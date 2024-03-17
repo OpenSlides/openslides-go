@@ -3,7 +3,7 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-go/restrict/collection"
 )
 
 func TestOrganizationModeA(t *testing.T) {

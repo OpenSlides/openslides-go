@@ -3,7 +3,7 @@ package datastore
 import (
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 // InvalidDataError is returned, when a key has an invalid value in the

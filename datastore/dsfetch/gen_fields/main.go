@@ -15,7 +15,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
+	"github.com/OpenSlides/openslides-go/models"
 )
 
 //go:embed value.go.tmpl
@@ -161,7 +161,7 @@ func genFieldMethods(buf *bytes.Buffer) error {
 }
 
 func openModelYML() (io.ReadCloser, error) {
-	return os.Open("../../../meta/models.yml")
+	return os.Open("../../meta/models.yml")
 }
 
 // parse returns all fields from the models.yml with there go-type as string.

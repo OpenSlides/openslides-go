@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 func TestStream(t *testing.T) {

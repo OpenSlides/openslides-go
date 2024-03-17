@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/oserror"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
 )

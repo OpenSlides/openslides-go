@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"golang.org/x/sync/errgroup"
 )
 

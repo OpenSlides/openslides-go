@@ -12,7 +12,7 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
+	"github.com/OpenSlides/openslides-go/models"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 }
 
 func openModelYML() (io.ReadCloser, error) {
-	return os.Open("../../meta/models.yml")
+	return os.Open("../meta/models.yml")
 }
 
 type restriction struct {

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/redis"
 )
 
 func TestMetric(t *testing.T) {

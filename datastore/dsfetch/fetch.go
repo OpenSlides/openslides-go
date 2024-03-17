@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 //go:generate sh -c "go run gen_fields/main.go > fields_generated.go"

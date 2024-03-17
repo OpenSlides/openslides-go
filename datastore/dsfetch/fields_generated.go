@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/fastjson"
 )
 
 // ValueBool is a value from the datastore.
@@ -5007,6 +5007,15 @@ func (r *Fetch) MotionWorkingGroupSpeaker_Weight(motionWorkingGroupSpeakerID int
 	}
 
 	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Motion_AdditionalSubmitter(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "additional_submitter")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybeInt {

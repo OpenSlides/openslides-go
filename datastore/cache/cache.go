@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/cache/pendingmap"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-go/datastore/cache/pendingmap"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 // Cache stores the values to the datastore.

@@ -13,7 +13,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+	"github.com/OpenSlides/openslides-go/set"
 	"golang.org/x/sys/unix"
 )
 

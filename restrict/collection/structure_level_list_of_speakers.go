@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/restrict/perm"
 )
 
 // StructureLevelListOfSpeakers handels restrictions of the collection structure_level_list_of_speakers.

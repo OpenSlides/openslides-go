@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// go test  -bench . github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey
+// go test  -bench . github.com/OpenSlides/openslides-go/datastore/dskey
 
 func MyBenchmark[Key comparable](b *testing.B, buildKey func(id int) Key) {
 	count := 100_000

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 // MeetingPermission is a cache for different Permission objects for each
@@ -53,7 +53,7 @@ type contextKeyType string
 const contextKey contextKeyType = "meeting_permission"
 
 // ContextWithPermissionCache adds a permission cache to the context.
-func ContextWithPermissionCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
+func ContextWithPermissionCache(ctx context.Context, getter flow.Getter, uid int) context.Context {
 	fetcher := dsfetch.New(getter)
 	return context.WithValue(ctx, contextKey, newMeetingPermission(fetcher, uid))
 }

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
 )
 
 func TestRequestTwoWithErrors(t *testing.T) {

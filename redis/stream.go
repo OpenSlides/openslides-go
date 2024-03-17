@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/gomodule/redigo/redis"
 )
 

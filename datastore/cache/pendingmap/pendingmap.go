@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 // ErrNotExist is returned from pendingmap.Get() when a key was not pending at

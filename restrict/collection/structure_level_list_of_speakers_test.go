@@ -3,8 +3,8 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/restrict/collection"
+	"github.com/OpenSlides/openslides-go/restrict/perm"
 )
 
 func TestStructureLevelListOfSpeakersModeA(t *testing.T) {

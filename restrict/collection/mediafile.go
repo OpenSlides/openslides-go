@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/restrict/perm"
 )
 
 // Mediafile handels permissions for the collection mediafile.
