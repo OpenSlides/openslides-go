@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/ostcar/topic v0.4.1
-	golang.org/x/sync v0.6.0
+	golang.org/x/sync v0.7.0
 	golang.org/x/sys v0.17.0
 )
 
