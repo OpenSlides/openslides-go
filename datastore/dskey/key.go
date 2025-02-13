@@ -9,12 +9,8 @@ import (
 // Key represents a FQField.
 type Key uint64
 
-// FromString parses a string to a Key.
-//
-// This uses a regular expression to validate the key. This can be slow if
-// called many times. It is faster to manually validate the key.
-func FromString(format string, a ...any) (Key, error) {
-	keyStr := fmt.Sprintf(format, a...)
+// FromString parses a string to Key.
+func FromString(keyStr string) (Key, error) {
 	idx1 := strings.IndexByte(keyStr, '/')
 	idx2 := strings.LastIndexByte(keyStr, '/')
 	if idx1 == -1 || idx1 == idx2 {
@@ -28,6 +24,12 @@ func FromString(format string, a ...any) (Key, error) {
 		return 0, InvalidKeyError{keyStr}
 	}
 	return Key(joinInt(cfID, id)), nil
+}
+
+// FromStringf parses a string to a Key using a format function.
+func FromStringf(format string, a ...any) (Key, error) {
+	keyStr := fmt.Sprintf(format, a...)
+	return FromString(keyStr)
 }
 
 // FromParts create a key from collection, id an field.
@@ -48,8 +50,19 @@ func FromParts(collection string, id int, field string) (Key, error) {
 // MustKey is like FromString but panics, if the key is invalid.
 //
 // Should only be used in tests.
-func MustKey(format string, a ...any) Key {
-	k, err := FromString(format, a...)
+func MustKey(keyStr string) Key {
+	k, err := FromString(keyStr)
+	if err != nil {
+		panic(err)
+	}
+	return k
+}
+
+// MustKeyf is like FromString but panics, if the key is invalid.
+//
+// Should only be used in tests.
+func MustKeyf(format string, a ...any) Key {
+	k, err := FromStringf(format, a...)
 	if err != nil {
 		panic(err)
 	}
