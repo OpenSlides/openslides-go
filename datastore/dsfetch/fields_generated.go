@@ -3457,6 +3457,24 @@ func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionPollProjectionMaxColumns(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_max_columns")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_name_order_first")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_state_ids")
 	if err != nil {
@@ -9570,6 +9588,8 @@ type Meeting struct {
 	MotionPollDefaultMethod                      string
 	MotionPollDefaultOnehundredPercentBase       string
 	MotionPollDefaultType                        string
+	MotionPollProjectionMaxColumns               int
+	MotionPollProjectionNameOrderFirst           string
 	MotionStateIDs                               []int
 	MotionSubmitterIDs                           []int
 	MotionWorkflowIDs                            []int
@@ -9810,6 +9830,8 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_MotionPollDefaultMethod(id).Lazy(&c.MotionPollDefaultMethod)
 	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Lazy(&c.MotionPollDefaultOnehundredPercentBase)
 	ds.Meeting_MotionPollDefaultType(id).Lazy(&c.MotionPollDefaultType)
+	ds.Meeting_MotionPollProjectionMaxColumns(id).Lazy(&c.MotionPollProjectionMaxColumns)
+	ds.Meeting_MotionPollProjectionNameOrderFirst(id).Lazy(&c.MotionPollProjectionNameOrderFirst)
 	ds.Meeting_MotionStateIDs(id).Lazy(&c.MotionStateIDs)
 	ds.Meeting_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
 	ds.Meeting_MotionWorkflowIDs(id).Lazy(&c.MotionWorkflowIDs)
