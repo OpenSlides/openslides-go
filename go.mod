@@ -3,7 +3,7 @@ module github.com/OpenSlides/openslides-go
 go 1.24.0
 
 require (
-	github.com/goccy/go-yaml v1.15.22
+	github.com/goccy/go-yaml v1.15.23
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gomodule/redigo v1.9.2
 	github.com/jackc/pgx/v5 v5.7.2
