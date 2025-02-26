@@ -1216,15 +1216,6 @@ func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("committee", committeeID, "forwarding_user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
 func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 	key, err := dskey.FromParts("committee", committeeID, "id")
 	if err != nil {
@@ -3455,6 +3446,24 @@ func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollProjectionMaxColumns(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_max_columns")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_name_order_first")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
@@ -6355,6 +6364,15 @@ func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Poll_HasVotedUserIDs(pollID int) *ValueIntSlice {
+	key, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 	key, err := dskey.FromParts("poll", pollID, "id")
 	if err != nil {
@@ -6479,15 +6497,6 @@ func (r *Fetch) Poll_Type(pollID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) Poll_VoteCount(pollID int) *ValueInt {
-	key, err := dskey.FromParts("poll", pollID, "vote_count")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
@@ -8065,15 +8074,6 @@ func (r *Fetch) User_FirstName(userID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
-	key, err := dskey.FromParts("user", userID, "forwarding_committee_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("user", userID, "gender_id")
 	if err != nil {
@@ -8802,7 +8802,6 @@ type Committee struct {
 	Description                        string
 	ExternalID                         string
 	ForwardToCommitteeIDs              []int
-	ForwardingUserID                   Maybe[int]
 	ID                                 int
 	ManagerIDs                         []int
 	MeetingIDs                         []int
@@ -8820,7 +8819,6 @@ func (c *Committee) lazy(ds *Fetch, id int) {
 	ds.Committee_Description(id).Lazy(&c.Description)
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
 	ds.Committee_ForwardToCommitteeIDs(id).Lazy(&c.ForwardToCommitteeIDs)
-	ds.Committee_ForwardingUserID(id).Lazy(&c.ForwardingUserID)
 	ds.Committee_ID(id).Lazy(&c.ID)
 	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
 	ds.Committee_MeetingIDs(id).Lazy(&c.MeetingIDs)
@@ -8853,20 +8851,6 @@ func (c *Committee) ForwardToCommitteeList() []*ValueCollection[Committee, *Comm
 			fetch: c.fetch,
 		}
 	}
-	return result
-}
-
-func (c *Committee) ForwardingUser() Maybe[*ValueCollection[User, *User]] {
-	var result Maybe[*ValueCollection[User, *User]]
-	id, hasValue := c.ForwardingUserID.Value()
-	if !hasValue {
-		return result
-	}
-	value := &ValueCollection[User, *User]{
-		id:    id,
-		fetch: c.fetch,
-	}
-	result.Set(value)
 	return result
 }
 
@@ -9570,6 +9554,8 @@ type Meeting struct {
 	MotionPollDefaultMethod                      string
 	MotionPollDefaultOnehundredPercentBase       string
 	MotionPollDefaultType                        string
+	MotionPollProjectionMaxColumns               int
+	MotionPollProjectionNameOrderFirst           string
 	MotionStateIDs                               []int
 	MotionSubmitterIDs                           []int
 	MotionWorkflowIDs                            []int
@@ -9810,6 +9796,8 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_MotionPollDefaultMethod(id).Lazy(&c.MotionPollDefaultMethod)
 	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Lazy(&c.MotionPollDefaultOnehundredPercentBase)
 	ds.Meeting_MotionPollDefaultType(id).Lazy(&c.MotionPollDefaultType)
+	ds.Meeting_MotionPollProjectionMaxColumns(id).Lazy(&c.MotionPollProjectionMaxColumns)
+	ds.Meeting_MotionPollProjectionNameOrderFirst(id).Lazy(&c.MotionPollProjectionNameOrderFirst)
 	ds.Meeting_MotionStateIDs(id).Lazy(&c.MotionStateIDs)
 	ds.Meeting_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
 	ds.Meeting_MotionWorkflowIDs(id).Lazy(&c.MotionWorkflowIDs)
@@ -13111,6 +13099,7 @@ type Poll struct {
 	GlobalNo              bool
 	GlobalOptionID        Maybe[int]
 	GlobalYes             bool
+	HasVotedUserIDs       []int
 	ID                    int
 	IsPseudoanonymized    bool
 	MaxVotesAmount        int
@@ -13125,7 +13114,6 @@ type Poll struct {
 	State                 string
 	Title                 string
 	Type                  string
-	VoteCount             int
 	VotedIDs              []int
 	VotesRaw              string
 	VotesSignature        string
@@ -13148,6 +13136,7 @@ func (c *Poll) lazy(ds *Fetch, id int) {
 	ds.Poll_GlobalNo(id).Lazy(&c.GlobalNo)
 	ds.Poll_GlobalOptionID(id).Lazy(&c.GlobalOptionID)
 	ds.Poll_GlobalYes(id).Lazy(&c.GlobalYes)
+	ds.Poll_HasVotedUserIDs(id).Lazy(&c.HasVotedUserIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
 	ds.Poll_IsPseudoanonymized(id).Lazy(&c.IsPseudoanonymized)
 	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
@@ -13162,7 +13151,6 @@ func (c *Poll) lazy(ds *Fetch, id int) {
 	ds.Poll_State(id).Lazy(&c.State)
 	ds.Poll_Title(id).Lazy(&c.Title)
 	ds.Poll_Type(id).Lazy(&c.Type)
-	ds.Poll_VoteCount(id).Lazy(&c.VoteCount)
 	ds.Poll_VotedIDs(id).Lazy(&c.VotedIDs)
 	ds.Poll_VotesRaw(id).Lazy(&c.VotesRaw)
 	ds.Poll_VotesSignature(id).Lazy(&c.VotesSignature)
@@ -14400,7 +14388,6 @@ type User struct {
 	DelegatedVoteIDs            []int
 	Email                       string
 	FirstName                   string
-	ForwardingCommitteeIDs      []int
 	GenderID                    Maybe[int]
 	ID                          int
 	IsActive                    bool
@@ -14437,7 +14424,6 @@ func (c *User) lazy(ds *Fetch, id int) {
 	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
 	ds.User_Email(id).Lazy(&c.Email)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
-	ds.User_ForwardingCommitteeIDs(id).Lazy(&c.ForwardingCommitteeIDs)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)
@@ -14489,17 +14475,6 @@ func (c *User) DelegatedVoteList() []*ValueCollection[Vote, *Vote] {
 	result := make([]*ValueCollection[Vote, *Vote], len(c.DelegatedVoteIDs))
 	for i, id := range c.DelegatedVoteIDs {
 		result[i] = &ValueCollection[Vote, *Vote]{
-			id:    id,
-			fetch: c.fetch,
-		}
-	}
-	return result
-}
-
-func (c *User) ForwardingCommitteeList() []*ValueCollection[Committee, *Committee] {
-	result := make([]*ValueCollection[Committee, *Committee], len(c.ForwardingCommitteeIDs))
-	for i, id := range c.ForwardingCommitteeIDs {
-		result[i] = &ValueCollection[Committee, *Committee]{
 			id:    id,
 			fetch: c.fetch,
 		}
