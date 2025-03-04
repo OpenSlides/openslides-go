@@ -12,6 +12,8 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: go fmt
         run: test -z $(gofmt -l .)
@@ -24,3 +26,9 @@ jobs:
 
       - name: test
         run: go test -timeout 30s -race ./...
+
+      - name: Check go generate
+        run: go generate ./...&& [ -z "$(git status --porcelain)" ]
+
+      - name: Check go mod tidy
+        run: go mod tidy && [ -z "$(git status --porcelain)" ]
