@@ -24,3 +24,9 @@ jobs:
 
       - name: test
         run: go test -timeout 30s -race ./...
+
+      - name: Check go generate
+        run: go generate ./...&& [ -z "$(git status --porcelain)" ]
+
+      - name: Check go mod tidy
+        run: go mod tidy && [ -z "$(git status --porcelain)" ]
