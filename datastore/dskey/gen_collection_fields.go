@@ -200,7 +200,7 @@ var collectionFields = [...]collectionField{
 	{"meeting", "default_projector_assignment_ids"},
 	{"meeting", "default_projector_assignment_poll_ids"},
 	{"meeting", "default_projector_countdown_ids"},
-	{"meeting", "default_projector_current_list_of_speakers_ids"},
+	{"meeting", "default_projector_current_los_ids"},
 	{"meeting", "default_projector_list_of_speakers_ids"},
 	{"meeting", "default_projector_mediafile_ids"},
 	{"meeting", "default_projector_message_ids"},
@@ -759,7 +759,7 @@ var collectionFields = [...]collectionField{
 	{"projector", "used_as_default_projector_for_assignment_in_meeting_id"},
 	{"projector", "used_as_default_projector_for_assignment_poll_in_meeting_id"},
 	{"projector", "used_as_default_projector_for_countdown_in_meeting_id"},
-	{"projector", "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"},
+	{"projector", "used_as_default_projector_for_current_los_in_meeting_id"},
 	{"projector", "used_as_default_projector_for_list_of_speakers_in_meeting_id"},
 	{"projector", "used_as_default_projector_for_mediafile_in_meeting_id"},
 	{"projector", "used_as_default_projector_for_message_in_meeting_id"},
@@ -1334,7 +1334,7 @@ func collectionFieldToID(cf string) int {
 		return 196
 	case "meeting/default_projector_countdown_ids":
 		return 197
-	case "meeting/default_projector_current_list_of_speakers_ids":
+	case "meeting/default_projector_current_los_ids":
 		return 198
 	case "meeting/default_projector_list_of_speakers_ids":
 		return 199
@@ -2452,7 +2452,7 @@ func collectionFieldToID(cf string) int {
 		return 755
 	case "projector/used_as_default_projector_for_countdown_in_meeting_id":
 		return 756
-	case "projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id":
+	case "projector/used_as_default_projector_for_current_los_in_meeting_id":
 		return 757
 	case "projector/used_as_default_projector_for_list_of_speakers_in_meeting_id":
 		return 758
