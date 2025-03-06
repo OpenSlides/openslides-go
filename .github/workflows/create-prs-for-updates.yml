@@ -1,0 +1,34 @@
+---
+name: Create PRs on each update
+on:
+  push:
+    branches:
+      - main
+      - staging/4*
+
+jobs:
+  create-pull-requests:
+    name: Create PR for dependant services
+    if: github.repository_owner == 'OpenSlides'
+    uses: ./.github/workflows/create-pr.yml
+    with:
+      repository: ${{ matrix.repository }}
+      commit: ${{ github.sha }}
+      assignee: ${{ matrix.assignee }}
+      setup-action: ${{ matrix.setup-action }}
+    secrets: inherit
+    strategy:
+      matrix:
+        include:
+          - repository: openslides-autoupdate-service
+            assignee: ostcar
+            setup-action: setup-autoupdate-pr
+          - repository: openslides-icc-service
+            assignee: ostcar
+          - repository: openslides-vote-service
+            assignee: luisa-beerboom
+          - repository: openslides-search-service
+            assignee: bastianjoel
+          # Uncomment me once projector-service goes live
+          #- repository: openslides-projector-service
+          #  assignee: bastianjoel
