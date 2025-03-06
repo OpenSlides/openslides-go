@@ -2656,8 +2656,8 @@ func (r *Fetch) Meeting_DefaultProjectorCountdownIDs(meetingID int) *ValueIntSli
 	return &ValueIntSlice{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Meeting_DefaultProjectorCurrentListOfSpeakersIDs(meetingID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting", meetingID, "default_projector_current_list_of_speakers_ids")
+func (r *Fetch) Meeting_DefaultProjectorCurrentLosIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "default_projector_current_los_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -7057,8 +7057,8 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForCountdownInMeetingID(projecto
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_current_list_of_speakers_in_meeting_id")
+func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentLosInMeetingID(projectorID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_current_los_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -9499,7 +9499,7 @@ type Meeting struct {
 	DefaultProjectorAssignmentIDs                []int
 	DefaultProjectorAssignmentPollIDs            []int
 	DefaultProjectorCountdownIDs                 []int
-	DefaultProjectorCurrentListOfSpeakersIDs     []int
+	DefaultProjectorCurrentLosIDs                []int
 	DefaultProjectorListOfSpeakersIDs            []int
 	DefaultProjectorMediafileIDs                 []int
 	DefaultProjectorMessageIDs                   []int
@@ -9741,7 +9741,7 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_DefaultProjectorAssignmentIDs(id).Lazy(&c.DefaultProjectorAssignmentIDs)
 	ds.Meeting_DefaultProjectorAssignmentPollIDs(id).Lazy(&c.DefaultProjectorAssignmentPollIDs)
 	ds.Meeting_DefaultProjectorCountdownIDs(id).Lazy(&c.DefaultProjectorCountdownIDs)
-	ds.Meeting_DefaultProjectorCurrentListOfSpeakersIDs(id).Lazy(&c.DefaultProjectorCurrentListOfSpeakersIDs)
+	ds.Meeting_DefaultProjectorCurrentLosIDs(id).Lazy(&c.DefaultProjectorCurrentLosIDs)
 	ds.Meeting_DefaultProjectorListOfSpeakersIDs(id).Lazy(&c.DefaultProjectorListOfSpeakersIDs)
 	ds.Meeting_DefaultProjectorMediafileIDs(id).Lazy(&c.DefaultProjectorMediafileIDs)
 	ds.Meeting_DefaultProjectorMessageIDs(id).Lazy(&c.DefaultProjectorMessageIDs)
@@ -10115,9 +10115,9 @@ func (c *Meeting) DefaultProjectorCountdownList() []*ValueCollection[Projector, 
 	return result
 }
 
-func (c *Meeting) DefaultProjectorCurrentListOfSpeakersList() []*ValueCollection[Projector, *Projector] {
-	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorCurrentListOfSpeakersIDs))
-	for i, id := range c.DefaultProjectorCurrentListOfSpeakersIDs {
+func (c *Meeting) DefaultProjectorCurrentLosList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorCurrentLosIDs))
+	for i, id := range c.DefaultProjectorCurrentLosIDs {
 		result[i] = &ValueCollection[Projector, *Projector]{
 			id:    id,
 			fetch: c.fetch,
@@ -13457,48 +13457,48 @@ func (r *Fetch) Projection(id int) *ValueCollection[Projection, *Projection] {
 
 // Projector has all fields from projector.
 type Projector struct {
-	AspectRatioDenominator                                    int
-	AspectRatioNumerator                                      int
-	BackgroundColor                                           string
-	ChyronBackgroundColor                                     string
-	ChyronBackgroundColor2                                    string
-	ChyronFontColor                                           string
-	ChyronFontColor2                                          string
-	Color                                                     string
-	CurrentProjectionIDs                                      []int
-	HeaderBackgroundColor                                     string
-	HeaderFontColor                                           string
-	HeaderH1Color                                             string
-	HistoryProjectionIDs                                      []int
-	ID                                                        int
-	IsInternal                                                bool
-	MeetingID                                                 int
-	Name                                                      string
-	PreviewProjectionIDs                                      []int
-	Scale                                                     int
-	Scroll                                                    int
-	SequentialNumber                                          int
-	ShowClock                                                 bool
-	ShowHeaderFooter                                          bool
-	ShowLogo                                                  bool
-	ShowTitle                                                 bool
-	UsedAsDefaultProjectorForAgendaItemListInMeetingID        Maybe[int]
-	UsedAsDefaultProjectorForAmendmentInMeetingID             Maybe[int]
-	UsedAsDefaultProjectorForAssignmentInMeetingID            Maybe[int]
-	UsedAsDefaultProjectorForAssignmentPollInMeetingID        Maybe[int]
-	UsedAsDefaultProjectorForCountdownInMeetingID             Maybe[int]
-	UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID Maybe[int]
-	UsedAsDefaultProjectorForListOfSpeakersInMeetingID        Maybe[int]
-	UsedAsDefaultProjectorForMediafileInMeetingID             Maybe[int]
-	UsedAsDefaultProjectorForMessageInMeetingID               Maybe[int]
-	UsedAsDefaultProjectorForMotionBlockInMeetingID           Maybe[int]
-	UsedAsDefaultProjectorForMotionInMeetingID                Maybe[int]
-	UsedAsDefaultProjectorForMotionPollInMeetingID            Maybe[int]
-	UsedAsDefaultProjectorForPollInMeetingID                  Maybe[int]
-	UsedAsDefaultProjectorForTopicInMeetingID                 Maybe[int]
-	UsedAsReferenceProjectorMeetingID                         Maybe[int]
-	Width                                                     int
-	fetch                                                     *Fetch
+	AspectRatioDenominator                             int
+	AspectRatioNumerator                               int
+	BackgroundColor                                    string
+	ChyronBackgroundColor                              string
+	ChyronBackgroundColor2                             string
+	ChyronFontColor                                    string
+	ChyronFontColor2                                   string
+	Color                                              string
+	CurrentProjectionIDs                               []int
+	HeaderBackgroundColor                              string
+	HeaderFontColor                                    string
+	HeaderH1Color                                      string
+	HistoryProjectionIDs                               []int
+	ID                                                 int
+	IsInternal                                         bool
+	MeetingID                                          int
+	Name                                               string
+	PreviewProjectionIDs                               []int
+	Scale                                              int
+	Scroll                                             int
+	SequentialNumber                                   int
+	ShowClock                                          bool
+	ShowHeaderFooter                                   bool
+	ShowLogo                                           bool
+	ShowTitle                                          bool
+	UsedAsDefaultProjectorForAgendaItemListInMeetingID Maybe[int]
+	UsedAsDefaultProjectorForAmendmentInMeetingID      Maybe[int]
+	UsedAsDefaultProjectorForAssignmentInMeetingID     Maybe[int]
+	UsedAsDefaultProjectorForAssignmentPollInMeetingID Maybe[int]
+	UsedAsDefaultProjectorForCountdownInMeetingID      Maybe[int]
+	UsedAsDefaultProjectorForCurrentLosInMeetingID     Maybe[int]
+	UsedAsDefaultProjectorForListOfSpeakersInMeetingID Maybe[int]
+	UsedAsDefaultProjectorForMediafileInMeetingID      Maybe[int]
+	UsedAsDefaultProjectorForMessageInMeetingID        Maybe[int]
+	UsedAsDefaultProjectorForMotionBlockInMeetingID    Maybe[int]
+	UsedAsDefaultProjectorForMotionInMeetingID         Maybe[int]
+	UsedAsDefaultProjectorForMotionPollInMeetingID     Maybe[int]
+	UsedAsDefaultProjectorForPollInMeetingID           Maybe[int]
+	UsedAsDefaultProjectorForTopicInMeetingID          Maybe[int]
+	UsedAsReferenceProjectorMeetingID                  Maybe[int]
+	Width                                              int
+	fetch                                              *Fetch
 }
 
 func (c *Projector) lazy(ds *Fetch, id int) {
@@ -13533,7 +13533,7 @@ func (c *Projector) lazy(ds *Fetch, id int) {
 	ds.Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForAssignmentInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForAssignmentPollInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForCountdownInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForCountdownInMeetingID)
-	ds.Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForCurrentLosInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForCurrentLosInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForListOfSpeakersInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForMediafileInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMediafileInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForMessageInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMessageInMeetingID)
@@ -13656,9 +13656,9 @@ func (c *Projector) UsedAsDefaultProjectorForCountdownInMeeting() Maybe[*ValueCo
 	return result
 }
 
-func (c *Projector) UsedAsDefaultProjectorForCurrentListOfSpeakersInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+func (c *Projector) UsedAsDefaultProjectorForCurrentLosInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
 	var result Maybe[*ValueCollection[Meeting, *Meeting]]
-	id, hasValue := c.UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID.Value()
+	id, hasValue := c.UsedAsDefaultProjectorForCurrentLosInMeetingID.Value()
 	if !hasValue {
 		return result
 	}
