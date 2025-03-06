@@ -10,7 +10,7 @@ require (
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/ostcar/topic v0.4.1
 	golang.org/x/sync v0.11.0
-	golang.org/x/sys v0.30.0
+	golang.org/x/sys v0.31.0
 )
 
 require (
