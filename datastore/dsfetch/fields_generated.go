@@ -3619,6 +3619,15 @@ func (r *Fetch) Meeting_MotionsEnableEditor(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionsEnableOriginMotionDisplay(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_origin_motion_display")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsEnableReasonOnProjector(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_reason_on_projector")
 	if err != nil {
@@ -3738,6 +3747,15 @@ func (r *Fetch) Meeting_MotionsNumberType(meetingID int) *ValueString {
 
 func (r *Fetch) Meeting_MotionsNumberWithBlank(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_number_with_blank")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionsOriginMotionToggleDefault(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_origin_motion_toggle_default")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
@@ -9573,6 +9591,7 @@ type Meeting struct {
 	MotionsDefaultSorting                        string
 	MotionsDefaultWorkflowID                     int
 	MotionsEnableEditor                          bool
+	MotionsEnableOriginMotionDisplay             bool
 	MotionsEnableReasonOnProjector               bool
 	MotionsEnableRecommendationOnProjector       bool
 	MotionsEnableSideboxOnProjector              bool
@@ -9587,6 +9606,7 @@ type Meeting struct {
 	MotionsNumberMinDigits                       int
 	MotionsNumberType                            string
 	MotionsNumberWithBlank                       bool
+	MotionsOriginMotionToggleDefault             bool
 	MotionsPreamble                              string
 	MotionsReasonRequired                        bool
 	MotionsRecommendationTextMode                string
@@ -9815,6 +9835,7 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_MotionsDefaultSorting(id).Lazy(&c.MotionsDefaultSorting)
 	ds.Meeting_MotionsDefaultWorkflowID(id).Lazy(&c.MotionsDefaultWorkflowID)
 	ds.Meeting_MotionsEnableEditor(id).Lazy(&c.MotionsEnableEditor)
+	ds.Meeting_MotionsEnableOriginMotionDisplay(id).Lazy(&c.MotionsEnableOriginMotionDisplay)
 	ds.Meeting_MotionsEnableReasonOnProjector(id).Lazy(&c.MotionsEnableReasonOnProjector)
 	ds.Meeting_MotionsEnableRecommendationOnProjector(id).Lazy(&c.MotionsEnableRecommendationOnProjector)
 	ds.Meeting_MotionsEnableSideboxOnProjector(id).Lazy(&c.MotionsEnableSideboxOnProjector)
@@ -9829,6 +9850,7 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_MotionsNumberMinDigits(id).Lazy(&c.MotionsNumberMinDigits)
 	ds.Meeting_MotionsNumberType(id).Lazy(&c.MotionsNumberType)
 	ds.Meeting_MotionsNumberWithBlank(id).Lazy(&c.MotionsNumberWithBlank)
+	ds.Meeting_MotionsOriginMotionToggleDefault(id).Lazy(&c.MotionsOriginMotionToggleDefault)
 	ds.Meeting_MotionsPreamble(id).Lazy(&c.MotionsPreamble)
 	ds.Meeting_MotionsReasonRequired(id).Lazy(&c.MotionsReasonRequired)
 	ds.Meeting_MotionsRecommendationTextMode(id).Lazy(&c.MotionsRecommendationTextMode)
