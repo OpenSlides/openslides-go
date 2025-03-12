@@ -1216,15 +1216,6 @@ func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("committee", committeeID, "forwarding_user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
 func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 	key, err := dskey.FromParts("committee", committeeID, "id")
 	if err != nil {
@@ -3628,6 +3619,15 @@ func (r *Fetch) Meeting_MotionsEnableEditor(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionsEnableOriginMotionDisplay(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_origin_motion_display")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsEnableReasonOnProjector(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_reason_on_projector")
 	if err != nil {
@@ -3747,6 +3747,15 @@ func (r *Fetch) Meeting_MotionsNumberType(meetingID int) *ValueString {
 
 func (r *Fetch) Meeting_MotionsNumberWithBlank(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_number_with_blank")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionsOriginMotionToggleDefault(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_origin_motion_toggle_default")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
@@ -8083,15 +8092,6 @@ func (r *Fetch) User_FirstName(userID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
-	key, err := dskey.FromParts("user", userID, "forwarding_committee_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("user", userID, "gender_id")
 	if err != nil {
@@ -8820,7 +8820,6 @@ type Committee struct {
 	Description                        string
 	ExternalID                         string
 	ForwardToCommitteeIDs              []int
-	ForwardingUserID                   Maybe[int]
 	ID                                 int
 	ManagerIDs                         []int
 	MeetingIDs                         []int
@@ -8838,7 +8837,6 @@ func (c *Committee) lazy(ds *Fetch, id int) {
 	ds.Committee_Description(id).Lazy(&c.Description)
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
 	ds.Committee_ForwardToCommitteeIDs(id).Lazy(&c.ForwardToCommitteeIDs)
-	ds.Committee_ForwardingUserID(id).Lazy(&c.ForwardingUserID)
 	ds.Committee_ID(id).Lazy(&c.ID)
 	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
 	ds.Committee_MeetingIDs(id).Lazy(&c.MeetingIDs)
@@ -8871,20 +8869,6 @@ func (c *Committee) ForwardToCommitteeList() []*ValueCollection[Committee, *Comm
 			fetch: c.fetch,
 		}
 	}
-	return result
-}
-
-func (c *Committee) ForwardingUser() Maybe[*ValueCollection[User, *User]] {
-	var result Maybe[*ValueCollection[User, *User]]
-	id, hasValue := c.ForwardingUserID.Value()
-	if !hasValue {
-		return result
-	}
-	value := &ValueCollection[User, *User]{
-		id:    id,
-		fetch: c.fetch,
-	}
-	result.Set(value)
 	return result
 }
 
@@ -9607,6 +9591,7 @@ type Meeting struct {
 	MotionsDefaultSorting                        string
 	MotionsDefaultWorkflowID                     int
 	MotionsEnableEditor                          bool
+	MotionsEnableOriginMotionDisplay             bool
 	MotionsEnableReasonOnProjector               bool
 	MotionsEnableRecommendationOnProjector       bool
 	MotionsEnableSideboxOnProjector              bool
@@ -9621,6 +9606,7 @@ type Meeting struct {
 	MotionsNumberMinDigits                       int
 	MotionsNumberType                            string
 	MotionsNumberWithBlank                       bool
+	MotionsOriginMotionToggleDefault             bool
 	MotionsPreamble                              string
 	MotionsReasonRequired                        bool
 	MotionsRecommendationTextMode                string
@@ -9849,6 +9835,7 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_MotionsDefaultSorting(id).Lazy(&c.MotionsDefaultSorting)
 	ds.Meeting_MotionsDefaultWorkflowID(id).Lazy(&c.MotionsDefaultWorkflowID)
 	ds.Meeting_MotionsEnableEditor(id).Lazy(&c.MotionsEnableEditor)
+	ds.Meeting_MotionsEnableOriginMotionDisplay(id).Lazy(&c.MotionsEnableOriginMotionDisplay)
 	ds.Meeting_MotionsEnableReasonOnProjector(id).Lazy(&c.MotionsEnableReasonOnProjector)
 	ds.Meeting_MotionsEnableRecommendationOnProjector(id).Lazy(&c.MotionsEnableRecommendationOnProjector)
 	ds.Meeting_MotionsEnableSideboxOnProjector(id).Lazy(&c.MotionsEnableSideboxOnProjector)
@@ -9863,6 +9850,7 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_MotionsNumberMinDigits(id).Lazy(&c.MotionsNumberMinDigits)
 	ds.Meeting_MotionsNumberType(id).Lazy(&c.MotionsNumberType)
 	ds.Meeting_MotionsNumberWithBlank(id).Lazy(&c.MotionsNumberWithBlank)
+	ds.Meeting_MotionsOriginMotionToggleDefault(id).Lazy(&c.MotionsOriginMotionToggleDefault)
 	ds.Meeting_MotionsPreamble(id).Lazy(&c.MotionsPreamble)
 	ds.Meeting_MotionsReasonRequired(id).Lazy(&c.MotionsReasonRequired)
 	ds.Meeting_MotionsRecommendationTextMode(id).Lazy(&c.MotionsRecommendationTextMode)
@@ -14422,7 +14410,6 @@ type User struct {
 	DelegatedVoteIDs            []int
 	Email                       string
 	FirstName                   string
-	ForwardingCommitteeIDs      []int
 	GenderID                    Maybe[int]
 	ID                          int
 	IsActive                    bool
@@ -14459,7 +14446,6 @@ func (c *User) lazy(ds *Fetch, id int) {
 	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
 	ds.User_Email(id).Lazy(&c.Email)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
-	ds.User_ForwardingCommitteeIDs(id).Lazy(&c.ForwardingCommitteeIDs)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)
@@ -14511,17 +14497,6 @@ func (c *User) DelegatedVoteList() []*ValueCollection[Vote, *Vote] {
 	result := make([]*ValueCollection[Vote, *Vote], len(c.DelegatedVoteIDs))
 	for i, id := range c.DelegatedVoteIDs {
 		result[i] = &ValueCollection[Vote, *Vote]{
-			id:    id,
-			fetch: c.fetch,
-		}
-	}
-	return result
-}
-
-func (c *User) ForwardingCommitteeList() []*ValueCollection[Committee, *Committee] {
-	result := make([]*ValueCollection[Committee, *Committee], len(c.ForwardingCommitteeIDs))
-	for i, id := range c.ForwardingCommitteeIDs {
-		result[i] = &ValueCollection[Committee, *Committee]{
 			id:    id,
 			fetch: c.fetch,
 		}
