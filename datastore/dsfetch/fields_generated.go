@@ -1180,6 +1180,33 @@ func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybeInt {
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Committee_AllChildIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "all_child_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_AllParentIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "all_parent_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_ChildIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "child_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("committee", committeeID, "default_meeting_id")
 	if err != nil {
@@ -1252,6 +1279,15 @@ func (r *Fetch) Committee_Name(committeeID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Committee_NativeUserIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "native_user_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Committee_OrganizationID(committeeID int) *ValueInt {
 	key, err := dskey.FromParts("committee", committeeID, "organization_id")
 	if err != nil {
@@ -1268,6 +1304,15 @@ func (r *Fetch) Committee_OrganizationTagIDs(committeeID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_ParentID(committeeID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("committee", committeeID, "parent_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *ValueIntSlice {
@@ -8101,6 +8146,24 @@ func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
+func (r *Fetch) User_Guest(userID int) *ValueBool {
+	key, err := dskey.FromParts("user", userID, "guest")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) User_HomeCommitteeID(userID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("user", userID, "home_committee_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
 func (r *Fetch) User_ID(userID int) *ValueInt {
 	key, err := dskey.FromParts("user", userID, "id")
 	if err != nil {
@@ -8816,6 +8879,9 @@ func (r *Fetch) ChatMessage(id int) *ValueCollection[ChatMessage, *ChatMessage] 
 
 // Committee has all fields from committee.
 type Committee struct {
+	AllChildIDs                        []int
+	AllParentIDs                       []int
+	ChildIDs                           []int
 	DefaultMeetingID                   Maybe[int]
 	Description                        string
 	ExternalID                         string
@@ -8824,8 +8890,10 @@ type Committee struct {
 	ManagerIDs                         []int
 	MeetingIDs                         []int
 	Name                               string
+	NativeUserIDs                      []int
 	OrganizationID                     int
 	OrganizationTagIDs                 []int
+	ParentID                           Maybe[int]
 	ReceiveForwardingsFromCommitteeIDs []int
 	UserIDs                            []int
 	fetch                              *Fetch
@@ -8833,6 +8901,9 @@ type Committee struct {
 
 func (c *Committee) lazy(ds *Fetch, id int) {
 	c.fetch = ds
+	ds.Committee_AllChildIDs(id).Lazy(&c.AllChildIDs)
+	ds.Committee_AllParentIDs(id).Lazy(&c.AllParentIDs)
+	ds.Committee_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.Committee_DefaultMeetingID(id).Lazy(&c.DefaultMeetingID)
 	ds.Committee_Description(id).Lazy(&c.Description)
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
@@ -8841,10 +8912,45 @@ func (c *Committee) lazy(ds *Fetch, id int) {
 	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
 	ds.Committee_MeetingIDs(id).Lazy(&c.MeetingIDs)
 	ds.Committee_Name(id).Lazy(&c.Name)
+	ds.Committee_NativeUserIDs(id).Lazy(&c.NativeUserIDs)
 	ds.Committee_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.Committee_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
+	ds.Committee_ParentID(id).Lazy(&c.ParentID)
 	ds.Committee_ReceiveForwardingsFromCommitteeIDs(id).Lazy(&c.ReceiveForwardingsFromCommitteeIDs)
 	ds.Committee_UserIDs(id).Lazy(&c.UserIDs)
+}
+
+func (c *Committee) AllChildList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.AllChildIDs))
+	for i, id := range c.AllChildIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) AllParentList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.AllParentIDs))
+	for i, id := range c.AllParentIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) ChildList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.ChildIDs))
+	for i, id := range c.ChildIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
 }
 
 func (c *Committee) DefaultMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
@@ -8894,6 +9000,17 @@ func (c *Committee) MeetingList() []*ValueCollection[Meeting, *Meeting] {
 	return result
 }
 
+func (c *Committee) NativeUserList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.NativeUserIDs))
+	for i, id := range c.NativeUserIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
 func (c *Committee) Organization() *ValueCollection[Organization, *Organization] {
 	return &ValueCollection[Organization, *Organization]{
 		id:    c.OrganizationID,
@@ -8909,6 +9026,20 @@ func (c *Committee) OrganizationTagList() []*ValueCollection[OrganizationTag, *O
 			fetch: c.fetch,
 		}
 	}
+	return result
+}
+
+func (c *Committee) Parent() Maybe[*ValueCollection[Committee, *Committee]] {
+	var result Maybe[*ValueCollection[Committee, *Committee]]
+	id, hasValue := c.ParentID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Committee, *Committee]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
 	return result
 }
 
@@ -14411,6 +14542,8 @@ type User struct {
 	Email                       string
 	FirstName                   string
 	GenderID                    Maybe[int]
+	Guest                       bool
+	HomeCommitteeID             Maybe[int]
 	ID                          int
 	IsActive                    bool
 	IsDemoUser                  bool
@@ -14447,6 +14580,8 @@ func (c *User) lazy(ds *Fetch, id int) {
 	ds.User_Email(id).Lazy(&c.Email)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
+	ds.User_Guest(id).Lazy(&c.Guest)
+	ds.User_HomeCommitteeID(id).Lazy(&c.HomeCommitteeID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)
 	ds.User_IsDemoUser(id).Lazy(&c.IsDemoUser)
@@ -14511,6 +14646,20 @@ func (c *User) Gender() Maybe[*ValueCollection[Gender, *Gender]] {
 		return result
 	}
 	value := &ValueCollection[Gender, *Gender]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *User) HomeCommittee() Maybe[*ValueCollection[Committee, *Committee]] {
+	var result Maybe[*ValueCollection[Committee, *Committee]]
+	id, hasValue := c.HomeCommitteeID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Committee, *Committee]{
 		id:    id,
 		fetch: c.fetch,
 	}
