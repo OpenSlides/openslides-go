@@ -3013,7 +3013,7 @@ func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersAllowMultipleSpeakers(meetingID int) *ValueBool {
@@ -5803,7 +5803,7 @@ func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_Description(organizationID int) *ValueString {
@@ -7540,7 +7540,7 @@ func (r *Fetch) Theme_Accent500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Accent600(themeID int) *ValueString {
@@ -7711,7 +7711,7 @@ func (r *Fetch) Theme_Primary500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Primary600(themeID int) *ValueString {
@@ -7846,7 +7846,7 @@ func (r *Fetch) Theme_Warn500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Warn600(themeID int) *ValueString {

@@ -4,19 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"sort"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
-	"github.com/OpenSlides/openslides-go/datastore/flow"
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const maxFieldsOnQuery = 1_500
+//go:generate  sh -c "go run genfields/main.go > field_def.go"
 
 var (
 	envPostgresHost         = environment.NewVariable("DATABASE_HOST", "localhost", "Postgres Host.")
@@ -28,8 +27,7 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	pool    *pgxpool.Pool
-	updater flow.Updater
+	pool *pgxpool.Pool
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -42,9 +40,7 @@ func encodePostgresConfig(s string) string {
 }
 
 // NewFlowPostgres initializes a SourcePostgres.
-//
-// TODO: This should be unexported, but there is an import cycle in the tests.
-func NewFlowPostgres(lookup environment.Environmenter, updater flow.Updater) (*FlowPostgres, error) {
+func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
 	if err != nil {
 		return nil, fmt.Errorf("reading postgres password: %w", err)
@@ -71,172 +67,231 @@ func NewFlowPostgres(lookup environment.Environmenter, updater flow.Updater) (*F
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	flow := FlowPostgres{pool: pool, updater: updater}
+	flow := FlowPostgres{pool: pool}
 
 	return &flow, nil
 }
 
+// Close closes the connection pool.
+func (p *FlowPostgres) Close() {
+	p.pool.Close()
+}
+
 // Get fetches the keys from postgres.
 func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
-
-	// For very big SQL Queries, split them in part
-	if len(fieldIndex) > maxFieldsOnQuery {
-		keysList := splitFieldKeys(keys)
-		result := make(map[dskey.Key][]byte, len(keys))
-		for _, keys := range keysList {
-			resultPart, err := p.Get(ctx, keys...)
-			if err != nil {
-				return nil, fmt.Errorf("get key list: %w", err)
-			}
-
-			for k, v := range resultPart {
-				result[k] = v
-			}
-		}
-		return result, nil
-	}
-
-	sql := fmt.Sprintf(`SELECT fqid, %s from models where fqid = ANY ($1) AND deleted=false;`, uniqueFieldsStr)
-
-	rows, err := p.pool.Query(ctx, sql, uniqueFQID)
+	conn, err := p.pool.Acquire(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("sending query: %w", err)
+		return nil, fmt.Errorf("acquiring connection: %w", err)
 	}
-	defer rows.Close()
+	defer conn.Release()
 
-	table := make(map[string][][]byte)
-	for rows.Next() {
-		r := rows.RawValues()
-		copied := make([][]byte, len(r)-1)
-		for i := 1; i < len(r); i++ {
-			copied[i-1] = r[i]
-			if r[i] == nil {
+	return getWithConn(ctx, conn.Conn(), keys...)
+}
+
+func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	collectionIDs := make(map[string][]int)
+	for _, key := range keys {
+		if slices.Contains(collectionIDs[key.Collection()], key.ID()) {
+			continue
+		}
+
+		collectionIDs[key.Collection()] = append(collectionIDs[key.Collection()], key.ID())
+	}
+
+	keyValues := make(map[dskey.Key][]byte, len(keys))
+	for collection, ids := range collectionIDs {
+		// TODO: maybe only fetch id and requested keys
+		sql := fmt.Sprintf(`SELECT * FROM "%s" WHERE id = ANY ($1) `, collection)
+
+		rows, err := conn.Query(ctx, sql, ids)
+		if err != nil {
+			return nil, fmt.Errorf("sending query for %s: %w", collection, err)
+		}
+		defer rows.Close()
+
+		err = forEachRow(rows, func(row pgx.CollectableRow) error {
+			values := row.RawValues()
+
+			if row.FieldDescriptions()[0].Name != "id" {
+				return fmt.Errorf("invalid row for collection %s, expect firts value to be the id. Got %s", collection, row.FieldDescriptions()[0].Name)
+			}
+			id, err := strconv.Atoi(string(values[0]))
+			if err != nil {
+				return fmt.Errorf("invalid id %s: %w", string(values[0]), err)
+			}
+
+			for i, value := range values {
+				field := row.FieldDescriptions()[i].Name
+				key, err := dskey.FromParts(collection, id, field)
+				if err != nil {
+					return fmt.Errorf("invalid key on field %d: %w", i, err)
+				}
+
+				keyValues[key] = nil
+				if value != nil {
+					converted, err := convertValue(value, row.FieldDescriptions()[i].DataTypeOID)
+					if err != nil {
+						return fmt.Errorf("convert value for field %s/%s: %w", collection, field, err)
+					}
+					keyValues[key] = converted
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("parse collection %s: %w", collection, err)
+		}
+	}
+
+	// The current implementation of cache expects to gets exactly the keys,
+	// that where requested. If a key does not exist, nil has to be used.
+	result := make(map[dskey.Key][]byte, len(keys))
+	for _, key := range keys {
+		result[key] = keyValues[key]
+	}
+
+	return result, nil
+}
+
+func convertValue(value []byte, oid uint32) ([]byte, error) {
+	const (
+		PSQLTypeVarChar   = 1043
+		PSQLTypeInt       = 23
+		PSQLTypeBool      = 16
+		PSQLTypeText      = 25
+		PSQLTypeIntList   = 1007
+		PSQLTypeTimestamp = 1184
+		PSQLTypeDecimal   = 1700
+		PSQLTypeJSON      = 3802
+	)
+
+	switch oid {
+	case PSQLTypeVarChar, PSQLTypeText:
+		return json.Marshal(string(value))
+
+	case PSQLTypeInt, PSQLTypeJSON:
+		return value, nil
+
+	case PSQLTypeIntList:
+		value[0] = '['
+		value[len(value)-1] = ']'
+		return value, nil
+
+	case PSQLTypeBool:
+		if string(value) == "t" {
+			return []byte("true"), nil
+		}
+		return []byte("false"), nil
+
+	case PSQLTypeDecimal:
+		return []byte(fmt.Sprintf(`"%s"`, value)), nil
+
+	case PSQLTypeTimestamp:
+		timeValue, err := time.Parse("2006-01-02 15:04:05-07", string(value))
+		if err != nil {
+			return nil, fmt.Errorf("parsing time %s: %w", value, err)
+		}
+
+		return []byte(strconv.Itoa(int(timeValue.Unix()))), nil
+
+	default:
+		return nil, fmt.Errorf("unsupported postgres type %d", oid)
+	}
+}
+
+// Update listens on pg notify to fetch updates.
+func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	conn, err := p.pool.Acquire(ctx)
+	if err != nil {
+		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
+		return
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(ctx, "LISTEN os_notify")
+	if err != nil {
+		updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
+		return
+	}
+
+	for {
+		notification, err := conn.Conn().WaitForNotification(ctx)
+		if err != nil {
+			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
+			return
+		}
+
+		var payload struct {
+			FQIDs []string `json:"fqids"`
+		}
+
+		if err := json.Unmarshal([]byte(notification.Payload), &payload); err != nil {
+			updateFn(nil, fmt.Errorf("unmarshal payload: %w", err))
+			continue
+		}
+
+		var allKeys []dskey.Key
+		for _, fqid := range payload.FQIDs {
+			collectionName, id, err := getCollectionNameAndID(fqid)
+			if err != nil {
+				updateFn(nil, fmt.Errorf("split fqid from %s: %w", fqid, err))
 				continue
 			}
-			copied[i-1] = make([]byte, len(r[i]))
-			copy(copied[i-1], r[i])
-		}
-		table[string(r[0])] = copied
-	}
 
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("reading postgres result: %w", rows.Err())
-	}
-
-	values := make(map[dskey.Key][]byte, len(keys))
-	for _, k := range keys {
-		var value []byte
-		element, ok := table[k.FQID()]
-		if ok {
-			idx, ok := fieldIndex[k.Field()]
-			if ok {
-				value = element[idx]
+			keys, err := createKeyList(collectionName, id)
+			if err != nil {
+				updateFn(nil, fmt.Errorf("creating key list from notification: %w", err))
+				continue
 			}
+
+			allKeys = append(allKeys, keys...)
 		}
 
-		if string(value) == "null" {
-			value = nil
-		}
-
-		values[k] = value
+		updateFn(getWithConn(ctx, conn.Conn(), allKeys...))
 	}
-
-	return values, nil
 }
 
-// HistoryInformation fetches the history information for one fqid.
-func (p *FlowPostgres) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
-	sql := `select distinct on (position) position, timestamp, user_id, information from positions natural join events
-	where fqid = $1 and information::text<>'null'::text order by position asc`
-
-	rows, err := p.pool.Query(ctx, sql, fqid)
-	if err != nil {
-		return fmt.Errorf("sending query: %w", err)
+func createKeyList(collection string, id int) ([]dskey.Key, error) {
+	fields := collectionFields[collection]
+	keys := make([]dskey.Key, len(fields))
+	var err error
+	for i, field := range fields {
+		keys[i], err = dskey.FromParts(collection, id, field)
+		if err != nil {
+			return nil, fmt.Errorf("creating key from parts: %w", err)
+		}
 	}
+	return keys, nil
+}
+
+// forEachRow is like pgx.ForEachRow but uses CollectableRow instead of scan.
+func forEachRow(rows pgx.Rows, fn func(row pgx.CollectableRow) error) error {
 	defer rows.Close()
 
-	type historyInformation struct {
-		Position    int             `json:"position"`
-		Timestamp   int             `json:"timestamp"`
-		UserID      int             `json:"user_id"`
-		Information json.RawMessage `json:"information"`
-	}
-
-	output := make(map[string][]historyInformation, 1)
-
 	for rows.Next() {
-		var hi historyInformation
-		var timestamp time.Time
 
-		if err = rows.Scan(&hi.Position, &timestamp, &hi.UserID, &hi.Information); err != nil {
-			return fmt.Errorf("scan: %w", err)
+		if err := fn(rows); err != nil {
+			return err
 		}
-
-		hi.Timestamp = int(timestamp.Unix())
-		output[fqid] = append(output[fqid], hi)
 	}
-
-	if err := json.NewEncoder(w).Encode(output); err != nil {
-		return fmt.Errorf("encode: %w", err)
-	}
-
-	return nil
+	return rows.Err()
 }
 
-// Update calls the updater.
-func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	p.updater.Update(ctx, updateFn)
-}
+// getCollectionNameAndID removes the suffix from the collection name.
+func getCollectionNameAndID(keyStr string) (string, int, error) {
+	idx1 := strings.IndexByte(keyStr, '/')
 
-func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {
-	uniqueFQIDSet := make(map[string]struct{})
-	uniqueFieldsSet := make(map[string]struct{})
-	for _, k := range keys {
-		uniqueFieldsSet[k.Field()] = struct{}{}
-		uniqueFQIDSet[k.FQID()] = struct{}{}
+	if idx1 == -1 {
+		return "", 0, fmt.Errorf("invalid key `%s`: missing slash", keyStr)
 	}
 
-	uniqueFields := make([]string, 0, len(uniqueFieldsSet))
-	fieldIndex = make(map[string]int, len(uniqueFieldsSet))
-	for field := range uniqueFieldsSet {
-		uniqueFields = append(uniqueFields, fmt.Sprintf("data->'%s'", field))
-		fieldIndex[field] = len(uniqueFields) - 1
+	id, err := strconv.Atoi(keyStr[idx1+1:])
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid key `%s`: id is not an integer", keyStr)
 	}
 
-	uniqueFQID = make([]string, 0, len(uniqueFQIDSet))
-	for k := range uniqueFQIDSet {
-		uniqueFQID = append(uniqueFQID, k)
-	}
-	uniqueFieldsStr = strings.Join(uniqueFields, ",")
-	return uniqueFieldsStr, fieldIndex, uniqueFQID
-}
-
-// splitFieldKeys splits a list of keys to many lists where any list has a
-// maximum of different fields.
-func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
-	sort.Slice(keys, func(i, j int) bool {
-		return keys[i].Field() < keys[j].Field()
-	})
-
-	var out [][]dskey.Key
-	keyCount := 0
-	var nextList []dskey.Key
-	var lastField string
-	for _, k := range keys {
-		nextList = append(nextList, k)
-
-		if k.Field() != lastField {
-			keyCount++
-			if keyCount >= maxFieldsOnQuery {
-				out = append(out, nextList)
-				nextList = nil
-				keyCount = 0
-			}
-		}
-		lastField = k.Field()
-	}
-	out = append(out, nextList)
-
-	return out
+	// Can be removed when this is merged:
+	// https://github.com/OpenSlides/openslides-meta/pull/240
+	return strings.TrimSuffix(keyStr[:idx1], "_t"), id, nil
 }

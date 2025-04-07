@@ -16,6 +16,8 @@ import (
 )
 
 func TestVoteCountSourceGet(t *testing.T) {
+	t.Parallel()
+
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{}`)
@@ -26,8 +28,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 	}))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	host, port, schema := parseURL(ts.URL)
 	env := environment.ForTests(map[string]string{
@@ -118,8 +119,8 @@ func TestVoteCountSourceGet(t *testing.T) {
 }
 
 func TestVoteCountSourceUpdate(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	t.Parallel()
+	ctx := t.Context()
 
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -201,6 +202,9 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 }
 
 func TestReconnect(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
 	msg := `{"1":[23]}`
 	sender := make(chan struct{})
 	var counter int
@@ -210,9 +214,6 @@ func TestReconnect(t *testing.T) {
 		counter++
 		<-sender
 	}))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	event := make(chan time.Time)
 	close(event)
@@ -239,14 +240,14 @@ func TestReconnect(t *testing.T) {
 }
 
 func TestReconnectWhenDeletedBetween(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
 	msg := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, <-msg)
 		// This handler returns after the first data is send. This triggers a reconnect.
 	}))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Use a closed channel as eventer so the connection is reestablished immediatly.
 	event := make(chan time.Time)
@@ -286,8 +287,8 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 }
 
 func TestGetWithoutConnect(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	t.Parallel()
+	ctx := t.Context()
 
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
