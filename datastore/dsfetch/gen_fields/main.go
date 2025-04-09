@@ -279,7 +279,7 @@ func toCollections(raw map[string]models.Model) []Collection {
 				resultType = fmt.Sprintf("Maybe[%s]", resultType)
 			}
 			if relation.List() {
-				resultType = "[]" + resultType
+				resultType = fmt.Sprintf("*RelationList[%s, *%s]", toType, toType)
 			}
 
 			methodName := withoutID(goName(fieldName))

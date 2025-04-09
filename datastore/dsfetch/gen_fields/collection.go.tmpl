@@ -20,13 +20,15 @@ func (c *{{.GoName}})lazy(ds *Fetch, id int) {
 func (c *{{$.GoName}}) {{.MethodName}}() {{.ResultType}}{
     {{- if .IsList}}
     if c.{{.StructFieldName}} == nil {
-        c.{{.StructFieldName}} = make({{.ResultType}}, len(c.{{.FieldName}}))
+        refs := make([]*ValueCollection[{{.Type}}, *{{.Type}}], len(c.{{.FieldName}}))
         for i, id := range c.{{.FieldName}}{
-            c.{{.StructFieldName}}[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
+            refs[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
                 id: id,
                 fetch: c.fetch,
             }
         }
+
+        c.{{.StructFieldName}} = &RelationList[{{.Type}}, *{{.Type}}]{refs}
     }
     return c.{{.StructFieldName}} 
     {{- else if .Required}}

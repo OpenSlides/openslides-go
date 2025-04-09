@@ -56,10 +56,10 @@ func (v *ValueCollection[T, P]) Preload(field string) *ValueCollection[T, P] {
 	return v
 }
 
-func (v *ValueCollection[T, P]) Load(ctx context.Context) (*ValueCollection[T, P], error) {
+func (v *ValueCollection[T, P]) Load(ctx context.Context) (T, error) {
 	collection, err := v.Value(ctx)
 	if err != nil {
-		return nil, err
+		return collection, err
 	}
 
 	v.value = &collection
@@ -68,11 +68,25 @@ func (v *ValueCollection[T, P]) Load(ctx context.Context) (*ValueCollection[T, P
 			ref := reflect.ValueOf(&collection).MethodByName(field).Call([]reflect.Value{})
 			rel := ref[0]
 			if rel.Kind() == reflect.Ptr {
-				// relation is represented by *ValueCollection
-				for field := range subRelations {
-					rel.MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
+				typeName := rel.Elem().Type().Name()
+				if strings.HasPrefix(typeName, "RelationList") {
+					// relation is represented by RelationList
+					relListReturn := rel.MethodByName("Refs").Call([]reflect.Value{})
+					relList := relListReturn[0]
+					for i := range relList.Len() {
+						valColl := relList.Index(i)
+						for field := range subRelations {
+							valColl.MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
+						}
+						valColl.MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
+					}
+				} else if strings.HasPrefix(typeName, "ValueCollection") {
+					// relation is represented by *ValueCollection
+					for field := range subRelations {
+						rel.MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
+					}
+					rel.MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
 				}
-				rel.MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
 			} else if rel.Kind() == reflect.Struct {
 				// relation is represented by Maybe[*ValueCollection]
 				maybeVal := rel.MethodByName("Value").Call([]reflect.Value{})
@@ -82,24 +96,16 @@ func (v *ValueCollection[T, P]) Load(ctx context.Context) (*ValueCollection[T, P
 					}
 					maybeVal[0].MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
 				}
-			} else if rel.Kind() == reflect.Slice {
-				// relation is represented by []*ValueCollection
-				for i := range rel.Len() {
-					valColl := rel.Index(i)
-					for field := range subRelations {
-						valColl.MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
-					}
-					valColl.MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
-				}
 			} else {
-				return nil, fmt.Errorf("invalid field name added to preload")
+				var zero T
+				return zero, fmt.Errorf("invalid field name added to preload")
 			}
 		}
 	}
 
 	v.loaded = true
 
-	return v, nil
+	return collection, nil
 }
 
 func (v *ValueCollection[T, P]) Get() P {
