@@ -235,12 +235,13 @@ type CollectionField struct {
 
 // CollectionRelation is one Relation, needed for method generation.
 type CollectionRelation struct {
-	ResultType string
-	IsList     bool
-	Type       string
-	FieldName  string
-	MethodName string
-	Required   bool
+	ResultType      string
+	IsList          bool
+	Type            string
+	FieldName       string
+	MethodName      string
+	StructFieldName string
+	Required        bool
 }
 
 func toCollections(raw map[string]models.Model) []Collection {
@@ -275,21 +276,25 @@ func toCollections(raw map[string]models.Model) []Collection {
 
 			resultType := fmt.Sprintf("*ValueCollection[%s, *%s]", toType, toType)
 			if !relation.List() && !modelField.Required {
-				resultType = fmt.Sprintf("Maybe[%s]", resultType)
+				resultType = fmt.Sprintf("*MaybeRelation[%s, *%s]", toType, toType)
 			}
 			if relation.List() {
-				resultType = "[]" + resultType
+				resultType = fmt.Sprintf("*RelationList[%s, *%s]", toType, toType)
 			}
+
+			methodName := withoutID(goName(fieldName))
+			structFieldName := string(methodName[0]+32) + string(methodName[1:])
 
 			col.Relations = append(
 				col.Relations,
 				CollectionRelation{
-					ResultType: resultType,
-					IsList:     relation.List(),
-					FieldName:  goName(fieldName),
-					MethodName: withoutID(goName(fieldName)),
-					Type:       toType,
-					Required:   modelField.Required,
+					ResultType:      resultType,
+					IsList:          relation.List(),
+					FieldName:       goName(fieldName),
+					MethodName:      methodName,
+					StructFieldName: structFieldName,
+					Type:            toType,
+					Required:        modelField.Required,
 				},
 			)
 

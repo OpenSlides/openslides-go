@@ -3,6 +3,9 @@ type {{.GoName}} struct{
     {{- range .Fields}}
     {{.Name}} {{.Type}}
     {{- end}}
+    {{- range .Relations}}
+    {{.StructFieldName}} {{.ResultType}}
+    {{- end}}
     fetch *Fetch
 }
 
@@ -15,33 +18,35 @@ func (c *{{.GoName}})lazy(ds *Fetch, id int) {
 
 {{ range .Relations}}
 func (c *{{$.GoName}}) {{.MethodName}}() {{.ResultType}}{
-    {{- if .IsList}}
-    result := make({{.ResultType}}, len(c.{{.FieldName}}))
-    for i, id := range c.{{.FieldName}}{
-        result[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
-            id: id,
-            fetch: c.fetch,
+    if c.{{.StructFieldName}} == nil {
+        {{- if .IsList}}
+        refs := make([]*ValueCollection[{{.Type}}, *{{.Type}}], len(c.{{.FieldName}}))
+        for i, id := range c.{{.FieldName}}{
+            refs[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
+                id: id,
+                fetch: c.fetch,
+            }
         }
-    }
-    return result
-    {{- else if .Required}}
-    return &ValueCollection[{{.Type}}, *{{.Type}}]{
-		id: c.{{.FieldName}},
-		fetch: c.fetch,
+        c.{{.StructFieldName}} = &RelationList[{{.Type}}, *{{.Type}}]{refs}
+        {{- else if .Required}}
+        c.{{.StructFieldName}} = &ValueCollection[{{.Type}}, *{{.Type}}]{
+		    id: c.{{.FieldName}},
+		    fetch: c.fetch,
+	    }
+	    {{- else}}
+        var ref Maybe[*ValueCollection[{{.Type}}, *{{.Type}}]]
+	    id, hasValue := c.{{.FieldName}}.Value()
+	    if hasValue {
+	        value := &ValueCollection[{{.Type}}, *{{.Type}}]{
+		        id:    id,
+		        fetch: c.fetch,
+	        }
+	        ref.Set(value)
+	    }
+        c.{{.StructFieldName}} = &MaybeRelation[{{.Type}}, *{{.Type}}]{ref}
+	    {{- end}}
 	}
-	{{- else}}
-    var result Maybe[*ValueCollection[{{.Type}}, *{{.Type}}]]
-	id, hasValue := c.{{.FieldName}}.Value()
-	if !hasValue {
-		return result
-	}
-	value := &ValueCollection[{{.Type}}, *{{.Type}}]{
-		id:    id,
-		fetch: c.fetch,
-	}
-	result.Set(value)
-	return result
-	{{- end}}
+    return c.{{.StructFieldName}} 
 }
 {{end}}
 
