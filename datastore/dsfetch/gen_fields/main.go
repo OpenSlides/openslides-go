@@ -276,7 +276,7 @@ func toCollections(raw map[string]models.Model) []Collection {
 
 			resultType := fmt.Sprintf("*ValueCollection[%s, *%s]", toType, toType)
 			if !relation.List() && !modelField.Required {
-				resultType = fmt.Sprintf("Maybe[%s]", resultType)
+				resultType = fmt.Sprintf("*MaybeRelation[%s, *%s]", toType, toType)
 			}
 			if relation.List() {
 				resultType = fmt.Sprintf("*RelationList[%s, *%s]", toType, toType)

@@ -86,15 +86,18 @@ func (v *ValueCollection[T, P]) Load(ctx context.Context) (T, error) {
 						rel.MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
 					}
 					rel.MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
-				}
-			} else if rel.Kind() == reflect.Struct {
-				// relation is represented by Maybe[*ValueCollection]
-				maybeVal := rel.MethodByName("Value").Call([]reflect.Value{})
-				if maybeVal[1].Bool() {
-					for field := range subRelations {
-						maybeVal[0].MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
+				} else if strings.HasPrefix(typeName, "MaybeRelation") {
+					// relation is represented by Maybe[*ValueCollection]
+					maybeVal := rel.MethodByName("Value").Call([]reflect.Value{})
+					if maybeVal[1].Bool() {
+						for field := range subRelations {
+							maybeVal[0].MethodByName("Preload").Call([]reflect.Value{reflect.ValueOf(field)})
+						}
+						maybeVal[0].MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
 					}
-					maybeVal[0].MethodByName("Load").Call([]reflect.Value{reflect.ValueOf(ctx)})
+				} else {
+					var zero T
+					return zero, fmt.Errorf("invalid field name added to preload")
 				}
 			} else {
 				var zero T

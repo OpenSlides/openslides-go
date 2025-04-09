@@ -18,3 +18,22 @@ func (r *RelationList[T, P]) Values() []P {
 
 	return values
 }
+
+// MaybeRelation is a Maybe wrapper for ValueCollection adding
+// direct access to its value
+type MaybeRelation[C any, T loader[C]] struct {
+	ref Maybe[*ValueCollection[C, T]]
+}
+
+func (r *MaybeRelation[T, P]) Value() (*ValueCollection[T, P], bool) {
+	return r.ref.Value()
+}
+
+func (r *MaybeRelation[T, P]) ValueGet() (T, bool) {
+	if m, isSet := r.ref.Value(); isSet {
+		return *m.Get(), true
+	}
+
+	var zero T
+	return zero, false
+}
