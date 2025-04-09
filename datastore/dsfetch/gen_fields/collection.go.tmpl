@@ -3,6 +3,9 @@ type {{.GoName}} struct{
     {{- range .Fields}}
     {{.Name}} {{.Type}}
     {{- end}}
+    {{- range .Relations}}
+    {{.StructFieldName}} {{.ResultType}}
+    {{- end}}
     fetch *Fetch
 }
 
@@ -16,19 +19,24 @@ func (c *{{.GoName}})lazy(ds *Fetch, id int) {
 {{ range .Relations}}
 func (c *{{$.GoName}}) {{.MethodName}}() {{.ResultType}}{
     {{- if .IsList}}
-    result := make({{.ResultType}}, len(c.{{.FieldName}}))
-    for i, id := range c.{{.FieldName}}{
-        result[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
-            id: id,
-            fetch: c.fetch,
+    if c.{{.StructFieldName}} == nil {
+        c.{{.StructFieldName}} = make({{.ResultType}}, len(c.{{.FieldName}}))
+        for i, id := range c.{{.FieldName}}{
+            c.{{.StructFieldName}}[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
+                id: id,
+                fetch: c.fetch,
+            }
         }
     }
-    return result
+    return c.{{.StructFieldName}} 
     {{- else if .Required}}
-    return &ValueCollection[{{.Type}}, *{{.Type}}]{
-		id: c.{{.FieldName}},
-		fetch: c.fetch,
+    if c.{{.StructFieldName}} == nil {
+        c.{{.StructFieldName}} = &ValueCollection[{{.Type}}, *{{.Type}}]{
+		    id: c.{{.FieldName}},
+		    fetch: c.fetch,
+	    }
 	}
+    return c.{{.StructFieldName}} 
 	{{- else}}
     var result Maybe[*ValueCollection[{{.Type}}, *{{.Type}}]]
 	id, hasValue := c.{{.FieldName}}.Value()
