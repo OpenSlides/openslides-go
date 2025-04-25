@@ -34,7 +34,7 @@ func (c *{{$.GoName}}) {{.MethodName}}() {{.ResultType}}{
 		    fetch: c.fetch,
 	    }
 	    {{- else}}
-        var ref Maybe[*ValueCollection[{{.Type}}, *{{.Type}}]]
+        var ref dsfetch.Maybe[*ValueCollection[{{.Type}}, *{{.Type}}]]
 	    id, hasValue := c.{{.FieldName}}.Value()
 	    if hasValue {
 	        value := &ValueCollection[{{.Type}}, *{{.Type}}]{

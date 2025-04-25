@@ -1,4 +1,6 @@
-package dsfetch
+package dsmodels
+
+import "github.com/OpenSlides/openslides-go/datastore/dsfetch"
 
 // RelationList is a list wrapper for ValueCollection adding
 // direct access to its values
@@ -22,7 +24,7 @@ func (r *RelationList[T, P]) Values() []P {
 // MaybeRelation is a Maybe wrapper for ValueCollection adding
 // direct access to its value
 type MaybeRelation[C any, T loader[C]] struct {
-	ref Maybe[*ValueCollection[C, T]]
+	ref dsfetch.Maybe[*ValueCollection[C, T]]
 }
 
 func (r *MaybeRelation[T, P]) Value() (*ValueCollection[T, P], bool) {

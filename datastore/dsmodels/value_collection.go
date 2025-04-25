@@ -1,4 +1,4 @@
-package dsfetch
+package dsmodels
 
 import (
 	"context"
