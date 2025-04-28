@@ -15,11 +15,14 @@ type ActionWorker struct {
 	State     string
 	Timestamp int
 	UserID    int
-	fetch     *Fetch
 }
 
-func (c *ActionWorker) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type actionWorkerBuilder struct {
+	builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker]
+}
+
+func (b *actionWorkerBuilder) lazy(ds *Fetch, id int) *ActionWorker {
+	c := ActionWorker{}
 	ds.ActionWorker_Created(id).Lazy(&c.Created)
 	ds.ActionWorker_ID(id).Lazy(&c.ID)
 	ds.ActionWorker_Name(id).Lazy(&c.Name)
@@ -27,12 +30,20 @@ func (c *ActionWorker) lazy(ds *Fetch, id int) {
 	ds.ActionWorker_State(id).Lazy(&c.State)
 	ds.ActionWorker_Timestamp(id).Lazy(&c.Timestamp)
 	ds.ActionWorker_UserID(id).Lazy(&c.UserID)
+	return &c
 }
 
-func (r *Fetch) ActionWorker(id int) *ValueCollection[ActionWorker, *ActionWorker] {
-	return &ValueCollection[ActionWorker, *ActionWorker]{
-		id:    id,
-		fetch: r,
+func (b *actionWorkerBuilder) Preload(rel builderWrapperI) *actionWorkerBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (r *Fetch) ActionWorker(id int) *actionWorkerBuilder {
+	return &actionWorkerBuilder{
+		builder: builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -54,16 +65,19 @@ type AgendaItem struct {
 	TagIDs          []int
 	Type            string
 	Weight          int
-	childList       *RelationList[AgendaItem, *AgendaItem]
-	meeting         *ValueCollection[Meeting, *Meeting]
-	parent          *MaybeRelation[AgendaItem, *AgendaItem]
-	projectionList  *RelationList[Projection, *Projection]
-	tagList         *RelationList[Tag, *Tag]
-	fetch           *Fetch
+	ChildList       []AgendaItem
+	Meeting         *Meeting
+	Parent          *dsfetch.Maybe[AgendaItem]
+	ProjectionList  []Projection
+	TagList         []Tag
 }
 
-func (c *AgendaItem) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type agendaItemBuilder struct {
+	builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]
+}
+
+func (b *agendaItemBuilder) lazy(ds *Fetch, id int) *AgendaItem {
+	c := AgendaItem{}
 	ds.AgendaItem_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.AgendaItem_Closed(id).Lazy(&c.Closed)
 	ds.AgendaItem_Comment(id).Lazy(&c.Comment)
@@ -80,80 +94,73 @@ func (c *AgendaItem) lazy(ds *Fetch, id int) {
 	ds.AgendaItem_TagIDs(id).Lazy(&c.TagIDs)
 	ds.AgendaItem_Type(id).Lazy(&c.Type)
 	ds.AgendaItem_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *AgendaItem) ChildList() *RelationList[AgendaItem, *AgendaItem] {
-	if c.childList == nil {
-		refs := make([]*ValueCollection[AgendaItem, *AgendaItem], len(c.ChildIDs))
-		for i, id := range c.ChildIDs {
-			refs[i] = &ValueCollection[AgendaItem, *AgendaItem]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.childList = &RelationList[AgendaItem, *AgendaItem]{refs}
+func (b *agendaItemBuilder) Preload(rel builderWrapperI) *agendaItemBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *agendaItemBuilder) ChildList() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "ChildIDs",
+			relField: "ChildList",
+			many:     true,
+		},
 	}
-	return c.childList
 }
 
-func (c *AgendaItem) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *agendaItemBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *AgendaItem) Parent() *MaybeRelation[AgendaItem, *AgendaItem] {
-	if c.parent == nil {
-		var ref dsfetch.Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
-		id, hasValue := c.ParentID.Value()
-		if hasValue {
-			value := &ValueCollection[AgendaItem, *AgendaItem]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.parent = &MaybeRelation[AgendaItem, *AgendaItem]{ref}
+func (b *agendaItemBuilder) Parent() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "ParentID",
+			relField: "Parent",
+		},
 	}
-	return c.parent
 }
 
-func (c *AgendaItem) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *agendaItemBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *AgendaItem) TagList() *RelationList[Tag, *Tag] {
-	if c.tagList == nil {
-		refs := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
-		for i, id := range c.TagIDs {
-			refs[i] = &ValueCollection[Tag, *Tag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.tagList = &RelationList[Tag, *Tag]{refs}
+func (b *agendaItemBuilder) TagList() *tagBuilder {
+	return &tagBuilder{
+		builder: builder[tagBuilder, *tagBuilder, Tag]{
+			fetch:    b.fetch,
+			idField:  "TagIDs",
+			relField: "TagList",
+			many:     true,
+		},
 	}
-	return c.tagList
 }
 
-func (r *Fetch) AgendaItem(id int) *ValueCollection[AgendaItem, *AgendaItem] {
-	return &ValueCollection[AgendaItem, *AgendaItem]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) AgendaItem(id int) *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -175,19 +182,22 @@ type Assignment struct {
 	SequentialNumber               int
 	TagIDs                         []int
 	Title                          string
-	agendaItem                     *MaybeRelation[AgendaItem, *AgendaItem]
-	attachmentMeetingMediafileList *RelationList[MeetingMediafile, *MeetingMediafile]
-	candidateList                  *RelationList[AssignmentCandidate, *AssignmentCandidate]
-	listOfSpeakers                 *ValueCollection[ListOfSpeakers, *ListOfSpeakers]
-	meeting                        *ValueCollection[Meeting, *Meeting]
-	pollList                       *RelationList[Poll, *Poll]
-	projectionList                 *RelationList[Projection, *Projection]
-	tagList                        *RelationList[Tag, *Tag]
-	fetch                          *Fetch
+	AgendaItem                     *dsfetch.Maybe[AgendaItem]
+	AttachmentMeetingMediafileList []MeetingMediafile
+	CandidateList                  []AssignmentCandidate
+	ListOfSpeakers                 *ListOfSpeakers
+	Meeting                        *Meeting
+	PollList                       []Poll
+	ProjectionList                 []Projection
+	TagList                        []Tag
 }
 
-func (c *Assignment) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type assignmentBuilder struct {
+	builder[assignmentBuilder, *assignmentBuilder, Assignment]
+}
+
+func (b *assignmentBuilder) lazy(ds *Fetch, id int) *Assignment {
+	c := Assignment{}
 	ds.Assignment_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Assignment_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
 	ds.Assignment_CandidateIDs(id).Lazy(&c.CandidateIDs)
@@ -204,118 +214,105 @@ func (c *Assignment) lazy(ds *Fetch, id int) {
 	ds.Assignment_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.Assignment_TagIDs(id).Lazy(&c.TagIDs)
 	ds.Assignment_Title(id).Lazy(&c.Title)
+	return &c
 }
 
-func (c *Assignment) AgendaItem() *MaybeRelation[AgendaItem, *AgendaItem] {
-	if c.agendaItem == nil {
-		var ref dsfetch.Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
-		id, hasValue := c.AgendaItemID.Value()
-		if hasValue {
-			value := &ValueCollection[AgendaItem, *AgendaItem]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.agendaItem = &MaybeRelation[AgendaItem, *AgendaItem]{ref}
+func (b *assignmentBuilder) Preload(rel builderWrapperI) *assignmentBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *assignmentBuilder) AgendaItem() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "AgendaItemID",
+			relField: "AgendaItem",
+		},
 	}
-	return c.agendaItem
 }
 
-func (c *Assignment) AttachmentMeetingMediafileList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.attachmentMeetingMediafileList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.AttachmentMeetingMediafileIDs))
-		for i, id := range c.AttachmentMeetingMediafileIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.attachmentMeetingMediafileList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
+func (b *assignmentBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "AttachmentMeetingMediafileIDs",
+			relField: "AttachmentMeetingMediafileList",
+			many:     true,
+		},
 	}
-	return c.attachmentMeetingMediafileList
 }
 
-func (c *Assignment) CandidateList() *RelationList[AssignmentCandidate, *AssignmentCandidate] {
-	if c.candidateList == nil {
-		refs := make([]*ValueCollection[AssignmentCandidate, *AssignmentCandidate], len(c.CandidateIDs))
-		for i, id := range c.CandidateIDs {
-			refs[i] = &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.candidateList = &RelationList[AssignmentCandidate, *AssignmentCandidate]{refs}
+func (b *assignmentBuilder) CandidateList() *assignmentCandidateBuilder {
+	return &assignmentCandidateBuilder{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+			fetch:    b.fetch,
+			idField:  "CandidateIDs",
+			relField: "CandidateList",
+			many:     true,
+		},
 	}
-	return c.candidateList
 }
 
-func (c *Assignment) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		c.listOfSpeakers = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-			id:    c.ListOfSpeakersID,
-			fetch: c.fetch,
-		}
+func (b *assignmentBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *Assignment) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *assignmentBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Assignment) PollList() *RelationList[Poll, *Poll] {
-	if c.pollList == nil {
-		refs := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
-		for i, id := range c.PollIDs {
-			refs[i] = &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollList = &RelationList[Poll, *Poll]{refs}
+func (b *assignmentBuilder) PollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollIDs",
+			relField: "PollList",
+			many:     true,
+		},
 	}
-	return c.pollList
 }
 
-func (c *Assignment) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *assignmentBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *Assignment) TagList() *RelationList[Tag, *Tag] {
-	if c.tagList == nil {
-		refs := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
-		for i, id := range c.TagIDs {
-			refs[i] = &ValueCollection[Tag, *Tag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.tagList = &RelationList[Tag, *Tag]{refs}
+func (b *assignmentBuilder) TagList() *tagBuilder {
+	return &tagBuilder{
+		builder: builder[tagBuilder, *tagBuilder, Tag]{
+			fetch:    b.fetch,
+			idField:  "TagIDs",
+			relField: "TagList",
+			many:     true,
+		},
 	}
-	return c.tagList
 }
 
-func (r *Fetch) Assignment(id int) *ValueCollection[Assignment, *Assignment] {
-	return &ValueCollection[Assignment, *Assignment]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Assignment(id int) *assignmentBuilder {
+	return &assignmentBuilder{
+		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -326,61 +323,66 @@ type AssignmentCandidate struct {
 	MeetingID     int
 	MeetingUserID dsfetch.Maybe[int]
 	Weight        int
-	assignment    *ValueCollection[Assignment, *Assignment]
-	meeting       *ValueCollection[Meeting, *Meeting]
-	meetingUser   *MaybeRelation[MeetingUser, *MeetingUser]
-	fetch         *Fetch
+	Assignment    *Assignment
+	Meeting       *Meeting
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 }
 
-func (c *AssignmentCandidate) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type assignmentCandidateBuilder struct {
+	builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]
+}
+
+func (b *assignmentCandidateBuilder) lazy(ds *Fetch, id int) *AssignmentCandidate {
+	c := AssignmentCandidate{}
 	ds.AssignmentCandidate_AssignmentID(id).Lazy(&c.AssignmentID)
 	ds.AssignmentCandidate_ID(id).Lazy(&c.ID)
 	ds.AssignmentCandidate_MeetingID(id).Lazy(&c.MeetingID)
 	ds.AssignmentCandidate_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.AssignmentCandidate_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *AssignmentCandidate) Assignment() *ValueCollection[Assignment, *Assignment] {
-	if c.assignment == nil {
-		c.assignment = &ValueCollection[Assignment, *Assignment]{
-			id:    c.AssignmentID,
-			fetch: c.fetch,
-		}
+func (b *assignmentCandidateBuilder) Preload(rel builderWrapperI) *assignmentCandidateBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *assignmentCandidateBuilder) Assignment() *assignmentBuilder {
+	return &assignmentBuilder{
+		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+			fetch:    b.fetch,
+			idField:  "AssignmentID",
+			relField: "Assignment",
+		},
 	}
-	return c.assignment
 }
 
-func (c *AssignmentCandidate) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *assignmentCandidateBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *AssignmentCandidate) MeetingUser() *MaybeRelation[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
-		id, hasValue := c.MeetingUserID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.meetingUser = &MaybeRelation[MeetingUser, *MeetingUser]{ref}
+func (b *assignmentCandidateBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (r *Fetch) AssignmentCandidate(id int) *ValueCollection[AssignmentCandidate, *AssignmentCandidate] {
-	return &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) AssignmentCandidate(id int) *assignmentCandidateBuilder {
+	return &assignmentCandidateBuilder{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -393,15 +395,18 @@ type ChatGroup struct {
 	ReadGroupIDs    []int
 	Weight          int
 	WriteGroupIDs   []int
-	chatMessageList *RelationList[ChatMessage, *ChatMessage]
-	meeting         *ValueCollection[Meeting, *Meeting]
-	readGroupList   *RelationList[Group, *Group]
-	writeGroupList  *RelationList[Group, *Group]
-	fetch           *Fetch
+	ChatMessageList []ChatMessage
+	Meeting         *Meeting
+	ReadGroupList   []Group
+	WriteGroupList  []Group
 }
 
-func (c *ChatGroup) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type chatGroupBuilder struct {
+	builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]
+}
+
+func (b *chatGroupBuilder) lazy(ds *Fetch, id int) *ChatGroup {
+	c := ChatGroup{}
 	ds.ChatGroup_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
 	ds.ChatGroup_ID(id).Lazy(&c.ID)
 	ds.ChatGroup_MeetingID(id).Lazy(&c.MeetingID)
@@ -409,64 +414,63 @@ func (c *ChatGroup) lazy(ds *Fetch, id int) {
 	ds.ChatGroup_ReadGroupIDs(id).Lazy(&c.ReadGroupIDs)
 	ds.ChatGroup_Weight(id).Lazy(&c.Weight)
 	ds.ChatGroup_WriteGroupIDs(id).Lazy(&c.WriteGroupIDs)
+	return &c
 }
 
-func (c *ChatGroup) ChatMessageList() *RelationList[ChatMessage, *ChatMessage] {
-	if c.chatMessageList == nil {
-		refs := make([]*ValueCollection[ChatMessage, *ChatMessage], len(c.ChatMessageIDs))
-		for i, id := range c.ChatMessageIDs {
-			refs[i] = &ValueCollection[ChatMessage, *ChatMessage]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.chatMessageList = &RelationList[ChatMessage, *ChatMessage]{refs}
+func (b *chatGroupBuilder) Preload(rel builderWrapperI) *chatGroupBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *chatGroupBuilder) ChatMessageList() *chatMessageBuilder {
+	return &chatMessageBuilder{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+			fetch:    b.fetch,
+			idField:  "ChatMessageIDs",
+			relField: "ChatMessageList",
+			many:     true,
+		},
 	}
-	return c.chatMessageList
 }
 
-func (c *ChatGroup) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *chatGroupBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *ChatGroup) ReadGroupList() *RelationList[Group, *Group] {
-	if c.readGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.ReadGroupIDs))
-		for i, id := range c.ReadGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.readGroupList = &RelationList[Group, *Group]{refs}
+func (b *chatGroupBuilder) ReadGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "ReadGroupIDs",
+			relField: "ReadGroupList",
+			many:     true,
+		},
 	}
-	return c.readGroupList
 }
 
-func (c *ChatGroup) WriteGroupList() *RelationList[Group, *Group] {
-	if c.writeGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.WriteGroupIDs))
-		for i, id := range c.WriteGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.writeGroupList = &RelationList[Group, *Group]{refs}
+func (b *chatGroupBuilder) WriteGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "WriteGroupIDs",
+			relField: "WriteGroupList",
+			many:     true,
+		},
 	}
-	return c.writeGroupList
 }
 
-func (r *Fetch) ChatGroup(id int) *ValueCollection[ChatGroup, *ChatGroup] {
-	return &ValueCollection[ChatGroup, *ChatGroup]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) ChatGroup(id int) *chatGroupBuilder {
+	return &chatGroupBuilder{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -478,62 +482,67 @@ type ChatMessage struct {
 	ID            int
 	MeetingID     int
 	MeetingUserID dsfetch.Maybe[int]
-	chatGroup     *ValueCollection[ChatGroup, *ChatGroup]
-	meeting       *ValueCollection[Meeting, *Meeting]
-	meetingUser   *MaybeRelation[MeetingUser, *MeetingUser]
-	fetch         *Fetch
+	ChatGroup     *ChatGroup
+	Meeting       *Meeting
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 }
 
-func (c *ChatMessage) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type chatMessageBuilder struct {
+	builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]
+}
+
+func (b *chatMessageBuilder) lazy(ds *Fetch, id int) *ChatMessage {
+	c := ChatMessage{}
 	ds.ChatMessage_ChatGroupID(id).Lazy(&c.ChatGroupID)
 	ds.ChatMessage_Content(id).Lazy(&c.Content)
 	ds.ChatMessage_Created(id).Lazy(&c.Created)
 	ds.ChatMessage_ID(id).Lazy(&c.ID)
 	ds.ChatMessage_MeetingID(id).Lazy(&c.MeetingID)
 	ds.ChatMessage_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	return &c
 }
 
-func (c *ChatMessage) ChatGroup() *ValueCollection[ChatGroup, *ChatGroup] {
-	if c.chatGroup == nil {
-		c.chatGroup = &ValueCollection[ChatGroup, *ChatGroup]{
-			id:    c.ChatGroupID,
-			fetch: c.fetch,
-		}
+func (b *chatMessageBuilder) Preload(rel builderWrapperI) *chatMessageBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *chatMessageBuilder) ChatGroup() *chatGroupBuilder {
+	return &chatGroupBuilder{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+			fetch:    b.fetch,
+			idField:  "ChatGroupID",
+			relField: "ChatGroup",
+		},
 	}
-	return c.chatGroup
 }
 
-func (c *ChatMessage) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *chatMessageBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *ChatMessage) MeetingUser() *MaybeRelation[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
-		id, hasValue := c.MeetingUserID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.meetingUser = &MaybeRelation[MeetingUser, *MeetingUser]{ref}
+func (b *chatMessageBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (r *Fetch) ChatMessage(id int) *ValueCollection[ChatMessage, *ChatMessage] {
-	return &ValueCollection[ChatMessage, *ChatMessage]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) ChatMessage(id int) *chatMessageBuilder {
+	return &chatMessageBuilder{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -551,19 +560,22 @@ type Committee struct {
 	OrganizationTagIDs                  []int
 	ReceiveForwardingsFromCommitteeIDs  []int
 	UserIDs                             []int
-	defaultMeeting                      *MaybeRelation[Meeting, *Meeting]
-	forwardToCommitteeList              *RelationList[Committee, *Committee]
-	managerList                         *RelationList[User, *User]
-	meetingList                         *RelationList[Meeting, *Meeting]
-	organization                        *ValueCollection[Organization, *Organization]
-	organizationTagList                 *RelationList[OrganizationTag, *OrganizationTag]
-	receiveForwardingsFromCommitteeList *RelationList[Committee, *Committee]
-	userList                            *RelationList[User, *User]
-	fetch                               *Fetch
+	DefaultMeeting                      *dsfetch.Maybe[Meeting]
+	ForwardToCommitteeList              []Committee
+	ManagerList                         []User
+	MeetingList                         []Meeting
+	Organization                        *Organization
+	OrganizationTagList                 []OrganizationTag
+	ReceiveForwardingsFromCommitteeList []Committee
+	UserList                            []User
 }
 
-func (c *Committee) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type committeeBuilder struct {
+	builder[committeeBuilder, *committeeBuilder, Committee]
+}
+
+func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
+	c := Committee{}
 	ds.Committee_DefaultMeetingID(id).Lazy(&c.DefaultMeetingID)
 	ds.Committee_Description(id).Lazy(&c.Description)
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
@@ -576,122 +588,106 @@ func (c *Committee) lazy(ds *Fetch, id int) {
 	ds.Committee_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
 	ds.Committee_ReceiveForwardingsFromCommitteeIDs(id).Lazy(&c.ReceiveForwardingsFromCommitteeIDs)
 	ds.Committee_UserIDs(id).Lazy(&c.UserIDs)
+	return &c
 }
 
-func (c *Committee) DefaultMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.defaultMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.DefaultMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.defaultMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *committeeBuilder) Preload(rel builderWrapperI) *committeeBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *committeeBuilder) DefaultMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "DefaultMeetingID",
+			relField: "DefaultMeeting",
+		},
 	}
-	return c.defaultMeeting
 }
 
-func (c *Committee) ForwardToCommitteeList() *RelationList[Committee, *Committee] {
-	if c.forwardToCommitteeList == nil {
-		refs := make([]*ValueCollection[Committee, *Committee], len(c.ForwardToCommitteeIDs))
-		for i, id := range c.ForwardToCommitteeIDs {
-			refs[i] = &ValueCollection[Committee, *Committee]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.forwardToCommitteeList = &RelationList[Committee, *Committee]{refs}
+func (b *committeeBuilder) ForwardToCommitteeList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "ForwardToCommitteeIDs",
+			relField: "ForwardToCommitteeList",
+			many:     true,
+		},
 	}
-	return c.forwardToCommitteeList
 }
 
-func (c *Committee) ManagerList() *RelationList[User, *User] {
-	if c.managerList == nil {
-		refs := make([]*ValueCollection[User, *User], len(c.ManagerIDs))
-		for i, id := range c.ManagerIDs {
-			refs[i] = &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.managerList = &RelationList[User, *User]{refs}
+func (b *committeeBuilder) ManagerList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "ManagerIDs",
+			relField: "ManagerList",
+			many:     true,
+		},
 	}
-	return c.managerList
 }
 
-func (c *Committee) MeetingList() *RelationList[Meeting, *Meeting] {
-	if c.meetingList == nil {
-		refs := make([]*ValueCollection[Meeting, *Meeting], len(c.MeetingIDs))
-		for i, id := range c.MeetingIDs {
-			refs[i] = &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingList = &RelationList[Meeting, *Meeting]{refs}
+func (b *committeeBuilder) MeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingIDs",
+			relField: "MeetingList",
+			many:     true,
+		},
 	}
-	return c.meetingList
 }
 
-func (c *Committee) Organization() *ValueCollection[Organization, *Organization] {
-	if c.organization == nil {
-		c.organization = &ValueCollection[Organization, *Organization]{
-			id:    c.OrganizationID,
-			fetch: c.fetch,
-		}
+func (b *committeeBuilder) Organization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "OrganizationID",
+			relField: "Organization",
+		},
 	}
-	return c.organization
 }
 
-func (c *Committee) OrganizationTagList() *RelationList[OrganizationTag, *OrganizationTag] {
-	if c.organizationTagList == nil {
-		refs := make([]*ValueCollection[OrganizationTag, *OrganizationTag], len(c.OrganizationTagIDs))
-		for i, id := range c.OrganizationTagIDs {
-			refs[i] = &ValueCollection[OrganizationTag, *OrganizationTag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.organizationTagList = &RelationList[OrganizationTag, *OrganizationTag]{refs}
+func (b *committeeBuilder) OrganizationTagList() *organizationTagBuilder {
+	return &organizationTagBuilder{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+			fetch:    b.fetch,
+			idField:  "OrganizationTagIDs",
+			relField: "OrganizationTagList",
+			many:     true,
+		},
 	}
-	return c.organizationTagList
 }
 
-func (c *Committee) ReceiveForwardingsFromCommitteeList() *RelationList[Committee, *Committee] {
-	if c.receiveForwardingsFromCommitteeList == nil {
-		refs := make([]*ValueCollection[Committee, *Committee], len(c.ReceiveForwardingsFromCommitteeIDs))
-		for i, id := range c.ReceiveForwardingsFromCommitteeIDs {
-			refs[i] = &ValueCollection[Committee, *Committee]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.receiveForwardingsFromCommitteeList = &RelationList[Committee, *Committee]{refs}
+func (b *committeeBuilder) ReceiveForwardingsFromCommitteeList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "ReceiveForwardingsFromCommitteeIDs",
+			relField: "ReceiveForwardingsFromCommitteeList",
+			many:     true,
+		},
 	}
-	return c.receiveForwardingsFromCommitteeList
 }
 
-func (c *Committee) UserList() *RelationList[User, *User] {
-	if c.userList == nil {
-		refs := make([]*ValueCollection[User, *User], len(c.UserIDs))
-		for i, id := range c.UserIDs {
-			refs[i] = &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.userList = &RelationList[User, *User]{refs}
+func (b *committeeBuilder) UserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "UserIDs",
+			relField: "UserList",
+			many:     true,
+		},
 	}
-	return c.userList
 }
 
-func (r *Fetch) Committee(id int) *ValueCollection[Committee, *Committee] {
-	return &ValueCollection[Committee, *Committee]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Committee(id int) *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -701,47 +697,55 @@ type Gender struct {
 	Name           string
 	OrganizationID int
 	UserIDs        []int
-	organization   *ValueCollection[Organization, *Organization]
-	userList       *RelationList[User, *User]
-	fetch          *Fetch
+	Organization   *Organization
+	UserList       []User
 }
 
-func (c *Gender) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type genderBuilder struct {
+	builder[genderBuilder, *genderBuilder, Gender]
+}
+
+func (b *genderBuilder) lazy(ds *Fetch, id int) *Gender {
+	c := Gender{}
 	ds.Gender_ID(id).Lazy(&c.ID)
 	ds.Gender_Name(id).Lazy(&c.Name)
 	ds.Gender_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.Gender_UserIDs(id).Lazy(&c.UserIDs)
+	return &c
 }
 
-func (c *Gender) Organization() *ValueCollection[Organization, *Organization] {
-	if c.organization == nil {
-		c.organization = &ValueCollection[Organization, *Organization]{
-			id:    c.OrganizationID,
-			fetch: c.fetch,
-		}
+func (b *genderBuilder) Preload(rel builderWrapperI) *genderBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *genderBuilder) Organization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "OrganizationID",
+			relField: "Organization",
+		},
 	}
-	return c.organization
 }
 
-func (c *Gender) UserList() *RelationList[User, *User] {
-	if c.userList == nil {
-		refs := make([]*ValueCollection[User, *User], len(c.UserIDs))
-		for i, id := range c.UserIDs {
-			refs[i] = &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.userList = &RelationList[User, *User]{refs}
+func (b *genderBuilder) UserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "UserIDs",
+			relField: "UserList",
+			many:     true,
+		},
 	}
-	return c.userList
 }
 
-func (r *Fetch) Gender(id int) *ValueCollection[Gender, *Gender] {
-	return &ValueCollection[Gender, *Gender]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Gender(id int) *genderBuilder {
+	return &genderBuilder{
+		builder: builder[genderBuilder, *genderBuilder, Gender]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -768,27 +772,30 @@ type Group struct {
 	Weight                                   int
 	WriteChatGroupIDs                        []int
 	WriteCommentSectionIDs                   []int
-	adminGroupForMeeting                     *MaybeRelation[Meeting, *Meeting]
-	anonymousGroupForMeeting                 *MaybeRelation[Meeting, *Meeting]
-	defaultGroupForMeeting                   *MaybeRelation[Meeting, *Meeting]
-	meeting                                  *ValueCollection[Meeting, *Meeting]
-	meetingMediafileAccessGroupList          *RelationList[MeetingMediafile, *MeetingMediafile]
-	meetingMediafileInheritedAccessGroupList *RelationList[MeetingMediafile, *MeetingMediafile]
-	meetingUserList                          *RelationList[MeetingUser, *MeetingUser]
-	pollList                                 *RelationList[Poll, *Poll]
-	readChatGroupList                        *RelationList[ChatGroup, *ChatGroup]
-	readCommentSectionList                   *RelationList[MotionCommentSection, *MotionCommentSection]
-	usedAsAssignmentPollDefault              *MaybeRelation[Meeting, *Meeting]
-	usedAsMotionPollDefault                  *MaybeRelation[Meeting, *Meeting]
-	usedAsPollDefault                        *MaybeRelation[Meeting, *Meeting]
-	usedAsTopicPollDefault                   *MaybeRelation[Meeting, *Meeting]
-	writeChatGroupList                       *RelationList[ChatGroup, *ChatGroup]
-	writeCommentSectionList                  *RelationList[MotionCommentSection, *MotionCommentSection]
-	fetch                                    *Fetch
+	AdminGroupForMeeting                     *dsfetch.Maybe[Meeting]
+	AnonymousGroupForMeeting                 *dsfetch.Maybe[Meeting]
+	DefaultGroupForMeeting                   *dsfetch.Maybe[Meeting]
+	Meeting                                  *Meeting
+	MeetingMediafileAccessGroupList          []MeetingMediafile
+	MeetingMediafileInheritedAccessGroupList []MeetingMediafile
+	MeetingUserList                          []MeetingUser
+	PollList                                 []Poll
+	ReadChatGroupList                        []ChatGroup
+	ReadCommentSectionList                   []MotionCommentSection
+	UsedAsAssignmentPollDefault              *dsfetch.Maybe[Meeting]
+	UsedAsMotionPollDefault                  *dsfetch.Maybe[Meeting]
+	UsedAsPollDefault                        *dsfetch.Maybe[Meeting]
+	UsedAsTopicPollDefault                   *dsfetch.Maybe[Meeting]
+	WriteChatGroupList                       []ChatGroup
+	WriteCommentSectionList                  []MotionCommentSection
 }
 
-func (c *Group) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type groupBuilder struct {
+	builder[groupBuilder, *groupBuilder, Group]
+}
+
+func (b *groupBuilder) lazy(ds *Fetch, id int) *Group {
+	c := Group{}
 	ds.Group_AdminGroupForMeetingID(id).Lazy(&c.AdminGroupForMeetingID)
 	ds.Group_AnonymousGroupForMeetingID(id).Lazy(&c.AnonymousGroupForMeetingID)
 	ds.Group_DefaultGroupForMeetingID(id).Lazy(&c.DefaultGroupForMeetingID)
@@ -810,246 +817,188 @@ func (c *Group) lazy(ds *Fetch, id int) {
 	ds.Group_Weight(id).Lazy(&c.Weight)
 	ds.Group_WriteChatGroupIDs(id).Lazy(&c.WriteChatGroupIDs)
 	ds.Group_WriteCommentSectionIDs(id).Lazy(&c.WriteCommentSectionIDs)
+	return &c
 }
 
-func (c *Group) AdminGroupForMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.adminGroupForMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.AdminGroupForMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.adminGroupForMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) Preload(rel builderWrapperI) *groupBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *groupBuilder) AdminGroupForMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "AdminGroupForMeetingID",
+			relField: "AdminGroupForMeeting",
+		},
 	}
-	return c.adminGroupForMeeting
 }
 
-func (c *Group) AnonymousGroupForMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.anonymousGroupForMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.AnonymousGroupForMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.anonymousGroupForMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) AnonymousGroupForMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "AnonymousGroupForMeetingID",
+			relField: "AnonymousGroupForMeeting",
+		},
 	}
-	return c.anonymousGroupForMeeting
 }
 
-func (c *Group) DefaultGroupForMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.defaultGroupForMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.DefaultGroupForMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.defaultGroupForMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) DefaultGroupForMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "DefaultGroupForMeetingID",
+			relField: "DefaultGroupForMeeting",
+		},
 	}
-	return c.defaultGroupForMeeting
 }
 
-func (c *Group) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *groupBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Group) MeetingMediafileAccessGroupList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.meetingMediafileAccessGroupList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileAccessGroupIDs))
-		for i, id := range c.MeetingMediafileAccessGroupIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingMediafileAccessGroupList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
+func (b *groupBuilder) MeetingMediafileAccessGroupList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "MeetingMediafileAccessGroupIDs",
+			relField: "MeetingMediafileAccessGroupList",
+			many:     true,
+		},
 	}
-	return c.meetingMediafileAccessGroupList
 }
 
-func (c *Group) MeetingMediafileInheritedAccessGroupList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.meetingMediafileInheritedAccessGroupList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileInheritedAccessGroupIDs))
-		for i, id := range c.MeetingMediafileInheritedAccessGroupIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingMediafileInheritedAccessGroupList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
+func (b *groupBuilder) MeetingMediafileInheritedAccessGroupList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "MeetingMediafileInheritedAccessGroupIDs",
+			relField: "MeetingMediafileInheritedAccessGroupList",
+			many:     true,
+		},
 	}
-	return c.meetingMediafileInheritedAccessGroupList
 }
 
-func (c *Group) MeetingUserList() *RelationList[MeetingUser, *MeetingUser] {
-	if c.meetingUserList == nil {
-		refs := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
-		for i, id := range c.MeetingUserIDs {
-			refs[i] = &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingUserList = &RelationList[MeetingUser, *MeetingUser]{refs}
+func (b *groupBuilder) MeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserIDs",
+			relField: "MeetingUserList",
+			many:     true,
+		},
 	}
-	return c.meetingUserList
 }
 
-func (c *Group) PollList() *RelationList[Poll, *Poll] {
-	if c.pollList == nil {
-		refs := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
-		for i, id := range c.PollIDs {
-			refs[i] = &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollList = &RelationList[Poll, *Poll]{refs}
+func (b *groupBuilder) PollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollIDs",
+			relField: "PollList",
+			many:     true,
+		},
 	}
-	return c.pollList
 }
 
-func (c *Group) ReadChatGroupList() *RelationList[ChatGroup, *ChatGroup] {
-	if c.readChatGroupList == nil {
-		refs := make([]*ValueCollection[ChatGroup, *ChatGroup], len(c.ReadChatGroupIDs))
-		for i, id := range c.ReadChatGroupIDs {
-			refs[i] = &ValueCollection[ChatGroup, *ChatGroup]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.readChatGroupList = &RelationList[ChatGroup, *ChatGroup]{refs}
+func (b *groupBuilder) ReadChatGroupList() *chatGroupBuilder {
+	return &chatGroupBuilder{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+			fetch:    b.fetch,
+			idField:  "ReadChatGroupIDs",
+			relField: "ReadChatGroupList",
+			many:     true,
+		},
 	}
-	return c.readChatGroupList
 }
 
-func (c *Group) ReadCommentSectionList() *RelationList[MotionCommentSection, *MotionCommentSection] {
-	if c.readCommentSectionList == nil {
-		refs := make([]*ValueCollection[MotionCommentSection, *MotionCommentSection], len(c.ReadCommentSectionIDs))
-		for i, id := range c.ReadCommentSectionIDs {
-			refs[i] = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.readCommentSectionList = &RelationList[MotionCommentSection, *MotionCommentSection]{refs}
+func (b *groupBuilder) ReadCommentSectionList() *motionCommentSectionBuilder {
+	return &motionCommentSectionBuilder{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+			fetch:    b.fetch,
+			idField:  "ReadCommentSectionIDs",
+			relField: "ReadCommentSectionList",
+			many:     true,
+		},
 	}
-	return c.readCommentSectionList
 }
 
-func (c *Group) UsedAsAssignmentPollDefault() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsAssignmentPollDefault == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsAssignmentPollDefaultID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsAssignmentPollDefault = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) UsedAsAssignmentPollDefault() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsAssignmentPollDefaultID",
+			relField: "UsedAsAssignmentPollDefault",
+		},
 	}
-	return c.usedAsAssignmentPollDefault
 }
 
-func (c *Group) UsedAsMotionPollDefault() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsMotionPollDefault == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsMotionPollDefaultID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsMotionPollDefault = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) UsedAsMotionPollDefault() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsMotionPollDefaultID",
+			relField: "UsedAsMotionPollDefault",
+		},
 	}
-	return c.usedAsMotionPollDefault
 }
 
-func (c *Group) UsedAsPollDefault() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsPollDefault == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsPollDefaultID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsPollDefault = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) UsedAsPollDefault() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsPollDefaultID",
+			relField: "UsedAsPollDefault",
+		},
 	}
-	return c.usedAsPollDefault
 }
 
-func (c *Group) UsedAsTopicPollDefault() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsTopicPollDefault == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsTopicPollDefaultID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsTopicPollDefault = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *groupBuilder) UsedAsTopicPollDefault() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsTopicPollDefaultID",
+			relField: "UsedAsTopicPollDefault",
+		},
 	}
-	return c.usedAsTopicPollDefault
 }
 
-func (c *Group) WriteChatGroupList() *RelationList[ChatGroup, *ChatGroup] {
-	if c.writeChatGroupList == nil {
-		refs := make([]*ValueCollection[ChatGroup, *ChatGroup], len(c.WriteChatGroupIDs))
-		for i, id := range c.WriteChatGroupIDs {
-			refs[i] = &ValueCollection[ChatGroup, *ChatGroup]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.writeChatGroupList = &RelationList[ChatGroup, *ChatGroup]{refs}
+func (b *groupBuilder) WriteChatGroupList() *chatGroupBuilder {
+	return &chatGroupBuilder{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+			fetch:    b.fetch,
+			idField:  "WriteChatGroupIDs",
+			relField: "WriteChatGroupList",
+			many:     true,
+		},
 	}
-	return c.writeChatGroupList
 }
 
-func (c *Group) WriteCommentSectionList() *RelationList[MotionCommentSection, *MotionCommentSection] {
-	if c.writeCommentSectionList == nil {
-		refs := make([]*ValueCollection[MotionCommentSection, *MotionCommentSection], len(c.WriteCommentSectionIDs))
-		for i, id := range c.WriteCommentSectionIDs {
-			refs[i] = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.writeCommentSectionList = &RelationList[MotionCommentSection, *MotionCommentSection]{refs}
+func (b *groupBuilder) WriteCommentSectionList() *motionCommentSectionBuilder {
+	return &motionCommentSectionBuilder{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+			fetch:    b.fetch,
+			idField:  "WriteCommentSectionIDs",
+			relField: "WriteCommentSectionList",
+			many:     true,
+		},
 	}
-	return c.writeCommentSectionList
 }
 
-func (r *Fetch) Group(id int) *ValueCollection[Group, *Group] {
-	return &ValueCollection[Group, *Group]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Group(id int) *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -1060,22 +1009,33 @@ type ImportPreview struct {
 	Name    string
 	Result  json.RawMessage
 	State   string
-	fetch   *Fetch
 }
 
-func (c *ImportPreview) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type importPreviewBuilder struct {
+	builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview]
+}
+
+func (b *importPreviewBuilder) lazy(ds *Fetch, id int) *ImportPreview {
+	c := ImportPreview{}
 	ds.ImportPreview_Created(id).Lazy(&c.Created)
 	ds.ImportPreview_ID(id).Lazy(&c.ID)
 	ds.ImportPreview_Name(id).Lazy(&c.Name)
 	ds.ImportPreview_Result(id).Lazy(&c.Result)
 	ds.ImportPreview_State(id).Lazy(&c.State)
+	return &c
 }
 
-func (r *Fetch) ImportPreview(id int) *ValueCollection[ImportPreview, *ImportPreview] {
-	return &ValueCollection[ImportPreview, *ImportPreview]{
-		id:    id,
-		fetch: r,
+func (b *importPreviewBuilder) Preload(rel builderWrapperI) *importPreviewBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (r *Fetch) ImportPreview(id int) *importPreviewBuilder {
+	return &importPreviewBuilder{
+		builder: builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -1090,15 +1050,18 @@ type ListOfSpeakers struct {
 	SequentialNumber                 int
 	SpeakerIDs                       []int
 	StructureLevelListOfSpeakersIDs  []int
-	meeting                          *ValueCollection[Meeting, *Meeting]
-	projectionList                   *RelationList[Projection, *Projection]
-	speakerList                      *RelationList[Speaker, *Speaker]
-	structureLevelListOfSpeakersList *RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]
-	fetch                            *Fetch
+	Meeting                          *Meeting
+	ProjectionList                   []Projection
+	SpeakerList                      []Speaker
+	StructureLevelListOfSpeakersList []StructureLevelListOfSpeakers
 }
 
-func (c *ListOfSpeakers) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type listOfSpeakersBuilder struct {
+	builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]
+}
+
+func (b *listOfSpeakersBuilder) lazy(ds *Fetch, id int) *ListOfSpeakers {
+	c := ListOfSpeakers{}
 	ds.ListOfSpeakers_Closed(id).Lazy(&c.Closed)
 	ds.ListOfSpeakers_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.ListOfSpeakers_ID(id).Lazy(&c.ID)
@@ -1108,64 +1071,63 @@ func (c *ListOfSpeakers) lazy(ds *Fetch, id int) {
 	ds.ListOfSpeakers_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.ListOfSpeakers_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.ListOfSpeakers_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
+	return &c
 }
 
-func (c *ListOfSpeakers) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *listOfSpeakersBuilder) Preload(rel builderWrapperI) *listOfSpeakersBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *listOfSpeakersBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *ListOfSpeakers) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *listOfSpeakersBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *ListOfSpeakers) SpeakerList() *RelationList[Speaker, *Speaker] {
-	if c.speakerList == nil {
-		refs := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
-		for i, id := range c.SpeakerIDs {
-			refs[i] = &ValueCollection[Speaker, *Speaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.speakerList = &RelationList[Speaker, *Speaker]{refs}
+func (b *listOfSpeakersBuilder) SpeakerList() *speakerBuilder {
+	return &speakerBuilder{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+			fetch:    b.fetch,
+			idField:  "SpeakerIDs",
+			relField: "SpeakerList",
+			many:     true,
+		},
 	}
-	return c.speakerList
 }
 
-func (c *ListOfSpeakers) StructureLevelListOfSpeakersList() *RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
-	if c.structureLevelListOfSpeakersList == nil {
-		refs := make([]*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers], len(c.StructureLevelListOfSpeakersIDs))
-		for i, id := range c.StructureLevelListOfSpeakersIDs {
-			refs[i] = &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.structureLevelListOfSpeakersList = &RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{refs}
+func (b *listOfSpeakersBuilder) StructureLevelListOfSpeakersList() *structureLevelListOfSpeakersBuilder {
+	return &structureLevelListOfSpeakersBuilder{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelListOfSpeakersIDs",
+			relField: "StructureLevelListOfSpeakersList",
+			many:     true,
+		},
 	}
-	return c.structureLevelListOfSpeakersList
 }
 
-func (r *Fetch) ListOfSpeakers(id int) *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) ListOfSpeakers(id int) *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -1185,15 +1147,18 @@ type Mediafile struct {
 	PublishedToMeetingsInOrganizationID dsfetch.Maybe[int]
 	Title                               string
 	Token                               string
-	childList                           *RelationList[Mediafile, *Mediafile]
-	meetingMediafileList                *RelationList[MeetingMediafile, *MeetingMediafile]
-	parent                              *MaybeRelation[Mediafile, *Mediafile]
-	publishedToMeetingsInOrganization   *MaybeRelation[Organization, *Organization]
-	fetch                               *Fetch
+	ChildList                           []Mediafile
+	MeetingMediafileList                []MeetingMediafile
+	Parent                              *dsfetch.Maybe[Mediafile]
+	PublishedToMeetingsInOrganization   *dsfetch.Maybe[Organization]
 }
 
-func (c *Mediafile) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type mediafileBuilder struct {
+	builder[mediafileBuilder, *mediafileBuilder, Mediafile]
+}
+
+func (b *mediafileBuilder) lazy(ds *Fetch, id int) *Mediafile {
+	c := Mediafile{}
 	ds.Mediafile_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.Mediafile_CreateTimestamp(id).Lazy(&c.CreateTimestamp)
 	ds.Mediafile_Filename(id).Lazy(&c.Filename)
@@ -1208,72 +1173,62 @@ func (c *Mediafile) lazy(ds *Fetch, id int) {
 	ds.Mediafile_PublishedToMeetingsInOrganizationID(id).Lazy(&c.PublishedToMeetingsInOrganizationID)
 	ds.Mediafile_Title(id).Lazy(&c.Title)
 	ds.Mediafile_Token(id).Lazy(&c.Token)
+	return &c
 }
 
-func (c *Mediafile) ChildList() *RelationList[Mediafile, *Mediafile] {
-	if c.childList == nil {
-		refs := make([]*ValueCollection[Mediafile, *Mediafile], len(c.ChildIDs))
-		for i, id := range c.ChildIDs {
-			refs[i] = &ValueCollection[Mediafile, *Mediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.childList = &RelationList[Mediafile, *Mediafile]{refs}
+func (b *mediafileBuilder) Preload(rel builderWrapperI) *mediafileBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *mediafileBuilder) ChildList() *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			fetch:    b.fetch,
+			idField:  "ChildIDs",
+			relField: "ChildList",
+			many:     true,
+		},
 	}
-	return c.childList
 }
 
-func (c *Mediafile) MeetingMediafileList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.meetingMediafileList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileIDs))
-		for i, id := range c.MeetingMediafileIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingMediafileList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
+func (b *mediafileBuilder) MeetingMediafileList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "MeetingMediafileIDs",
+			relField: "MeetingMediafileList",
+			many:     true,
+		},
 	}
-	return c.meetingMediafileList
 }
 
-func (c *Mediafile) Parent() *MaybeRelation[Mediafile, *Mediafile] {
-	if c.parent == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Mediafile, *Mediafile]]
-		id, hasValue := c.ParentID.Value()
-		if hasValue {
-			value := &ValueCollection[Mediafile, *Mediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.parent = &MaybeRelation[Mediafile, *Mediafile]{ref}
+func (b *mediafileBuilder) Parent() *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			fetch:    b.fetch,
+			idField:  "ParentID",
+			relField: "Parent",
+		},
 	}
-	return c.parent
 }
 
-func (c *Mediafile) PublishedToMeetingsInOrganization() *MaybeRelation[Organization, *Organization] {
-	if c.publishedToMeetingsInOrganization == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Organization, *Organization]]
-		id, hasValue := c.PublishedToMeetingsInOrganizationID.Value()
-		if hasValue {
-			value := &ValueCollection[Organization, *Organization]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.publishedToMeetingsInOrganization = &MaybeRelation[Organization, *Organization]{ref}
+func (b *mediafileBuilder) PublishedToMeetingsInOrganization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "PublishedToMeetingsInOrganizationID",
+			relField: "PublishedToMeetingsInOrganization",
+		},
 	}
-	return c.publishedToMeetingsInOrganization
 }
 
-func (r *Fetch) Mediafile(id int) *ValueCollection[Mediafile, *Mediafile] {
-	return &ValueCollection[Mediafile, *Mediafile]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Mediafile(id int) *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -1518,99 +1473,102 @@ type Meeting struct {
 	VoteIDs                                      []int
 	WelcomeText                                  string
 	WelcomeTitle                                 string
-	adminGroup                                   *MaybeRelation[Group, *Group]
-	agendaItemList                               *RelationList[AgendaItem, *AgendaItem]
-	allProjectionList                            *RelationList[Projection, *Projection]
-	anonymousGroup                               *MaybeRelation[Group, *Group]
-	assignmentCandidateList                      *RelationList[AssignmentCandidate, *AssignmentCandidate]
-	assignmentList                               *RelationList[Assignment, *Assignment]
-	assignmentPollDefaultGroupList               *RelationList[Group, *Group]
-	chatGroupList                                *RelationList[ChatGroup, *ChatGroup]
-	chatMessageList                              *RelationList[ChatMessage, *ChatMessage]
-	committee                                    *ValueCollection[Committee, *Committee]
-	defaultGroup                                 *ValueCollection[Group, *Group]
-	defaultMeetingForCommittee                   *MaybeRelation[Committee, *Committee]
-	defaultProjectorAgendaItemListList           *RelationList[Projector, *Projector]
-	defaultProjectorAmendmentList                *RelationList[Projector, *Projector]
-	defaultProjectorAssignmentList               *RelationList[Projector, *Projector]
-	defaultProjectorAssignmentPollList           *RelationList[Projector, *Projector]
-	defaultProjectorCountdownList                *RelationList[Projector, *Projector]
-	defaultProjectorCurrentLosList               *RelationList[Projector, *Projector]
-	defaultProjectorListOfSpeakersList           *RelationList[Projector, *Projector]
-	defaultProjectorMediafileList                *RelationList[Projector, *Projector]
-	defaultProjectorMessageList                  *RelationList[Projector, *Projector]
-	defaultProjectorMotionBlockList              *RelationList[Projector, *Projector]
-	defaultProjectorMotionList                   *RelationList[Projector, *Projector]
-	defaultProjectorMotionPollList               *RelationList[Projector, *Projector]
-	defaultProjectorPollList                     *RelationList[Projector, *Projector]
-	defaultProjectorTopicList                    *RelationList[Projector, *Projector]
-	fontBold                                     *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontBoldItalic                               *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontChyronSpeakerName                        *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontItalic                                   *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontMonospace                                *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontProjectorH1                              *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontProjectorH2                              *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	fontRegular                                  *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	forwardedMotionList                          *RelationList[Motion, *Motion]
-	groupList                                    *RelationList[Group, *Group]
-	isActiveInOrganization                       *MaybeRelation[Organization, *Organization]
-	isArchivedInOrganization                     *MaybeRelation[Organization, *Organization]
-	listOfSpeakersCountdown                      *MaybeRelation[ProjectorCountdown, *ProjectorCountdown]
-	listOfSpeakersList                           *RelationList[ListOfSpeakers, *ListOfSpeakers]
-	logoPdfBallotPaper                           *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoPdfFooterL                               *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoPdfFooterR                               *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoPdfHeaderL                               *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoPdfHeaderR                               *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoProjectorHeader                          *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoProjectorMain                            *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	logoWebHeader                                *MaybeRelation[MeetingMediafile, *MeetingMediafile]
-	mediafileList                                *RelationList[Mediafile, *Mediafile]
-	meetingMediafileList                         *RelationList[MeetingMediafile, *MeetingMediafile]
-	meetingUserList                              *RelationList[MeetingUser, *MeetingUser]
-	motionBlockList                              *RelationList[MotionBlock, *MotionBlock]
-	motionCategoryList                           *RelationList[MotionCategory, *MotionCategory]
-	motionChangeRecommendationList               *RelationList[MotionChangeRecommendation, *MotionChangeRecommendation]
-	motionCommentList                            *RelationList[MotionComment, *MotionComment]
-	motionCommentSectionList                     *RelationList[MotionCommentSection, *MotionCommentSection]
-	motionEditorList                             *RelationList[MotionEditor, *MotionEditor]
-	motionList                                   *RelationList[Motion, *Motion]
-	motionPollDefaultGroupList                   *RelationList[Group, *Group]
-	motionStateList                              *RelationList[MotionState, *MotionState]
-	motionSubmitterList                          *RelationList[MotionSubmitter, *MotionSubmitter]
-	motionWorkflowList                           *RelationList[MotionWorkflow, *MotionWorkflow]
-	motionWorkingGroupSpeakerList                *RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]
-	motionsDefaultAmendmentWorkflow              *ValueCollection[MotionWorkflow, *MotionWorkflow]
-	motionsDefaultWorkflow                       *ValueCollection[MotionWorkflow, *MotionWorkflow]
-	optionList                                   *RelationList[Option, *Option]
-	organizationTagList                          *RelationList[OrganizationTag, *OrganizationTag]
-	personalNoteList                             *RelationList[PersonalNote, *PersonalNote]
-	pointOfOrderCategoryList                     *RelationList[PointOfOrderCategory, *PointOfOrderCategory]
-	pollCandidateList                            *RelationList[PollCandidate, *PollCandidate]
-	pollCandidateListList                        *RelationList[PollCandidateList, *PollCandidateList]
-	pollCountdown                                *MaybeRelation[ProjectorCountdown, *ProjectorCountdown]
-	pollDefaultGroupList                         *RelationList[Group, *Group]
-	pollList                                     *RelationList[Poll, *Poll]
-	presentUserList                              *RelationList[User, *User]
-	projectionList                               *RelationList[Projection, *Projection]
-	projectorCountdownList                       *RelationList[ProjectorCountdown, *ProjectorCountdown]
-	projectorList                                *RelationList[Projector, *Projector]
-	projectorMessageList                         *RelationList[ProjectorMessage, *ProjectorMessage]
-	referenceProjector                           *ValueCollection[Projector, *Projector]
-	speakerList                                  *RelationList[Speaker, *Speaker]
-	structureLevelList                           *RelationList[StructureLevel, *StructureLevel]
-	structureLevelListOfSpeakersList             *RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]
-	tagList                                      *RelationList[Tag, *Tag]
-	templateForOrganization                      *MaybeRelation[Organization, *Organization]
-	topicList                                    *RelationList[Topic, *Topic]
-	topicPollDefaultGroupList                    *RelationList[Group, *Group]
-	voteList                                     *RelationList[Vote, *Vote]
-	fetch                                        *Fetch
+	AdminGroup                                   *dsfetch.Maybe[Group]
+	AgendaItemList                               []AgendaItem
+	AllProjectionList                            []Projection
+	AnonymousGroup                               *dsfetch.Maybe[Group]
+	AssignmentCandidateList                      []AssignmentCandidate
+	AssignmentList                               []Assignment
+	AssignmentPollDefaultGroupList               []Group
+	ChatGroupList                                []ChatGroup
+	ChatMessageList                              []ChatMessage
+	Committee                                    *Committee
+	DefaultGroup                                 *Group
+	DefaultMeetingForCommittee                   *dsfetch.Maybe[Committee]
+	DefaultProjectorAgendaItemListList           []Projector
+	DefaultProjectorAmendmentList                []Projector
+	DefaultProjectorAssignmentList               []Projector
+	DefaultProjectorAssignmentPollList           []Projector
+	DefaultProjectorCountdownList                []Projector
+	DefaultProjectorCurrentLosList               []Projector
+	DefaultProjectorListOfSpeakersList           []Projector
+	DefaultProjectorMediafileList                []Projector
+	DefaultProjectorMessageList                  []Projector
+	DefaultProjectorMotionBlockList              []Projector
+	DefaultProjectorMotionList                   []Projector
+	DefaultProjectorMotionPollList               []Projector
+	DefaultProjectorPollList                     []Projector
+	DefaultProjectorTopicList                    []Projector
+	FontBold                                     *dsfetch.Maybe[MeetingMediafile]
+	FontBoldItalic                               *dsfetch.Maybe[MeetingMediafile]
+	FontChyronSpeakerName                        *dsfetch.Maybe[MeetingMediafile]
+	FontItalic                                   *dsfetch.Maybe[MeetingMediafile]
+	FontMonospace                                *dsfetch.Maybe[MeetingMediafile]
+	FontProjectorH1                              *dsfetch.Maybe[MeetingMediafile]
+	FontProjectorH2                              *dsfetch.Maybe[MeetingMediafile]
+	FontRegular                                  *dsfetch.Maybe[MeetingMediafile]
+	ForwardedMotionList                          []Motion
+	GroupList                                    []Group
+	IsActiveInOrganization                       *dsfetch.Maybe[Organization]
+	IsArchivedInOrganization                     *dsfetch.Maybe[Organization]
+	ListOfSpeakersCountdown                      *dsfetch.Maybe[ProjectorCountdown]
+	ListOfSpeakersList                           []ListOfSpeakers
+	LogoPdfBallotPaper                           *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfFooterL                               *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfFooterR                               *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfHeaderL                               *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfHeaderR                               *dsfetch.Maybe[MeetingMediafile]
+	LogoProjectorHeader                          *dsfetch.Maybe[MeetingMediafile]
+	LogoProjectorMain                            *dsfetch.Maybe[MeetingMediafile]
+	LogoWebHeader                                *dsfetch.Maybe[MeetingMediafile]
+	MediafileList                                []Mediafile
+	MeetingMediafileList                         []MeetingMediafile
+	MeetingUserList                              []MeetingUser
+	MotionBlockList                              []MotionBlock
+	MotionCategoryList                           []MotionCategory
+	MotionChangeRecommendationList               []MotionChangeRecommendation
+	MotionCommentList                            []MotionComment
+	MotionCommentSectionList                     []MotionCommentSection
+	MotionEditorList                             []MotionEditor
+	MotionList                                   []Motion
+	MotionPollDefaultGroupList                   []Group
+	MotionStateList                              []MotionState
+	MotionSubmitterList                          []MotionSubmitter
+	MotionWorkflowList                           []MotionWorkflow
+	MotionWorkingGroupSpeakerList                []MotionWorkingGroupSpeaker
+	MotionsDefaultAmendmentWorkflow              *MotionWorkflow
+	MotionsDefaultWorkflow                       *MotionWorkflow
+	OptionList                                   []Option
+	OrganizationTagList                          []OrganizationTag
+	PersonalNoteList                             []PersonalNote
+	PointOfOrderCategoryList                     []PointOfOrderCategory
+	PollCandidateList                            []PollCandidate
+	PollCandidateListList                        []PollCandidateList
+	PollCountdown                                *dsfetch.Maybe[ProjectorCountdown]
+	PollDefaultGroupList                         []Group
+	PollList                                     []Poll
+	PresentUserList                              []User
+	ProjectionList                               []Projection
+	ProjectorCountdownList                       []ProjectorCountdown
+	ProjectorList                                []Projector
+	ProjectorMessageList                         []ProjectorMessage
+	ReferenceProjector                           *Projector
+	SpeakerList                                  []Speaker
+	StructureLevelList                           []StructureLevel
+	StructureLevelListOfSpeakersList             []StructureLevelListOfSpeakers
+	TagList                                      []Tag
+	TemplateForOrganization                      *dsfetch.Maybe[Organization]
+	TopicList                                    []Topic
+	TopicPollDefaultGroupList                    []Group
+	VoteList                                     []Vote
 }
 
-func (c *Meeting) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type meetingBuilder struct {
+	builder[meetingBuilder, *meetingBuilder, Meeting]
+}
+
+func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
+	c := Meeting{}
 	ds.Meeting_AdminGroupID(id).Lazy(&c.AdminGroupID)
 	ds.Meeting_AgendaEnableNumbering(id).Lazy(&c.AgendaEnableNumbering)
 	ds.Meeting_AgendaItemCreation(id).Lazy(&c.AgendaItemCreation)
@@ -1850,1272 +1808,959 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_VoteIDs(id).Lazy(&c.VoteIDs)
 	ds.Meeting_WelcomeText(id).Lazy(&c.WelcomeText)
 	ds.Meeting_WelcomeTitle(id).Lazy(&c.WelcomeTitle)
+	return &c
 }
 
-func (c *Meeting) AdminGroup() *MaybeRelation[Group, *Group] {
-	if c.adminGroup == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Group, *Group]]
-		id, hasValue := c.AdminGroupID.Value()
-		if hasValue {
-			value := &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.adminGroup = &MaybeRelation[Group, *Group]{ref}
-	}
-	return c.adminGroup
-}
-
-func (c *Meeting) AgendaItemList() *RelationList[AgendaItem, *AgendaItem] {
-	if c.agendaItemList == nil {
-		refs := make([]*ValueCollection[AgendaItem, *AgendaItem], len(c.AgendaItemIDs))
-		for i, id := range c.AgendaItemIDs {
-			refs[i] = &ValueCollection[AgendaItem, *AgendaItem]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.agendaItemList = &RelationList[AgendaItem, *AgendaItem]{refs}
-	}
-	return c.agendaItemList
-}
-
-func (c *Meeting) AllProjectionList() *RelationList[Projection, *Projection] {
-	if c.allProjectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.AllProjectionIDs))
-		for i, id := range c.AllProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.allProjectionList = &RelationList[Projection, *Projection]{refs}
-	}
-	return c.allProjectionList
-}
-
-func (c *Meeting) AnonymousGroup() *MaybeRelation[Group, *Group] {
-	if c.anonymousGroup == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Group, *Group]]
-		id, hasValue := c.AnonymousGroupID.Value()
-		if hasValue {
-			value := &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.anonymousGroup = &MaybeRelation[Group, *Group]{ref}
-	}
-	return c.anonymousGroup
-}
-
-func (c *Meeting) AssignmentCandidateList() *RelationList[AssignmentCandidate, *AssignmentCandidate] {
-	if c.assignmentCandidateList == nil {
-		refs := make([]*ValueCollection[AssignmentCandidate, *AssignmentCandidate], len(c.AssignmentCandidateIDs))
-		for i, id := range c.AssignmentCandidateIDs {
-			refs[i] = &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.assignmentCandidateList = &RelationList[AssignmentCandidate, *AssignmentCandidate]{refs}
-	}
-	return c.assignmentCandidateList
-}
-
-func (c *Meeting) AssignmentList() *RelationList[Assignment, *Assignment] {
-	if c.assignmentList == nil {
-		refs := make([]*ValueCollection[Assignment, *Assignment], len(c.AssignmentIDs))
-		for i, id := range c.AssignmentIDs {
-			refs[i] = &ValueCollection[Assignment, *Assignment]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.assignmentList = &RelationList[Assignment, *Assignment]{refs}
-	}
-	return c.assignmentList
-}
-
-func (c *Meeting) AssignmentPollDefaultGroupList() *RelationList[Group, *Group] {
-	if c.assignmentPollDefaultGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.AssignmentPollDefaultGroupIDs))
-		for i, id := range c.AssignmentPollDefaultGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.assignmentPollDefaultGroupList = &RelationList[Group, *Group]{refs}
-	}
-	return c.assignmentPollDefaultGroupList
-}
-
-func (c *Meeting) ChatGroupList() *RelationList[ChatGroup, *ChatGroup] {
-	if c.chatGroupList == nil {
-		refs := make([]*ValueCollection[ChatGroup, *ChatGroup], len(c.ChatGroupIDs))
-		for i, id := range c.ChatGroupIDs {
-			refs[i] = &ValueCollection[ChatGroup, *ChatGroup]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.chatGroupList = &RelationList[ChatGroup, *ChatGroup]{refs}
-	}
-	return c.chatGroupList
-}
-
-func (c *Meeting) ChatMessageList() *RelationList[ChatMessage, *ChatMessage] {
-	if c.chatMessageList == nil {
-		refs := make([]*ValueCollection[ChatMessage, *ChatMessage], len(c.ChatMessageIDs))
-		for i, id := range c.ChatMessageIDs {
-			refs[i] = &ValueCollection[ChatMessage, *ChatMessage]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.chatMessageList = &RelationList[ChatMessage, *ChatMessage]{refs}
-	}
-	return c.chatMessageList
-}
-
-func (c *Meeting) Committee() *ValueCollection[Committee, *Committee] {
-	if c.committee == nil {
-		c.committee = &ValueCollection[Committee, *Committee]{
-			id:    c.CommitteeID,
-			fetch: c.fetch,
-		}
-	}
-	return c.committee
-}
-
-func (c *Meeting) DefaultGroup() *ValueCollection[Group, *Group] {
-	if c.defaultGroup == nil {
-		c.defaultGroup = &ValueCollection[Group, *Group]{
-			id:    c.DefaultGroupID,
-			fetch: c.fetch,
-		}
-	}
-	return c.defaultGroup
-}
-
-func (c *Meeting) DefaultMeetingForCommittee() *MaybeRelation[Committee, *Committee] {
-	if c.defaultMeetingForCommittee == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Committee, *Committee]]
-		id, hasValue := c.DefaultMeetingForCommitteeID.Value()
-		if hasValue {
-			value := &ValueCollection[Committee, *Committee]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.defaultMeetingForCommittee = &MaybeRelation[Committee, *Committee]{ref}
-	}
-	return c.defaultMeetingForCommittee
-}
-
-func (c *Meeting) DefaultProjectorAgendaItemListList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorAgendaItemListList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAgendaItemListIDs))
-		for i, id := range c.DefaultProjectorAgendaItemListIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorAgendaItemListList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorAgendaItemListList
-}
-
-func (c *Meeting) DefaultProjectorAmendmentList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorAmendmentList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAmendmentIDs))
-		for i, id := range c.DefaultProjectorAmendmentIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorAmendmentList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorAmendmentList
-}
-
-func (c *Meeting) DefaultProjectorAssignmentList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorAssignmentList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAssignmentIDs))
-		for i, id := range c.DefaultProjectorAssignmentIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorAssignmentList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorAssignmentList
-}
-
-func (c *Meeting) DefaultProjectorAssignmentPollList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorAssignmentPollList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAssignmentPollIDs))
-		for i, id := range c.DefaultProjectorAssignmentPollIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorAssignmentPollList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorAssignmentPollList
-}
-
-func (c *Meeting) DefaultProjectorCountdownList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorCountdownList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorCountdownIDs))
-		for i, id := range c.DefaultProjectorCountdownIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorCountdownList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorCountdownList
-}
-
-func (c *Meeting) DefaultProjectorCurrentLosList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorCurrentLosList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorCurrentLosIDs))
-		for i, id := range c.DefaultProjectorCurrentLosIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorCurrentLosList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorCurrentLosList
-}
-
-func (c *Meeting) DefaultProjectorListOfSpeakersList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorListOfSpeakersList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorListOfSpeakersIDs))
-		for i, id := range c.DefaultProjectorListOfSpeakersIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorListOfSpeakersList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorListOfSpeakersList
-}
-
-func (c *Meeting) DefaultProjectorMediafileList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorMediafileList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMediafileIDs))
-		for i, id := range c.DefaultProjectorMediafileIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorMediafileList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorMediafileList
-}
-
-func (c *Meeting) DefaultProjectorMessageList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorMessageList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMessageIDs))
-		for i, id := range c.DefaultProjectorMessageIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorMessageList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorMessageList
-}
-
-func (c *Meeting) DefaultProjectorMotionBlockList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorMotionBlockList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMotionBlockIDs))
-		for i, id := range c.DefaultProjectorMotionBlockIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorMotionBlockList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorMotionBlockList
-}
-
-func (c *Meeting) DefaultProjectorMotionList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorMotionList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMotionIDs))
-		for i, id := range c.DefaultProjectorMotionIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorMotionList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorMotionList
-}
-
-func (c *Meeting) DefaultProjectorMotionPollList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorMotionPollList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMotionPollIDs))
-		for i, id := range c.DefaultProjectorMotionPollIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorMotionPollList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorMotionPollList
-}
-
-func (c *Meeting) DefaultProjectorPollList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorPollList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorPollIDs))
-		for i, id := range c.DefaultProjectorPollIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorPollList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorPollList
-}
-
-func (c *Meeting) DefaultProjectorTopicList() *RelationList[Projector, *Projector] {
-	if c.defaultProjectorTopicList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorTopicIDs))
-		for i, id := range c.DefaultProjectorTopicIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.defaultProjectorTopicList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.defaultProjectorTopicList
-}
-
-func (c *Meeting) FontBold() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontBold == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontBoldID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontBold = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontBold
-}
-
-func (c *Meeting) FontBoldItalic() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontBoldItalic == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontBoldItalicID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontBoldItalic = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontBoldItalic
-}
-
-func (c *Meeting) FontChyronSpeakerName() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontChyronSpeakerName == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontChyronSpeakerNameID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontChyronSpeakerName = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontChyronSpeakerName
-}
-
-func (c *Meeting) FontItalic() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontItalic == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontItalicID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontItalic = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontItalic
-}
-
-func (c *Meeting) FontMonospace() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontMonospace == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontMonospaceID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontMonospace = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontMonospace
-}
-
-func (c *Meeting) FontProjectorH1() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontProjectorH1 == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontProjectorH1ID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontProjectorH1 = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontProjectorH1
-}
-
-func (c *Meeting) FontProjectorH2() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontProjectorH2 == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontProjectorH2ID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontProjectorH2 = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontProjectorH2
-}
-
-func (c *Meeting) FontRegular() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.fontRegular == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.FontRegularID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.fontRegular = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.fontRegular
-}
-
-func (c *Meeting) ForwardedMotionList() *RelationList[Motion, *Motion] {
-	if c.forwardedMotionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.ForwardedMotionIDs))
-		for i, id := range c.ForwardedMotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.forwardedMotionList = &RelationList[Motion, *Motion]{refs}
-	}
-	return c.forwardedMotionList
-}
-
-func (c *Meeting) GroupList() *RelationList[Group, *Group] {
-	if c.groupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.GroupIDs))
-		for i, id := range c.GroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.groupList = &RelationList[Group, *Group]{refs}
-	}
-	return c.groupList
-}
-
-func (c *Meeting) IsActiveInOrganization() *MaybeRelation[Organization, *Organization] {
-	if c.isActiveInOrganization == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Organization, *Organization]]
-		id, hasValue := c.IsActiveInOrganizationID.Value()
-		if hasValue {
-			value := &ValueCollection[Organization, *Organization]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.isActiveInOrganization = &MaybeRelation[Organization, *Organization]{ref}
-	}
-	return c.isActiveInOrganization
-}
-
-func (c *Meeting) IsArchivedInOrganization() *MaybeRelation[Organization, *Organization] {
-	if c.isArchivedInOrganization == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Organization, *Organization]]
-		id, hasValue := c.IsArchivedInOrganizationID.Value()
-		if hasValue {
-			value := &ValueCollection[Organization, *Organization]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.isArchivedInOrganization = &MaybeRelation[Organization, *Organization]{ref}
-	}
-	return c.isArchivedInOrganization
-}
-
-func (c *Meeting) ListOfSpeakersCountdown() *MaybeRelation[ProjectorCountdown, *ProjectorCountdown] {
-	if c.listOfSpeakersCountdown == nil {
-		var ref dsfetch.Maybe[*ValueCollection[ProjectorCountdown, *ProjectorCountdown]]
-		id, hasValue := c.ListOfSpeakersCountdownID.Value()
-		if hasValue {
-			value := &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.listOfSpeakersCountdown = &MaybeRelation[ProjectorCountdown, *ProjectorCountdown]{ref}
-	}
-	return c.listOfSpeakersCountdown
-}
-
-func (c *Meeting) ListOfSpeakersList() *RelationList[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakersList == nil {
-		refs := make([]*ValueCollection[ListOfSpeakers, *ListOfSpeakers], len(c.ListOfSpeakersIDs))
-		for i, id := range c.ListOfSpeakersIDs {
-			refs[i] = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.listOfSpeakersList = &RelationList[ListOfSpeakers, *ListOfSpeakers]{refs}
-	}
-	return c.listOfSpeakersList
-}
-
-func (c *Meeting) LogoPdfBallotPaper() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoPdfBallotPaper == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoPdfBallotPaperID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoPdfBallotPaper = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoPdfBallotPaper
-}
-
-func (c *Meeting) LogoPdfFooterL() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoPdfFooterL == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoPdfFooterLID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoPdfFooterL = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoPdfFooterL
-}
-
-func (c *Meeting) LogoPdfFooterR() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoPdfFooterR == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoPdfFooterRID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoPdfFooterR = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoPdfFooterR
-}
-
-func (c *Meeting) LogoPdfHeaderL() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoPdfHeaderL == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoPdfHeaderLID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoPdfHeaderL = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoPdfHeaderL
-}
-
-func (c *Meeting) LogoPdfHeaderR() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoPdfHeaderR == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoPdfHeaderRID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoPdfHeaderR = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoPdfHeaderR
-}
-
-func (c *Meeting) LogoProjectorHeader() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoProjectorHeader == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoProjectorHeaderID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoProjectorHeader = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoProjectorHeader
-}
-
-func (c *Meeting) LogoProjectorMain() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoProjectorMain == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoProjectorMainID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoProjectorMain = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoProjectorMain
-}
-
-func (c *Meeting) LogoWebHeader() *MaybeRelation[MeetingMediafile, *MeetingMediafile] {
-	if c.logoWebHeader == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
-		id, hasValue := c.LogoWebHeaderID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.logoWebHeader = &MaybeRelation[MeetingMediafile, *MeetingMediafile]{ref}
-	}
-	return c.logoWebHeader
-}
-
-func (c *Meeting) MediafileList() *RelationList[Mediafile, *Mediafile] {
-	if c.mediafileList == nil {
-		refs := make([]*ValueCollection[Mediafile, *Mediafile], len(c.MediafileIDs))
-		for i, id := range c.MediafileIDs {
-			refs[i] = &ValueCollection[Mediafile, *Mediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.mediafileList = &RelationList[Mediafile, *Mediafile]{refs}
-	}
-	return c.mediafileList
-}
-
-func (c *Meeting) MeetingMediafileList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.meetingMediafileList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileIDs))
-		for i, id := range c.MeetingMediafileIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingMediafileList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
-	}
-	return c.meetingMediafileList
-}
-
-func (c *Meeting) MeetingUserList() *RelationList[MeetingUser, *MeetingUser] {
-	if c.meetingUserList == nil {
-		refs := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
-		for i, id := range c.MeetingUserIDs {
-			refs[i] = &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingUserList = &RelationList[MeetingUser, *MeetingUser]{refs}
-	}
-	return c.meetingUserList
-}
-
-func (c *Meeting) MotionBlockList() *RelationList[MotionBlock, *MotionBlock] {
-	if c.motionBlockList == nil {
-		refs := make([]*ValueCollection[MotionBlock, *MotionBlock], len(c.MotionBlockIDs))
-		for i, id := range c.MotionBlockIDs {
-			refs[i] = &ValueCollection[MotionBlock, *MotionBlock]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionBlockList = &RelationList[MotionBlock, *MotionBlock]{refs}
-	}
-	return c.motionBlockList
-}
-
-func (c *Meeting) MotionCategoryList() *RelationList[MotionCategory, *MotionCategory] {
-	if c.motionCategoryList == nil {
-		refs := make([]*ValueCollection[MotionCategory, *MotionCategory], len(c.MotionCategoryIDs))
-		for i, id := range c.MotionCategoryIDs {
-			refs[i] = &ValueCollection[MotionCategory, *MotionCategory]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionCategoryList = &RelationList[MotionCategory, *MotionCategory]{refs}
-	}
-	return c.motionCategoryList
-}
-
-func (c *Meeting) MotionChangeRecommendationList() *RelationList[MotionChangeRecommendation, *MotionChangeRecommendation] {
-	if c.motionChangeRecommendationList == nil {
-		refs := make([]*ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation], len(c.MotionChangeRecommendationIDs))
-		for i, id := range c.MotionChangeRecommendationIDs {
-			refs[i] = &ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionChangeRecommendationList = &RelationList[MotionChangeRecommendation, *MotionChangeRecommendation]{refs}
-	}
-	return c.motionChangeRecommendationList
-}
-
-func (c *Meeting) MotionCommentList() *RelationList[MotionComment, *MotionComment] {
-	if c.motionCommentList == nil {
-		refs := make([]*ValueCollection[MotionComment, *MotionComment], len(c.MotionCommentIDs))
-		for i, id := range c.MotionCommentIDs {
-			refs[i] = &ValueCollection[MotionComment, *MotionComment]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionCommentList = &RelationList[MotionComment, *MotionComment]{refs}
-	}
-	return c.motionCommentList
-}
-
-func (c *Meeting) MotionCommentSectionList() *RelationList[MotionCommentSection, *MotionCommentSection] {
-	if c.motionCommentSectionList == nil {
-		refs := make([]*ValueCollection[MotionCommentSection, *MotionCommentSection], len(c.MotionCommentSectionIDs))
-		for i, id := range c.MotionCommentSectionIDs {
-			refs[i] = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionCommentSectionList = &RelationList[MotionCommentSection, *MotionCommentSection]{refs}
-	}
-	return c.motionCommentSectionList
-}
-
-func (c *Meeting) MotionEditorList() *RelationList[MotionEditor, *MotionEditor] {
-	if c.motionEditorList == nil {
-		refs := make([]*ValueCollection[MotionEditor, *MotionEditor], len(c.MotionEditorIDs))
-		for i, id := range c.MotionEditorIDs {
-			refs[i] = &ValueCollection[MotionEditor, *MotionEditor]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionEditorList = &RelationList[MotionEditor, *MotionEditor]{refs}
-	}
-	return c.motionEditorList
-}
-
-func (c *Meeting) MotionList() *RelationList[Motion, *Motion] {
-	if c.motionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
-		for i, id := range c.MotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionList = &RelationList[Motion, *Motion]{refs}
-	}
-	return c.motionList
-}
-
-func (c *Meeting) MotionPollDefaultGroupList() *RelationList[Group, *Group] {
-	if c.motionPollDefaultGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.MotionPollDefaultGroupIDs))
-		for i, id := range c.MotionPollDefaultGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionPollDefaultGroupList = &RelationList[Group, *Group]{refs}
-	}
-	return c.motionPollDefaultGroupList
-}
-
-func (c *Meeting) MotionStateList() *RelationList[MotionState, *MotionState] {
-	if c.motionStateList == nil {
-		refs := make([]*ValueCollection[MotionState, *MotionState], len(c.MotionStateIDs))
-		for i, id := range c.MotionStateIDs {
-			refs[i] = &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionStateList = &RelationList[MotionState, *MotionState]{refs}
-	}
-	return c.motionStateList
-}
-
-func (c *Meeting) MotionSubmitterList() *RelationList[MotionSubmitter, *MotionSubmitter] {
-	if c.motionSubmitterList == nil {
-		refs := make([]*ValueCollection[MotionSubmitter, *MotionSubmitter], len(c.MotionSubmitterIDs))
-		for i, id := range c.MotionSubmitterIDs {
-			refs[i] = &ValueCollection[MotionSubmitter, *MotionSubmitter]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionSubmitterList = &RelationList[MotionSubmitter, *MotionSubmitter]{refs}
-	}
-	return c.motionSubmitterList
-}
-
-func (c *Meeting) MotionWorkflowList() *RelationList[MotionWorkflow, *MotionWorkflow] {
-	if c.motionWorkflowList == nil {
-		refs := make([]*ValueCollection[MotionWorkflow, *MotionWorkflow], len(c.MotionWorkflowIDs))
-		for i, id := range c.MotionWorkflowIDs {
-			refs[i] = &ValueCollection[MotionWorkflow, *MotionWorkflow]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionWorkflowList = &RelationList[MotionWorkflow, *MotionWorkflow]{refs}
-	}
-	return c.motionWorkflowList
-}
-
-func (c *Meeting) MotionWorkingGroupSpeakerList() *RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
-	if c.motionWorkingGroupSpeakerList == nil {
-		refs := make([]*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker], len(c.MotionWorkingGroupSpeakerIDs))
-		for i, id := range c.MotionWorkingGroupSpeakerIDs {
-			refs[i] = &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionWorkingGroupSpeakerList = &RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{refs}
-	}
-	return c.motionWorkingGroupSpeakerList
-}
-
-func (c *Meeting) MotionsDefaultAmendmentWorkflow() *ValueCollection[MotionWorkflow, *MotionWorkflow] {
-	if c.motionsDefaultAmendmentWorkflow == nil {
-		c.motionsDefaultAmendmentWorkflow = &ValueCollection[MotionWorkflow, *MotionWorkflow]{
-			id:    c.MotionsDefaultAmendmentWorkflowID,
-			fetch: c.fetch,
-		}
-	}
-	return c.motionsDefaultAmendmentWorkflow
-}
-
-func (c *Meeting) MotionsDefaultWorkflow() *ValueCollection[MotionWorkflow, *MotionWorkflow] {
-	if c.motionsDefaultWorkflow == nil {
-		c.motionsDefaultWorkflow = &ValueCollection[MotionWorkflow, *MotionWorkflow]{
-			id:    c.MotionsDefaultWorkflowID,
-			fetch: c.fetch,
-		}
-	}
-	return c.motionsDefaultWorkflow
-}
-
-func (c *Meeting) OptionList() *RelationList[Option, *Option] {
-	if c.optionList == nil {
-		refs := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
-		for i, id := range c.OptionIDs {
-			refs[i] = &ValueCollection[Option, *Option]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.optionList = &RelationList[Option, *Option]{refs}
-	}
-	return c.optionList
-}
-
-func (c *Meeting) OrganizationTagList() *RelationList[OrganizationTag, *OrganizationTag] {
-	if c.organizationTagList == nil {
-		refs := make([]*ValueCollection[OrganizationTag, *OrganizationTag], len(c.OrganizationTagIDs))
-		for i, id := range c.OrganizationTagIDs {
-			refs[i] = &ValueCollection[OrganizationTag, *OrganizationTag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.organizationTagList = &RelationList[OrganizationTag, *OrganizationTag]{refs}
-	}
-	return c.organizationTagList
-}
-
-func (c *Meeting) PersonalNoteList() *RelationList[PersonalNote, *PersonalNote] {
-	if c.personalNoteList == nil {
-		refs := make([]*ValueCollection[PersonalNote, *PersonalNote], len(c.PersonalNoteIDs))
-		for i, id := range c.PersonalNoteIDs {
-			refs[i] = &ValueCollection[PersonalNote, *PersonalNote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.personalNoteList = &RelationList[PersonalNote, *PersonalNote]{refs}
-	}
-	return c.personalNoteList
-}
-
-func (c *Meeting) PointOfOrderCategoryList() *RelationList[PointOfOrderCategory, *PointOfOrderCategory] {
-	if c.pointOfOrderCategoryList == nil {
-		refs := make([]*ValueCollection[PointOfOrderCategory, *PointOfOrderCategory], len(c.PointOfOrderCategoryIDs))
-		for i, id := range c.PointOfOrderCategoryIDs {
-			refs[i] = &ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pointOfOrderCategoryList = &RelationList[PointOfOrderCategory, *PointOfOrderCategory]{refs}
-	}
-	return c.pointOfOrderCategoryList
-}
-
-func (c *Meeting) PollCandidateList() *RelationList[PollCandidate, *PollCandidate] {
-	if c.pollCandidateList == nil {
-		refs := make([]*ValueCollection[PollCandidate, *PollCandidate], len(c.PollCandidateIDs))
-		for i, id := range c.PollCandidateIDs {
-			refs[i] = &ValueCollection[PollCandidate, *PollCandidate]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollCandidateList = &RelationList[PollCandidate, *PollCandidate]{refs}
-	}
-	return c.pollCandidateList
-}
-
-func (c *Meeting) PollCandidateListList() *RelationList[PollCandidateList, *PollCandidateList] {
-	if c.pollCandidateListList == nil {
-		refs := make([]*ValueCollection[PollCandidateList, *PollCandidateList], len(c.PollCandidateListIDs))
-		for i, id := range c.PollCandidateListIDs {
-			refs[i] = &ValueCollection[PollCandidateList, *PollCandidateList]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollCandidateListList = &RelationList[PollCandidateList, *PollCandidateList]{refs}
-	}
-	return c.pollCandidateListList
-}
-
-func (c *Meeting) PollCountdown() *MaybeRelation[ProjectorCountdown, *ProjectorCountdown] {
-	if c.pollCountdown == nil {
-		var ref dsfetch.Maybe[*ValueCollection[ProjectorCountdown, *ProjectorCountdown]]
-		id, hasValue := c.PollCountdownID.Value()
-		if hasValue {
-			value := &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.pollCountdown = &MaybeRelation[ProjectorCountdown, *ProjectorCountdown]{ref}
-	}
-	return c.pollCountdown
-}
-
-func (c *Meeting) PollDefaultGroupList() *RelationList[Group, *Group] {
-	if c.pollDefaultGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.PollDefaultGroupIDs))
-		for i, id := range c.PollDefaultGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollDefaultGroupList = &RelationList[Group, *Group]{refs}
-	}
-	return c.pollDefaultGroupList
-}
-
-func (c *Meeting) PollList() *RelationList[Poll, *Poll] {
-	if c.pollList == nil {
-		refs := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
-		for i, id := range c.PollIDs {
-			refs[i] = &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollList = &RelationList[Poll, *Poll]{refs}
-	}
-	return c.pollList
-}
-
-func (c *Meeting) PresentUserList() *RelationList[User, *User] {
-	if c.presentUserList == nil {
-		refs := make([]*ValueCollection[User, *User], len(c.PresentUserIDs))
-		for i, id := range c.PresentUserIDs {
-			refs[i] = &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.presentUserList = &RelationList[User, *User]{refs}
-	}
-	return c.presentUserList
-}
-
-func (c *Meeting) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
-	}
-	return c.projectionList
-}
-
-func (c *Meeting) ProjectorCountdownList() *RelationList[ProjectorCountdown, *ProjectorCountdown] {
-	if c.projectorCountdownList == nil {
-		refs := make([]*ValueCollection[ProjectorCountdown, *ProjectorCountdown], len(c.ProjectorCountdownIDs))
-		for i, id := range c.ProjectorCountdownIDs {
-			refs[i] = &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectorCountdownList = &RelationList[ProjectorCountdown, *ProjectorCountdown]{refs}
-	}
-	return c.projectorCountdownList
-}
-
-func (c *Meeting) ProjectorList() *RelationList[Projector, *Projector] {
-	if c.projectorList == nil {
-		refs := make([]*ValueCollection[Projector, *Projector], len(c.ProjectorIDs))
-		for i, id := range c.ProjectorIDs {
-			refs[i] = &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectorList = &RelationList[Projector, *Projector]{refs}
-	}
-	return c.projectorList
-}
-
-func (c *Meeting) ProjectorMessageList() *RelationList[ProjectorMessage, *ProjectorMessage] {
-	if c.projectorMessageList == nil {
-		refs := make([]*ValueCollection[ProjectorMessage, *ProjectorMessage], len(c.ProjectorMessageIDs))
-		for i, id := range c.ProjectorMessageIDs {
-			refs[i] = &ValueCollection[ProjectorMessage, *ProjectorMessage]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectorMessageList = &RelationList[ProjectorMessage, *ProjectorMessage]{refs}
-	}
-	return c.projectorMessageList
-}
-
-func (c *Meeting) ReferenceProjector() *ValueCollection[Projector, *Projector] {
-	if c.referenceProjector == nil {
-		c.referenceProjector = &ValueCollection[Projector, *Projector]{
-			id:    c.ReferenceProjectorID,
-			fetch: c.fetch,
-		}
-	}
-	return c.referenceProjector
-}
-
-func (c *Meeting) SpeakerList() *RelationList[Speaker, *Speaker] {
-	if c.speakerList == nil {
-		refs := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
-		for i, id := range c.SpeakerIDs {
-			refs[i] = &ValueCollection[Speaker, *Speaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.speakerList = &RelationList[Speaker, *Speaker]{refs}
-	}
-	return c.speakerList
-}
-
-func (c *Meeting) StructureLevelList() *RelationList[StructureLevel, *StructureLevel] {
-	if c.structureLevelList == nil {
-		refs := make([]*ValueCollection[StructureLevel, *StructureLevel], len(c.StructureLevelIDs))
-		for i, id := range c.StructureLevelIDs {
-			refs[i] = &ValueCollection[StructureLevel, *StructureLevel]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.structureLevelList = &RelationList[StructureLevel, *StructureLevel]{refs}
-	}
-	return c.structureLevelList
-}
-
-func (c *Meeting) StructureLevelListOfSpeakersList() *RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
-	if c.structureLevelListOfSpeakersList == nil {
-		refs := make([]*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers], len(c.StructureLevelListOfSpeakersIDs))
-		for i, id := range c.StructureLevelListOfSpeakersIDs {
-			refs[i] = &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.structureLevelListOfSpeakersList = &RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{refs}
-	}
-	return c.structureLevelListOfSpeakersList
-}
-
-func (c *Meeting) TagList() *RelationList[Tag, *Tag] {
-	if c.tagList == nil {
-		refs := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
-		for i, id := range c.TagIDs {
-			refs[i] = &ValueCollection[Tag, *Tag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.tagList = &RelationList[Tag, *Tag]{refs}
-	}
-	return c.tagList
-}
-
-func (c *Meeting) TemplateForOrganization() *MaybeRelation[Organization, *Organization] {
-	if c.templateForOrganization == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Organization, *Organization]]
-		id, hasValue := c.TemplateForOrganizationID.Value()
-		if hasValue {
-			value := &ValueCollection[Organization, *Organization]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.templateForOrganization = &MaybeRelation[Organization, *Organization]{ref}
-	}
-	return c.templateForOrganization
-}
-
-func (c *Meeting) TopicList() *RelationList[Topic, *Topic] {
-	if c.topicList == nil {
-		refs := make([]*ValueCollection[Topic, *Topic], len(c.TopicIDs))
-		for i, id := range c.TopicIDs {
-			refs[i] = &ValueCollection[Topic, *Topic]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.topicList = &RelationList[Topic, *Topic]{refs}
-	}
-	return c.topicList
-}
-
-func (c *Meeting) TopicPollDefaultGroupList() *RelationList[Group, *Group] {
-	if c.topicPollDefaultGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.TopicPollDefaultGroupIDs))
-		for i, id := range c.TopicPollDefaultGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.topicPollDefaultGroupList = &RelationList[Group, *Group]{refs}
-	}
-	return c.topicPollDefaultGroupList
-}
-
-func (c *Meeting) VoteList() *RelationList[Vote, *Vote] {
-	if c.voteList == nil {
-		refs := make([]*ValueCollection[Vote, *Vote], len(c.VoteIDs))
-		for i, id := range c.VoteIDs {
-			refs[i] = &ValueCollection[Vote, *Vote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.voteList = &RelationList[Vote, *Vote]{refs}
-	}
-	return c.voteList
-}
-
-func (r *Fetch) Meeting(id int) *ValueCollection[Meeting, *Meeting] {
-	return &ValueCollection[Meeting, *Meeting]{
-		id:    id,
-		fetch: r,
+func (b *meetingBuilder) Preload(rel builderWrapperI) *meetingBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *meetingBuilder) AdminGroup() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "AdminGroupID",
+			relField: "AdminGroup",
+		},
+	}
+}
+
+func (b *meetingBuilder) AgendaItemList() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "AgendaItemIDs",
+			relField: "AgendaItemList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) AllProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "AllProjectionIDs",
+			relField: "AllProjectionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) AnonymousGroup() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "AnonymousGroupID",
+			relField: "AnonymousGroup",
+		},
+	}
+}
+
+func (b *meetingBuilder) AssignmentCandidateList() *assignmentCandidateBuilder {
+	return &assignmentCandidateBuilder{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+			fetch:    b.fetch,
+			idField:  "AssignmentCandidateIDs",
+			relField: "AssignmentCandidateList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) AssignmentList() *assignmentBuilder {
+	return &assignmentBuilder{
+		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+			fetch:    b.fetch,
+			idField:  "AssignmentIDs",
+			relField: "AssignmentList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) AssignmentPollDefaultGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "AssignmentPollDefaultGroupIDs",
+			relField: "AssignmentPollDefaultGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ChatGroupList() *chatGroupBuilder {
+	return &chatGroupBuilder{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+			fetch:    b.fetch,
+			idField:  "ChatGroupIDs",
+			relField: "ChatGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ChatMessageList() *chatMessageBuilder {
+	return &chatMessageBuilder{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+			fetch:    b.fetch,
+			idField:  "ChatMessageIDs",
+			relField: "ChatMessageList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) Committee() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "CommitteeID",
+			relField: "Committee",
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultGroup() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "DefaultGroupID",
+			relField: "DefaultGroup",
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultMeetingForCommittee() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "DefaultMeetingForCommitteeID",
+			relField: "DefaultMeetingForCommittee",
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorAgendaItemListList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorAgendaItemListIDs",
+			relField: "DefaultProjectorAgendaItemListList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorAmendmentList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorAmendmentIDs",
+			relField: "DefaultProjectorAmendmentList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorAssignmentList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorAssignmentIDs",
+			relField: "DefaultProjectorAssignmentList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorAssignmentPollList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorAssignmentPollIDs",
+			relField: "DefaultProjectorAssignmentPollList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorCountdownList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorCountdownIDs",
+			relField: "DefaultProjectorCountdownList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorCurrentLosList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorCurrentLosIDs",
+			relField: "DefaultProjectorCurrentLosList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorListOfSpeakersList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorListOfSpeakersIDs",
+			relField: "DefaultProjectorListOfSpeakersList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorMediafileList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorMediafileIDs",
+			relField: "DefaultProjectorMediafileList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorMessageList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorMessageIDs",
+			relField: "DefaultProjectorMessageList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorMotionBlockList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorMotionBlockIDs",
+			relField: "DefaultProjectorMotionBlockList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorMotionList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorMotionIDs",
+			relField: "DefaultProjectorMotionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorMotionPollList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorMotionPollIDs",
+			relField: "DefaultProjectorMotionPollList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorPollList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorPollIDs",
+			relField: "DefaultProjectorPollList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorTopicList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "DefaultProjectorTopicIDs",
+			relField: "DefaultProjectorTopicList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) FontBold() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontBoldID",
+			relField: "FontBold",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontBoldItalic() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontBoldItalicID",
+			relField: "FontBoldItalic",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontChyronSpeakerName() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontChyronSpeakerNameID",
+			relField: "FontChyronSpeakerName",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontItalic() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontItalicID",
+			relField: "FontItalic",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontMonospace() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontMonospaceID",
+			relField: "FontMonospace",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontProjectorH1() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontProjectorH1ID",
+			relField: "FontProjectorH1",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontProjectorH2() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontProjectorH2ID",
+			relField: "FontProjectorH2",
+		},
+	}
+}
+
+func (b *meetingBuilder) FontRegular() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "FontRegularID",
+			relField: "FontRegular",
+		},
+	}
+}
+
+func (b *meetingBuilder) ForwardedMotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "ForwardedMotionIDs",
+			relField: "ForwardedMotionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) GroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "GroupIDs",
+			relField: "GroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) IsActiveInOrganization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "IsActiveInOrganizationID",
+			relField: "IsActiveInOrganization",
+		},
+	}
+}
+
+func (b *meetingBuilder) IsArchivedInOrganization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "IsArchivedInOrganizationID",
+			relField: "IsArchivedInOrganization",
+		},
+	}
+}
+
+func (b *meetingBuilder) ListOfSpeakersCountdown() *projectorCountdownBuilder {
+	return &projectorCountdownBuilder{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersCountdownID",
+			relField: "ListOfSpeakersCountdown",
+		},
+	}
+}
+
+func (b *meetingBuilder) ListOfSpeakersList() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersIDs",
+			relField: "ListOfSpeakersList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoPdfBallotPaper() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoPdfBallotPaperID",
+			relField: "LogoPdfBallotPaper",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoPdfFooterL() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoPdfFooterLID",
+			relField: "LogoPdfFooterL",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoPdfFooterR() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoPdfFooterRID",
+			relField: "LogoPdfFooterR",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoPdfHeaderL() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoPdfHeaderLID",
+			relField: "LogoPdfHeaderL",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoPdfHeaderR() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoPdfHeaderRID",
+			relField: "LogoPdfHeaderR",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoProjectorHeader() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoProjectorHeaderID",
+			relField: "LogoProjectorHeader",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoProjectorMain() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoProjectorMainID",
+			relField: "LogoProjectorMain",
+		},
+	}
+}
+
+func (b *meetingBuilder) LogoWebHeader() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "LogoWebHeaderID",
+			relField: "LogoWebHeader",
+		},
+	}
+}
+
+func (b *meetingBuilder) MediafileList() *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			fetch:    b.fetch,
+			idField:  "MediafileIDs",
+			relField: "MediafileList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MeetingMediafileList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "MeetingMediafileIDs",
+			relField: "MeetingMediafileList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserIDs",
+			relField: "MeetingUserList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionBlockList() *motionBlockBuilder {
+	return &motionBlockBuilder{
+		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+			fetch:    b.fetch,
+			idField:  "MotionBlockIDs",
+			relField: "MotionBlockList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionCategoryList() *motionCategoryBuilder {
+	return &motionCategoryBuilder{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+			fetch:    b.fetch,
+			idField:  "MotionCategoryIDs",
+			relField: "MotionCategoryList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionChangeRecommendationList() *motionChangeRecommendationBuilder {
+	return &motionChangeRecommendationBuilder{
+		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
+			fetch:    b.fetch,
+			idField:  "MotionChangeRecommendationIDs",
+			relField: "MotionChangeRecommendationList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionCommentList() *motionCommentBuilder {
+	return &motionCommentBuilder{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+			fetch:    b.fetch,
+			idField:  "MotionCommentIDs",
+			relField: "MotionCommentList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionCommentSectionList() *motionCommentSectionBuilder {
+	return &motionCommentSectionBuilder{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+			fetch:    b.fetch,
+			idField:  "MotionCommentSectionIDs",
+			relField: "MotionCommentSectionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionEditorList() *motionEditorBuilder {
+	return &motionEditorBuilder{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+			fetch:    b.fetch,
+			idField:  "MotionEditorIDs",
+			relField: "MotionEditorList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionIDs",
+			relField: "MotionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionPollDefaultGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "MotionPollDefaultGroupIDs",
+			relField: "MotionPollDefaultGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionStateList() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "MotionStateIDs",
+			relField: "MotionStateList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionSubmitterList() *motionSubmitterBuilder {
+	return &motionSubmitterBuilder{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+			fetch:    b.fetch,
+			idField:  "MotionSubmitterIDs",
+			relField: "MotionSubmitterList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionWorkflowList() *motionWorkflowBuilder {
+	return &motionWorkflowBuilder{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+			fetch:    b.fetch,
+			idField:  "MotionWorkflowIDs",
+			relField: "MotionWorkflowList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
+	return &motionWorkingGroupSpeakerBuilder{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+			fetch:    b.fetch,
+			idField:  "MotionWorkingGroupSpeakerIDs",
+			relField: "MotionWorkingGroupSpeakerList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionsDefaultAmendmentWorkflow() *motionWorkflowBuilder {
+	return &motionWorkflowBuilder{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+			fetch:    b.fetch,
+			idField:  "MotionsDefaultAmendmentWorkflowID",
+			relField: "MotionsDefaultAmendmentWorkflow",
+		},
+	}
+}
+
+func (b *meetingBuilder) MotionsDefaultWorkflow() *motionWorkflowBuilder {
+	return &motionWorkflowBuilder{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+			fetch:    b.fetch,
+			idField:  "MotionsDefaultWorkflowID",
+			relField: "MotionsDefaultWorkflow",
+		},
+	}
+}
+
+func (b *meetingBuilder) OptionList() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "OptionIDs",
+			relField: "OptionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) OrganizationTagList() *organizationTagBuilder {
+	return &organizationTagBuilder{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+			fetch:    b.fetch,
+			idField:  "OrganizationTagIDs",
+			relField: "OrganizationTagList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PersonalNoteList() *personalNoteBuilder {
+	return &personalNoteBuilder{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+			fetch:    b.fetch,
+			idField:  "PersonalNoteIDs",
+			relField: "PersonalNoteList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PointOfOrderCategoryList() *pointOfOrderCategoryBuilder {
+	return &pointOfOrderCategoryBuilder{
+		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
+			fetch:    b.fetch,
+			idField:  "PointOfOrderCategoryIDs",
+			relField: "PointOfOrderCategoryList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PollCandidateList() *pollCandidateBuilder {
+	return &pollCandidateBuilder{
+		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
+			fetch:    b.fetch,
+			idField:  "PollCandidateIDs",
+			relField: "PollCandidateList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PollCandidateListList() *pollCandidateListBuilder {
+	return &pollCandidateListBuilder{
+		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
+			fetch:    b.fetch,
+			idField:  "PollCandidateListIDs",
+			relField: "PollCandidateListList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PollCountdown() *projectorCountdownBuilder {
+	return &projectorCountdownBuilder{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+			fetch:    b.fetch,
+			idField:  "PollCountdownID",
+			relField: "PollCountdown",
+		},
+	}
+}
+
+func (b *meetingBuilder) PollDefaultGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "PollDefaultGroupIDs",
+			relField: "PollDefaultGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollIDs",
+			relField: "PollList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) PresentUserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "PresentUserIDs",
+			relField: "PresentUserList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ProjectorCountdownList() *projectorCountdownBuilder {
+	return &projectorCountdownBuilder{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+			fetch:    b.fetch,
+			idField:  "ProjectorCountdownIDs",
+			relField: "ProjectorCountdownList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ProjectorList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "ProjectorIDs",
+			relField: "ProjectorList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ProjectorMessageList() *projectorMessageBuilder {
+	return &projectorMessageBuilder{
+		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
+			fetch:    b.fetch,
+			idField:  "ProjectorMessageIDs",
+			relField: "ProjectorMessageList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) ReferenceProjector() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "ReferenceProjectorID",
+			relField: "ReferenceProjector",
+		},
+	}
+}
+
+func (b *meetingBuilder) SpeakerList() *speakerBuilder {
+	return &speakerBuilder{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+			fetch:    b.fetch,
+			idField:  "SpeakerIDs",
+			relField: "SpeakerList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) StructureLevelList() *structureLevelBuilder {
+	return &structureLevelBuilder{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelIDs",
+			relField: "StructureLevelList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) StructureLevelListOfSpeakersList() *structureLevelListOfSpeakersBuilder {
+	return &structureLevelListOfSpeakersBuilder{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelListOfSpeakersIDs",
+			relField: "StructureLevelListOfSpeakersList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) TagList() *tagBuilder {
+	return &tagBuilder{
+		builder: builder[tagBuilder, *tagBuilder, Tag]{
+			fetch:    b.fetch,
+			idField:  "TagIDs",
+			relField: "TagList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) TemplateForOrganization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "TemplateForOrganizationID",
+			relField: "TemplateForOrganization",
+		},
+	}
+}
+
+func (b *meetingBuilder) TopicList() *topicBuilder {
+	return &topicBuilder{
+		builder: builder[topicBuilder, *topicBuilder, Topic]{
+			fetch:    b.fetch,
+			idField:  "TopicIDs",
+			relField: "TopicList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "TopicPollDefaultGroupIDs",
+			relField: "TopicPollDefaultGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) VoteList() *voteBuilder {
+	return &voteBuilder{
+		builder: builder[voteBuilder, *voteBuilder, Vote]{
+			fetch:    b.fetch,
+			idField:  "VoteIDs",
+			relField: "VoteList",
+			many:     true,
+		},
+	}
+}
+
+func (r *Fetch) Meeting(id int) *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -3146,33 +2791,36 @@ type MeetingMediafile struct {
 	UsedAsLogoProjectorHeaderInMeetingID   dsfetch.Maybe[int]
 	UsedAsLogoProjectorMainInMeetingID     dsfetch.Maybe[int]
 	UsedAsLogoWebHeaderInMeetingID         dsfetch.Maybe[int]
-	accessGroupList                        *RelationList[Group, *Group]
-	inheritedAccessGroupList               *RelationList[Group, *Group]
-	listOfSpeakers                         *MaybeRelation[ListOfSpeakers, *ListOfSpeakers]
-	mediafile                              *ValueCollection[Mediafile, *Mediafile]
-	meeting                                *ValueCollection[Meeting, *Meeting]
-	projectionList                         *RelationList[Projection, *Projection]
-	usedAsFontBoldInMeeting                *MaybeRelation[Meeting, *Meeting]
-	usedAsFontBoldItalicInMeeting          *MaybeRelation[Meeting, *Meeting]
-	usedAsFontChyronSpeakerNameInMeeting   *MaybeRelation[Meeting, *Meeting]
-	usedAsFontItalicInMeeting              *MaybeRelation[Meeting, *Meeting]
-	usedAsFontMonospaceInMeeting           *MaybeRelation[Meeting, *Meeting]
-	usedAsFontProjectorH1InMeeting         *MaybeRelation[Meeting, *Meeting]
-	usedAsFontProjectorH2InMeeting         *MaybeRelation[Meeting, *Meeting]
-	usedAsFontRegularInMeeting             *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoPdfBallotPaperInMeeting      *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoPdfFooterLInMeeting          *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoPdfFooterRInMeeting          *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoPdfHeaderLInMeeting          *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoPdfHeaderRInMeeting          *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoProjectorHeaderInMeeting     *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoProjectorMainInMeeting       *MaybeRelation[Meeting, *Meeting]
-	usedAsLogoWebHeaderInMeeting           *MaybeRelation[Meeting, *Meeting]
-	fetch                                  *Fetch
+	AccessGroupList                        []Group
+	InheritedAccessGroupList               []Group
+	ListOfSpeakers                         *dsfetch.Maybe[ListOfSpeakers]
+	Mediafile                              *Mediafile
+	Meeting                                *Meeting
+	ProjectionList                         []Projection
+	UsedAsFontBoldInMeeting                *dsfetch.Maybe[Meeting]
+	UsedAsFontBoldItalicInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsFontChyronSpeakerNameInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsFontItalicInMeeting              *dsfetch.Maybe[Meeting]
+	UsedAsFontMonospaceInMeeting           *dsfetch.Maybe[Meeting]
+	UsedAsFontProjectorH1InMeeting         *dsfetch.Maybe[Meeting]
+	UsedAsFontProjectorH2InMeeting         *dsfetch.Maybe[Meeting]
+	UsedAsFontRegularInMeeting             *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfBallotPaperInMeeting      *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfFooterLInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfFooterRInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfHeaderLInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfHeaderRInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoProjectorHeaderInMeeting     *dsfetch.Maybe[Meeting]
+	UsedAsLogoProjectorMainInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsLogoWebHeaderInMeeting           *dsfetch.Maybe[Meeting]
 }
 
-func (c *MeetingMediafile) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type meetingMediafileBuilder struct {
+	builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]
+}
+
+func (b *meetingMediafileBuilder) lazy(ds *Fetch, id int) *MeetingMediafile {
+	c := MeetingMediafile{}
 	ds.MeetingMediafile_AccessGroupIDs(id).Lazy(&c.AccessGroupIDs)
 	ds.MeetingMediafile_AttachmentIDs(id).Lazy(&c.AttachmentIDs)
 	ds.MeetingMediafile_ID(id).Lazy(&c.ID)
@@ -3198,346 +2846,243 @@ func (c *MeetingMediafile) lazy(ds *Fetch, id int) {
 	ds.MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(id).Lazy(&c.UsedAsLogoProjectorHeaderInMeetingID)
 	ds.MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(id).Lazy(&c.UsedAsLogoProjectorMainInMeetingID)
 	ds.MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(id).Lazy(&c.UsedAsLogoWebHeaderInMeetingID)
+	return &c
 }
 
-func (c *MeetingMediafile) AccessGroupList() *RelationList[Group, *Group] {
-	if c.accessGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.AccessGroupIDs))
-		for i, id := range c.AccessGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.accessGroupList = &RelationList[Group, *Group]{refs}
+func (b *meetingMediafileBuilder) Preload(rel builderWrapperI) *meetingMediafileBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *meetingMediafileBuilder) AccessGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "AccessGroupIDs",
+			relField: "AccessGroupList",
+			many:     true,
+		},
 	}
-	return c.accessGroupList
 }
 
-func (c *MeetingMediafile) InheritedAccessGroupList() *RelationList[Group, *Group] {
-	if c.inheritedAccessGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.InheritedAccessGroupIDs))
-		for i, id := range c.InheritedAccessGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.inheritedAccessGroupList = &RelationList[Group, *Group]{refs}
+func (b *meetingMediafileBuilder) InheritedAccessGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "InheritedAccessGroupIDs",
+			relField: "InheritedAccessGroupList",
+			many:     true,
+		},
 	}
-	return c.inheritedAccessGroupList
 }
 
-func (c *MeetingMediafile) ListOfSpeakers() *MaybeRelation[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		var ref dsfetch.Maybe[*ValueCollection[ListOfSpeakers, *ListOfSpeakers]]
-		id, hasValue := c.ListOfSpeakersID.Value()
-		if hasValue {
-			value := &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.listOfSpeakers = &MaybeRelation[ListOfSpeakers, *ListOfSpeakers]{ref}
+func (b *meetingMediafileBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *MeetingMediafile) Mediafile() *ValueCollection[Mediafile, *Mediafile] {
-	if c.mediafile == nil {
-		c.mediafile = &ValueCollection[Mediafile, *Mediafile]{
-			id:    c.MediafileID,
-			fetch: c.fetch,
-		}
+func (b *meetingMediafileBuilder) Mediafile() *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			fetch:    b.fetch,
+			idField:  "MediafileID",
+			relField: "Mediafile",
+		},
 	}
-	return c.mediafile
 }
 
-func (c *MeetingMediafile) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *meetingMediafileBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MeetingMediafile) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *meetingMediafileBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *MeetingMediafile) UsedAsFontBoldInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontBoldInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontBoldInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontBoldInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontBoldInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontBoldInMeetingID",
+			relField: "UsedAsFontBoldInMeeting",
+		},
 	}
-	return c.usedAsFontBoldInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontBoldItalicInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontBoldItalicInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontBoldItalicInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontBoldItalicInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontBoldItalicInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontBoldItalicInMeetingID",
+			relField: "UsedAsFontBoldItalicInMeeting",
+		},
 	}
-	return c.usedAsFontBoldItalicInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontChyronSpeakerNameInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontChyronSpeakerNameInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontChyronSpeakerNameInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontChyronSpeakerNameInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontChyronSpeakerNameInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontChyronSpeakerNameInMeetingID",
+			relField: "UsedAsFontChyronSpeakerNameInMeeting",
+		},
 	}
-	return c.usedAsFontChyronSpeakerNameInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontItalicInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontItalicInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontItalicInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontItalicInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontItalicInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontItalicInMeetingID",
+			relField: "UsedAsFontItalicInMeeting",
+		},
 	}
-	return c.usedAsFontItalicInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontMonospaceInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontMonospaceInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontMonospaceInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontMonospaceInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontMonospaceInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontMonospaceInMeetingID",
+			relField: "UsedAsFontMonospaceInMeeting",
+		},
 	}
-	return c.usedAsFontMonospaceInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontProjectorH1InMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontProjectorH1InMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontProjectorH1InMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontProjectorH1InMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontProjectorH1InMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontProjectorH1InMeetingID",
+			relField: "UsedAsFontProjectorH1InMeeting",
+		},
 	}
-	return c.usedAsFontProjectorH1InMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontProjectorH2InMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontProjectorH2InMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontProjectorH2InMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontProjectorH2InMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontProjectorH2InMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontProjectorH2InMeetingID",
+			relField: "UsedAsFontProjectorH2InMeeting",
+		},
 	}
-	return c.usedAsFontProjectorH2InMeeting
 }
 
-func (c *MeetingMediafile) UsedAsFontRegularInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsFontRegularInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsFontRegularInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsFontRegularInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsFontRegularInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsFontRegularInMeetingID",
+			relField: "UsedAsFontRegularInMeeting",
+		},
 	}
-	return c.usedAsFontRegularInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoPdfBallotPaperInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoPdfBallotPaperInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoPdfBallotPaperInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoPdfBallotPaperInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoPdfBallotPaperInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoPdfBallotPaperInMeetingID",
+			relField: "UsedAsLogoPdfBallotPaperInMeeting",
+		},
 	}
-	return c.usedAsLogoPdfBallotPaperInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoPdfFooterLInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoPdfFooterLInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoPdfFooterLInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoPdfFooterLInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoPdfFooterLInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoPdfFooterLInMeetingID",
+			relField: "UsedAsLogoPdfFooterLInMeeting",
+		},
 	}
-	return c.usedAsLogoPdfFooterLInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoPdfFooterRInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoPdfFooterRInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoPdfFooterRInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoPdfFooterRInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoPdfFooterRInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoPdfFooterRInMeetingID",
+			relField: "UsedAsLogoPdfFooterRInMeeting",
+		},
 	}
-	return c.usedAsLogoPdfFooterRInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoPdfHeaderLInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoPdfHeaderLInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoPdfHeaderLInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoPdfHeaderLInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoPdfHeaderLInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoPdfHeaderLInMeetingID",
+			relField: "UsedAsLogoPdfHeaderLInMeeting",
+		},
 	}
-	return c.usedAsLogoPdfHeaderLInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoPdfHeaderRInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoPdfHeaderRInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoPdfHeaderRInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoPdfHeaderRInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoPdfHeaderRInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoPdfHeaderRInMeetingID",
+			relField: "UsedAsLogoPdfHeaderRInMeeting",
+		},
 	}
-	return c.usedAsLogoPdfHeaderRInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoProjectorHeaderInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoProjectorHeaderInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoProjectorHeaderInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoProjectorHeaderInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoProjectorHeaderInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoProjectorHeaderInMeetingID",
+			relField: "UsedAsLogoProjectorHeaderInMeeting",
+		},
 	}
-	return c.usedAsLogoProjectorHeaderInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoProjectorMainInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoProjectorMainInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoProjectorMainInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoProjectorMainInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoProjectorMainInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoProjectorMainInMeetingID",
+			relField: "UsedAsLogoProjectorMainInMeeting",
+		},
 	}
-	return c.usedAsLogoProjectorMainInMeeting
 }
 
-func (c *MeetingMediafile) UsedAsLogoWebHeaderInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsLogoWebHeaderInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsLogoWebHeaderInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsLogoWebHeaderInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *meetingMediafileBuilder) UsedAsLogoWebHeaderInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsLogoWebHeaderInMeetingID",
+			relField: "UsedAsLogoWebHeaderInMeeting",
+		},
 	}
-	return c.usedAsLogoWebHeaderInMeeting
 }
 
-func (r *Fetch) MeetingMediafile(id int) *ValueCollection[MeetingMediafile, *MeetingMediafile] {
-	return &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MeetingMediafile(id int) *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -3563,25 +3108,28 @@ type MeetingUser struct {
 	VoteDelegatedToID             dsfetch.Maybe[int]
 	VoteDelegationsFromIDs        []int
 	VoteWeight                    string
-	assignmentCandidateList       *RelationList[AssignmentCandidate, *AssignmentCandidate]
-	chatMessageList               *RelationList[ChatMessage, *ChatMessage]
-	groupList                     *RelationList[Group, *Group]
-	meeting                       *ValueCollection[Meeting, *Meeting]
-	motionEditorList              *RelationList[MotionEditor, *MotionEditor]
-	motionSubmitterList           *RelationList[MotionSubmitter, *MotionSubmitter]
-	motionWorkingGroupSpeakerList *RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]
-	personalNoteList              *RelationList[PersonalNote, *PersonalNote]
-	speakerList                   *RelationList[Speaker, *Speaker]
-	structureLevelList            *RelationList[StructureLevel, *StructureLevel]
-	supportedMotionList           *RelationList[Motion, *Motion]
-	user                          *ValueCollection[User, *User]
-	voteDelegatedTo               *MaybeRelation[MeetingUser, *MeetingUser]
-	voteDelegationsFromList       *RelationList[MeetingUser, *MeetingUser]
-	fetch                         *Fetch
+	AssignmentCandidateList       []AssignmentCandidate
+	ChatMessageList               []ChatMessage
+	GroupList                     []Group
+	Meeting                       *Meeting
+	MotionEditorList              []MotionEditor
+	MotionSubmitterList           []MotionSubmitter
+	MotionWorkingGroupSpeakerList []MotionWorkingGroupSpeaker
+	PersonalNoteList              []PersonalNote
+	SpeakerList                   []Speaker
+	StructureLevelList            []StructureLevel
+	SupportedMotionList           []Motion
+	User                          *User
+	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
+	VoteDelegationsFromList       []MeetingUser
 }
 
-func (c *MeetingUser) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type meetingUserBuilder struct {
+	builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]
+}
+
+func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
+	c := MeetingUser{}
 	ds.MeetingUser_AboutMe(id).Lazy(&c.AboutMe)
 	ds.MeetingUser_AssignmentCandidateIDs(id).Lazy(&c.AssignmentCandidateIDs)
 	ds.MeetingUser_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
@@ -3602,202 +3150,171 @@ func (c *MeetingUser) lazy(ds *Fetch, id int) {
 	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
 	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
 	ds.MeetingUser_VoteWeight(id).Lazy(&c.VoteWeight)
+	return &c
 }
 
-func (c *MeetingUser) AssignmentCandidateList() *RelationList[AssignmentCandidate, *AssignmentCandidate] {
-	if c.assignmentCandidateList == nil {
-		refs := make([]*ValueCollection[AssignmentCandidate, *AssignmentCandidate], len(c.AssignmentCandidateIDs))
-		for i, id := range c.AssignmentCandidateIDs {
-			refs[i] = &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.assignmentCandidateList = &RelationList[AssignmentCandidate, *AssignmentCandidate]{refs}
+func (b *meetingUserBuilder) Preload(rel builderWrapperI) *meetingUserBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *meetingUserBuilder) AssignmentCandidateList() *assignmentCandidateBuilder {
+	return &assignmentCandidateBuilder{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+			fetch:    b.fetch,
+			idField:  "AssignmentCandidateIDs",
+			relField: "AssignmentCandidateList",
+			many:     true,
+		},
 	}
-	return c.assignmentCandidateList
 }
 
-func (c *MeetingUser) ChatMessageList() *RelationList[ChatMessage, *ChatMessage] {
-	if c.chatMessageList == nil {
-		refs := make([]*ValueCollection[ChatMessage, *ChatMessage], len(c.ChatMessageIDs))
-		for i, id := range c.ChatMessageIDs {
-			refs[i] = &ValueCollection[ChatMessage, *ChatMessage]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.chatMessageList = &RelationList[ChatMessage, *ChatMessage]{refs}
+func (b *meetingUserBuilder) ChatMessageList() *chatMessageBuilder {
+	return &chatMessageBuilder{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+			fetch:    b.fetch,
+			idField:  "ChatMessageIDs",
+			relField: "ChatMessageList",
+			many:     true,
+		},
 	}
-	return c.chatMessageList
 }
 
-func (c *MeetingUser) GroupList() *RelationList[Group, *Group] {
-	if c.groupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.GroupIDs))
-		for i, id := range c.GroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.groupList = &RelationList[Group, *Group]{refs}
+func (b *meetingUserBuilder) GroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "GroupIDs",
+			relField: "GroupList",
+			many:     true,
+		},
 	}
-	return c.groupList
 }
 
-func (c *MeetingUser) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *meetingUserBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MeetingUser) MotionEditorList() *RelationList[MotionEditor, *MotionEditor] {
-	if c.motionEditorList == nil {
-		refs := make([]*ValueCollection[MotionEditor, *MotionEditor], len(c.MotionEditorIDs))
-		for i, id := range c.MotionEditorIDs {
-			refs[i] = &ValueCollection[MotionEditor, *MotionEditor]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionEditorList = &RelationList[MotionEditor, *MotionEditor]{refs}
+func (b *meetingUserBuilder) MotionEditorList() *motionEditorBuilder {
+	return &motionEditorBuilder{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+			fetch:    b.fetch,
+			idField:  "MotionEditorIDs",
+			relField: "MotionEditorList",
+			many:     true,
+		},
 	}
-	return c.motionEditorList
 }
 
-func (c *MeetingUser) MotionSubmitterList() *RelationList[MotionSubmitter, *MotionSubmitter] {
-	if c.motionSubmitterList == nil {
-		refs := make([]*ValueCollection[MotionSubmitter, *MotionSubmitter], len(c.MotionSubmitterIDs))
-		for i, id := range c.MotionSubmitterIDs {
-			refs[i] = &ValueCollection[MotionSubmitter, *MotionSubmitter]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionSubmitterList = &RelationList[MotionSubmitter, *MotionSubmitter]{refs}
+func (b *meetingUserBuilder) MotionSubmitterList() *motionSubmitterBuilder {
+	return &motionSubmitterBuilder{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+			fetch:    b.fetch,
+			idField:  "MotionSubmitterIDs",
+			relField: "MotionSubmitterList",
+			many:     true,
+		},
 	}
-	return c.motionSubmitterList
 }
 
-func (c *MeetingUser) MotionWorkingGroupSpeakerList() *RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
-	if c.motionWorkingGroupSpeakerList == nil {
-		refs := make([]*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker], len(c.MotionWorkingGroupSpeakerIDs))
-		for i, id := range c.MotionWorkingGroupSpeakerIDs {
-			refs[i] = &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionWorkingGroupSpeakerList = &RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{refs}
+func (b *meetingUserBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
+	return &motionWorkingGroupSpeakerBuilder{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+			fetch:    b.fetch,
+			idField:  "MotionWorkingGroupSpeakerIDs",
+			relField: "MotionWorkingGroupSpeakerList",
+			many:     true,
+		},
 	}
-	return c.motionWorkingGroupSpeakerList
 }
 
-func (c *MeetingUser) PersonalNoteList() *RelationList[PersonalNote, *PersonalNote] {
-	if c.personalNoteList == nil {
-		refs := make([]*ValueCollection[PersonalNote, *PersonalNote], len(c.PersonalNoteIDs))
-		for i, id := range c.PersonalNoteIDs {
-			refs[i] = &ValueCollection[PersonalNote, *PersonalNote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.personalNoteList = &RelationList[PersonalNote, *PersonalNote]{refs}
+func (b *meetingUserBuilder) PersonalNoteList() *personalNoteBuilder {
+	return &personalNoteBuilder{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+			fetch:    b.fetch,
+			idField:  "PersonalNoteIDs",
+			relField: "PersonalNoteList",
+			many:     true,
+		},
 	}
-	return c.personalNoteList
 }
 
-func (c *MeetingUser) SpeakerList() *RelationList[Speaker, *Speaker] {
-	if c.speakerList == nil {
-		refs := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
-		for i, id := range c.SpeakerIDs {
-			refs[i] = &ValueCollection[Speaker, *Speaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.speakerList = &RelationList[Speaker, *Speaker]{refs}
+func (b *meetingUserBuilder) SpeakerList() *speakerBuilder {
+	return &speakerBuilder{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+			fetch:    b.fetch,
+			idField:  "SpeakerIDs",
+			relField: "SpeakerList",
+			many:     true,
+		},
 	}
-	return c.speakerList
 }
 
-func (c *MeetingUser) StructureLevelList() *RelationList[StructureLevel, *StructureLevel] {
-	if c.structureLevelList == nil {
-		refs := make([]*ValueCollection[StructureLevel, *StructureLevel], len(c.StructureLevelIDs))
-		for i, id := range c.StructureLevelIDs {
-			refs[i] = &ValueCollection[StructureLevel, *StructureLevel]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.structureLevelList = &RelationList[StructureLevel, *StructureLevel]{refs}
+func (b *meetingUserBuilder) StructureLevelList() *structureLevelBuilder {
+	return &structureLevelBuilder{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelIDs",
+			relField: "StructureLevelList",
+			many:     true,
+		},
 	}
-	return c.structureLevelList
 }
 
-func (c *MeetingUser) SupportedMotionList() *RelationList[Motion, *Motion] {
-	if c.supportedMotionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.SupportedMotionIDs))
-		for i, id := range c.SupportedMotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.supportedMotionList = &RelationList[Motion, *Motion]{refs}
+func (b *meetingUserBuilder) SupportedMotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "SupportedMotionIDs",
+			relField: "SupportedMotionList",
+			many:     true,
+		},
 	}
-	return c.supportedMotionList
 }
 
-func (c *MeetingUser) User() *ValueCollection[User, *User] {
-	if c.user == nil {
-		c.user = &ValueCollection[User, *User]{
-			id:    c.UserID,
-			fetch: c.fetch,
-		}
+func (b *meetingUserBuilder) User() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "UserID",
+			relField: "User",
+		},
 	}
-	return c.user
 }
 
-func (c *MeetingUser) VoteDelegatedTo() *MaybeRelation[MeetingUser, *MeetingUser] {
-	if c.voteDelegatedTo == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
-		id, hasValue := c.VoteDelegatedToID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.voteDelegatedTo = &MaybeRelation[MeetingUser, *MeetingUser]{ref}
+func (b *meetingUserBuilder) VoteDelegatedTo() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "VoteDelegatedToID",
+			relField: "VoteDelegatedTo",
+		},
 	}
-	return c.voteDelegatedTo
 }
 
-func (c *MeetingUser) VoteDelegationsFromList() *RelationList[MeetingUser, *MeetingUser] {
-	if c.voteDelegationsFromList == nil {
-		refs := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.VoteDelegationsFromIDs))
-		for i, id := range c.VoteDelegationsFromIDs {
-			refs[i] = &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.voteDelegationsFromList = &RelationList[MeetingUser, *MeetingUser]{refs}
+func (b *meetingUserBuilder) VoteDelegationsFromList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "VoteDelegationsFromIDs",
+			relField: "VoteDelegationsFromList",
+			many:     true,
+		},
 	}
-	return c.voteDelegationsFromList
 }
 
-func (r *Fetch) MeetingUser(id int) *ValueCollection[MeetingUser, *MeetingUser] {
-	return &ValueCollection[MeetingUser, *MeetingUser]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MeetingUser(id int) *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -3856,42 +3373,45 @@ type Motion struct {
 	Title                                         string
 	WorkflowTimestamp                             int
 	WorkingGroupSpeakerIDs                        []int
-	agendaItem                                    *MaybeRelation[AgendaItem, *AgendaItem]
-	allDerivedMotionList                          *RelationList[Motion, *Motion]
-	allOriginList                                 *RelationList[Motion, *Motion]
-	amendmentList                                 *RelationList[Motion, *Motion]
-	attachmentMeetingMediafileList                *RelationList[MeetingMediafile, *MeetingMediafile]
-	block                                         *MaybeRelation[MotionBlock, *MotionBlock]
-	category                                      *MaybeRelation[MotionCategory, *MotionCategory]
-	changeRecommendationList                      *RelationList[MotionChangeRecommendation, *MotionChangeRecommendation]
-	commentList                                   *RelationList[MotionComment, *MotionComment]
-	derivedMotionList                             *RelationList[Motion, *Motion]
-	editorList                                    *RelationList[MotionEditor, *MotionEditor]
-	iDenticalMotionList                           *RelationList[Motion, *Motion]
-	leadMotion                                    *MaybeRelation[Motion, *Motion]
-	listOfSpeakers                                *ValueCollection[ListOfSpeakers, *ListOfSpeakers]
-	meeting                                       *ValueCollection[Meeting, *Meeting]
-	optionList                                    *RelationList[Option, *Option]
-	origin                                        *MaybeRelation[Motion, *Motion]
-	originMeeting                                 *MaybeRelation[Meeting, *Meeting]
-	personalNoteList                              *RelationList[PersonalNote, *PersonalNote]
-	pollList                                      *RelationList[Poll, *Poll]
-	projectionList                                *RelationList[Projection, *Projection]
-	recommendation                                *MaybeRelation[MotionState, *MotionState]
-	referencedInMotionRecommendationExtensionList *RelationList[Motion, *Motion]
-	referencedInMotionStateExtensionList          *RelationList[Motion, *Motion]
-	sortChildList                                 *RelationList[Motion, *Motion]
-	sortParent                                    *MaybeRelation[Motion, *Motion]
-	state                                         *ValueCollection[MotionState, *MotionState]
-	submitterList                                 *RelationList[MotionSubmitter, *MotionSubmitter]
-	supporterMeetingUserList                      *RelationList[MeetingUser, *MeetingUser]
-	tagList                                       *RelationList[Tag, *Tag]
-	workingGroupSpeakerList                       *RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]
-	fetch                                         *Fetch
+	AgendaItem                                    *dsfetch.Maybe[AgendaItem]
+	AllDerivedMotionList                          []Motion
+	AllOriginList                                 []Motion
+	AmendmentList                                 []Motion
+	AttachmentMeetingMediafileList                []MeetingMediafile
+	Block                                         *dsfetch.Maybe[MotionBlock]
+	Category                                      *dsfetch.Maybe[MotionCategory]
+	ChangeRecommendationList                      []MotionChangeRecommendation
+	CommentList                                   []MotionComment
+	DerivedMotionList                             []Motion
+	EditorList                                    []MotionEditor
+	IDenticalMotionList                           []Motion
+	LeadMotion                                    *dsfetch.Maybe[Motion]
+	ListOfSpeakers                                *ListOfSpeakers
+	Meeting                                       *Meeting
+	OptionList                                    []Option
+	Origin                                        *dsfetch.Maybe[Motion]
+	OriginMeeting                                 *dsfetch.Maybe[Meeting]
+	PersonalNoteList                              []PersonalNote
+	PollList                                      []Poll
+	ProjectionList                                []Projection
+	Recommendation                                *dsfetch.Maybe[MotionState]
+	ReferencedInMotionRecommendationExtensionList []Motion
+	ReferencedInMotionStateExtensionList          []Motion
+	SortChildList                                 []Motion
+	SortParent                                    *dsfetch.Maybe[Motion]
+	State                                         *MotionState
+	SubmitterList                                 []MotionSubmitter
+	SupporterMeetingUserList                      []MeetingUser
+	TagList                                       []Tag
+	WorkingGroupSpeakerList                       []MotionWorkingGroupSpeaker
 }
 
-func (c *Motion) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionBuilder struct {
+	builder[motionBuilder, *motionBuilder, Motion]
+}
+
+func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
+	c := Motion{}
 	ds.Motion_AdditionalSubmitter(id).Lazy(&c.AdditionalSubmitter)
 	ds.Motion_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Motion_AllDerivedMotionIDs(id).Lazy(&c.AllDerivedMotionIDs)
@@ -3945,450 +3465,350 @@ func (c *Motion) lazy(ds *Fetch, id int) {
 	ds.Motion_Title(id).Lazy(&c.Title)
 	ds.Motion_WorkflowTimestamp(id).Lazy(&c.WorkflowTimestamp)
 	ds.Motion_WorkingGroupSpeakerIDs(id).Lazy(&c.WorkingGroupSpeakerIDs)
+	return &c
 }
 
-func (c *Motion) AgendaItem() *MaybeRelation[AgendaItem, *AgendaItem] {
-	if c.agendaItem == nil {
-		var ref dsfetch.Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
-		id, hasValue := c.AgendaItemID.Value()
-		if hasValue {
-			value := &ValueCollection[AgendaItem, *AgendaItem]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.agendaItem = &MaybeRelation[AgendaItem, *AgendaItem]{ref}
+func (b *motionBuilder) Preload(rel builderWrapperI) *motionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionBuilder) AgendaItem() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "AgendaItemID",
+			relField: "AgendaItem",
+		},
 	}
-	return c.agendaItem
 }
 
-func (c *Motion) AllDerivedMotionList() *RelationList[Motion, *Motion] {
-	if c.allDerivedMotionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.AllDerivedMotionIDs))
-		for i, id := range c.AllDerivedMotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.allDerivedMotionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) AllDerivedMotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "AllDerivedMotionIDs",
+			relField: "AllDerivedMotionList",
+			many:     true,
+		},
 	}
-	return c.allDerivedMotionList
 }
 
-func (c *Motion) AllOriginList() *RelationList[Motion, *Motion] {
-	if c.allOriginList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.AllOriginIDs))
-		for i, id := range c.AllOriginIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.allOriginList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) AllOriginList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "AllOriginIDs",
+			relField: "AllOriginList",
+			many:     true,
+		},
 	}
-	return c.allOriginList
 }
 
-func (c *Motion) AmendmentList() *RelationList[Motion, *Motion] {
-	if c.amendmentList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.AmendmentIDs))
-		for i, id := range c.AmendmentIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.amendmentList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) AmendmentList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "AmendmentIDs",
+			relField: "AmendmentList",
+			many:     true,
+		},
 	}
-	return c.amendmentList
 }
 
-func (c *Motion) AttachmentMeetingMediafileList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.attachmentMeetingMediafileList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.AttachmentMeetingMediafileIDs))
-		for i, id := range c.AttachmentMeetingMediafileIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.attachmentMeetingMediafileList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
+func (b *motionBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "AttachmentMeetingMediafileIDs",
+			relField: "AttachmentMeetingMediafileList",
+			many:     true,
+		},
 	}
-	return c.attachmentMeetingMediafileList
 }
 
-func (c *Motion) Block() *MaybeRelation[MotionBlock, *MotionBlock] {
-	if c.block == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MotionBlock, *MotionBlock]]
-		id, hasValue := c.BlockID.Value()
-		if hasValue {
-			value := &ValueCollection[MotionBlock, *MotionBlock]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.block = &MaybeRelation[MotionBlock, *MotionBlock]{ref}
+func (b *motionBuilder) Block() *motionBlockBuilder {
+	return &motionBlockBuilder{
+		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+			fetch:    b.fetch,
+			idField:  "BlockID",
+			relField: "Block",
+		},
 	}
-	return c.block
 }
 
-func (c *Motion) Category() *MaybeRelation[MotionCategory, *MotionCategory] {
-	if c.category == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MotionCategory, *MotionCategory]]
-		id, hasValue := c.CategoryID.Value()
-		if hasValue {
-			value := &ValueCollection[MotionCategory, *MotionCategory]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.category = &MaybeRelation[MotionCategory, *MotionCategory]{ref}
+func (b *motionBuilder) Category() *motionCategoryBuilder {
+	return &motionCategoryBuilder{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+			fetch:    b.fetch,
+			idField:  "CategoryID",
+			relField: "Category",
+		},
 	}
-	return c.category
 }
 
-func (c *Motion) ChangeRecommendationList() *RelationList[MotionChangeRecommendation, *MotionChangeRecommendation] {
-	if c.changeRecommendationList == nil {
-		refs := make([]*ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation], len(c.ChangeRecommendationIDs))
-		for i, id := range c.ChangeRecommendationIDs {
-			refs[i] = &ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.changeRecommendationList = &RelationList[MotionChangeRecommendation, *MotionChangeRecommendation]{refs}
+func (b *motionBuilder) ChangeRecommendationList() *motionChangeRecommendationBuilder {
+	return &motionChangeRecommendationBuilder{
+		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
+			fetch:    b.fetch,
+			idField:  "ChangeRecommendationIDs",
+			relField: "ChangeRecommendationList",
+			many:     true,
+		},
 	}
-	return c.changeRecommendationList
 }
 
-func (c *Motion) CommentList() *RelationList[MotionComment, *MotionComment] {
-	if c.commentList == nil {
-		refs := make([]*ValueCollection[MotionComment, *MotionComment], len(c.CommentIDs))
-		for i, id := range c.CommentIDs {
-			refs[i] = &ValueCollection[MotionComment, *MotionComment]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.commentList = &RelationList[MotionComment, *MotionComment]{refs}
+func (b *motionBuilder) CommentList() *motionCommentBuilder {
+	return &motionCommentBuilder{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+			fetch:    b.fetch,
+			idField:  "CommentIDs",
+			relField: "CommentList",
+			many:     true,
+		},
 	}
-	return c.commentList
 }
 
-func (c *Motion) DerivedMotionList() *RelationList[Motion, *Motion] {
-	if c.derivedMotionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.DerivedMotionIDs))
-		for i, id := range c.DerivedMotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.derivedMotionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) DerivedMotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "DerivedMotionIDs",
+			relField: "DerivedMotionList",
+			many:     true,
+		},
 	}
-	return c.derivedMotionList
 }
 
-func (c *Motion) EditorList() *RelationList[MotionEditor, *MotionEditor] {
-	if c.editorList == nil {
-		refs := make([]*ValueCollection[MotionEditor, *MotionEditor], len(c.EditorIDs))
-		for i, id := range c.EditorIDs {
-			refs[i] = &ValueCollection[MotionEditor, *MotionEditor]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.editorList = &RelationList[MotionEditor, *MotionEditor]{refs}
+func (b *motionBuilder) EditorList() *motionEditorBuilder {
+	return &motionEditorBuilder{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+			fetch:    b.fetch,
+			idField:  "EditorIDs",
+			relField: "EditorList",
+			many:     true,
+		},
 	}
-	return c.editorList
 }
 
-func (c *Motion) IDenticalMotionList() *RelationList[Motion, *Motion] {
-	if c.iDenticalMotionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.IDenticalMotionIDs))
-		for i, id := range c.IDenticalMotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.iDenticalMotionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) IDenticalMotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "IDenticalMotionIDs",
+			relField: "IDenticalMotionList",
+			many:     true,
+		},
 	}
-	return c.iDenticalMotionList
 }
 
-func (c *Motion) LeadMotion() *MaybeRelation[Motion, *Motion] {
-	if c.leadMotion == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Motion, *Motion]]
-		id, hasValue := c.LeadMotionID.Value()
-		if hasValue {
-			value := &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.leadMotion = &MaybeRelation[Motion, *Motion]{ref}
+func (b *motionBuilder) LeadMotion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "LeadMotionID",
+			relField: "LeadMotion",
+		},
 	}
-	return c.leadMotion
 }
 
-func (c *Motion) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		c.listOfSpeakers = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-			id:    c.ListOfSpeakersID,
-			fetch: c.fetch,
-		}
+func (b *motionBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *Motion) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Motion) OptionList() *RelationList[Option, *Option] {
-	if c.optionList == nil {
-		refs := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
-		for i, id := range c.OptionIDs {
-			refs[i] = &ValueCollection[Option, *Option]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.optionList = &RelationList[Option, *Option]{refs}
+func (b *motionBuilder) OptionList() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "OptionIDs",
+			relField: "OptionList",
+			many:     true,
+		},
 	}
-	return c.optionList
 }
 
-func (c *Motion) Origin() *MaybeRelation[Motion, *Motion] {
-	if c.origin == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Motion, *Motion]]
-		id, hasValue := c.OriginID.Value()
-		if hasValue {
-			value := &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.origin = &MaybeRelation[Motion, *Motion]{ref}
+func (b *motionBuilder) Origin() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "OriginID",
+			relField: "Origin",
+		},
 	}
-	return c.origin
 }
 
-func (c *Motion) OriginMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.originMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.OriginMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.originMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *motionBuilder) OriginMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "OriginMeetingID",
+			relField: "OriginMeeting",
+		},
 	}
-	return c.originMeeting
 }
 
-func (c *Motion) PersonalNoteList() *RelationList[PersonalNote, *PersonalNote] {
-	if c.personalNoteList == nil {
-		refs := make([]*ValueCollection[PersonalNote, *PersonalNote], len(c.PersonalNoteIDs))
-		for i, id := range c.PersonalNoteIDs {
-			refs[i] = &ValueCollection[PersonalNote, *PersonalNote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.personalNoteList = &RelationList[PersonalNote, *PersonalNote]{refs}
+func (b *motionBuilder) PersonalNoteList() *personalNoteBuilder {
+	return &personalNoteBuilder{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+			fetch:    b.fetch,
+			idField:  "PersonalNoteIDs",
+			relField: "PersonalNoteList",
+			many:     true,
+		},
 	}
-	return c.personalNoteList
 }
 
-func (c *Motion) PollList() *RelationList[Poll, *Poll] {
-	if c.pollList == nil {
-		refs := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
-		for i, id := range c.PollIDs {
-			refs[i] = &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollList = &RelationList[Poll, *Poll]{refs}
+func (b *motionBuilder) PollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollIDs",
+			relField: "PollList",
+			many:     true,
+		},
 	}
-	return c.pollList
 }
 
-func (c *Motion) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *motionBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *Motion) Recommendation() *MaybeRelation[MotionState, *MotionState] {
-	if c.recommendation == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MotionState, *MotionState]]
-		id, hasValue := c.RecommendationID.Value()
-		if hasValue {
-			value := &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.recommendation = &MaybeRelation[MotionState, *MotionState]{ref}
+func (b *motionBuilder) Recommendation() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "RecommendationID",
+			relField: "Recommendation",
+		},
 	}
-	return c.recommendation
 }
 
-func (c *Motion) ReferencedInMotionRecommendationExtensionList() *RelationList[Motion, *Motion] {
-	if c.referencedInMotionRecommendationExtensionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.ReferencedInMotionRecommendationExtensionIDs))
-		for i, id := range c.ReferencedInMotionRecommendationExtensionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.referencedInMotionRecommendationExtensionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) ReferencedInMotionRecommendationExtensionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "ReferencedInMotionRecommendationExtensionIDs",
+			relField: "ReferencedInMotionRecommendationExtensionList",
+			many:     true,
+		},
 	}
-	return c.referencedInMotionRecommendationExtensionList
 }
 
-func (c *Motion) ReferencedInMotionStateExtensionList() *RelationList[Motion, *Motion] {
-	if c.referencedInMotionStateExtensionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.ReferencedInMotionStateExtensionIDs))
-		for i, id := range c.ReferencedInMotionStateExtensionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.referencedInMotionStateExtensionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) ReferencedInMotionStateExtensionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "ReferencedInMotionStateExtensionIDs",
+			relField: "ReferencedInMotionStateExtensionList",
+			many:     true,
+		},
 	}
-	return c.referencedInMotionStateExtensionList
 }
 
-func (c *Motion) SortChildList() *RelationList[Motion, *Motion] {
-	if c.sortChildList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.SortChildIDs))
-		for i, id := range c.SortChildIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.sortChildList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBuilder) SortChildList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "SortChildIDs",
+			relField: "SortChildList",
+			many:     true,
+		},
 	}
-	return c.sortChildList
 }
 
-func (c *Motion) SortParent() *MaybeRelation[Motion, *Motion] {
-	if c.sortParent == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Motion, *Motion]]
-		id, hasValue := c.SortParentID.Value()
-		if hasValue {
-			value := &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.sortParent = &MaybeRelation[Motion, *Motion]{ref}
+func (b *motionBuilder) SortParent() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "SortParentID",
+			relField: "SortParent",
+		},
 	}
-	return c.sortParent
 }
 
-func (c *Motion) State() *ValueCollection[MotionState, *MotionState] {
-	if c.state == nil {
-		c.state = &ValueCollection[MotionState, *MotionState]{
-			id:    c.StateID,
-			fetch: c.fetch,
-		}
+func (b *motionBuilder) State() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "StateID",
+			relField: "State",
+		},
 	}
-	return c.state
 }
 
-func (c *Motion) SubmitterList() *RelationList[MotionSubmitter, *MotionSubmitter] {
-	if c.submitterList == nil {
-		refs := make([]*ValueCollection[MotionSubmitter, *MotionSubmitter], len(c.SubmitterIDs))
-		for i, id := range c.SubmitterIDs {
-			refs[i] = &ValueCollection[MotionSubmitter, *MotionSubmitter]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.submitterList = &RelationList[MotionSubmitter, *MotionSubmitter]{refs}
+func (b *motionBuilder) SubmitterList() *motionSubmitterBuilder {
+	return &motionSubmitterBuilder{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+			fetch:    b.fetch,
+			idField:  "SubmitterIDs",
+			relField: "SubmitterList",
+			many:     true,
+		},
 	}
-	return c.submitterList
 }
 
-func (c *Motion) SupporterMeetingUserList() *RelationList[MeetingUser, *MeetingUser] {
-	if c.supporterMeetingUserList == nil {
-		refs := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.SupporterMeetingUserIDs))
-		for i, id := range c.SupporterMeetingUserIDs {
-			refs[i] = &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.supporterMeetingUserList = &RelationList[MeetingUser, *MeetingUser]{refs}
+func (b *motionBuilder) SupporterMeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "SupporterMeetingUserIDs",
+			relField: "SupporterMeetingUserList",
+			many:     true,
+		},
 	}
-	return c.supporterMeetingUserList
 }
 
-func (c *Motion) TagList() *RelationList[Tag, *Tag] {
-	if c.tagList == nil {
-		refs := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
-		for i, id := range c.TagIDs {
-			refs[i] = &ValueCollection[Tag, *Tag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.tagList = &RelationList[Tag, *Tag]{refs}
+func (b *motionBuilder) TagList() *tagBuilder {
+	return &tagBuilder{
+		builder: builder[tagBuilder, *tagBuilder, Tag]{
+			fetch:    b.fetch,
+			idField:  "TagIDs",
+			relField: "TagList",
+			many:     true,
+		},
 	}
-	return c.tagList
 }
 
-func (c *Motion) WorkingGroupSpeakerList() *RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
-	if c.workingGroupSpeakerList == nil {
-		refs := make([]*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker], len(c.WorkingGroupSpeakerIDs))
-		for i, id := range c.WorkingGroupSpeakerIDs {
-			refs[i] = &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.workingGroupSpeakerList = &RelationList[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{refs}
+func (b *motionBuilder) WorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
+	return &motionWorkingGroupSpeakerBuilder{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+			fetch:    b.fetch,
+			idField:  "WorkingGroupSpeakerIDs",
+			relField: "WorkingGroupSpeakerList",
+			many:     true,
+		},
 	}
-	return c.workingGroupSpeakerList
 }
 
-func (r *Fetch) Motion(id int) *ValueCollection[Motion, *Motion] {
-	return &ValueCollection[Motion, *Motion]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Motion(id int) *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4403,16 +3823,19 @@ type MotionBlock struct {
 	ProjectionIDs    []int
 	SequentialNumber int
 	Title            string
-	agendaItem       *MaybeRelation[AgendaItem, *AgendaItem]
-	listOfSpeakers   *ValueCollection[ListOfSpeakers, *ListOfSpeakers]
-	meeting          *ValueCollection[Meeting, *Meeting]
-	motionList       *RelationList[Motion, *Motion]
-	projectionList   *RelationList[Projection, *Projection]
-	fetch            *Fetch
+	AgendaItem       *dsfetch.Maybe[AgendaItem]
+	ListOfSpeakers   *ListOfSpeakers
+	Meeting          *Meeting
+	MotionList       []Motion
+	ProjectionList   []Projection
 }
 
-func (c *MotionBlock) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionBlockBuilder struct {
+	builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]
+}
+
+func (b *motionBlockBuilder) lazy(ds *Fetch, id int) *MotionBlock {
+	c := MotionBlock{}
 	ds.MotionBlock_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.MotionBlock_ID(id).Lazy(&c.ID)
 	ds.MotionBlock_Internal(id).Lazy(&c.Internal)
@@ -4422,76 +3845,72 @@ func (c *MotionBlock) lazy(ds *Fetch, id int) {
 	ds.MotionBlock_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
 	ds.MotionBlock_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.MotionBlock_Title(id).Lazy(&c.Title)
+	return &c
 }
 
-func (c *MotionBlock) AgendaItem() *MaybeRelation[AgendaItem, *AgendaItem] {
-	if c.agendaItem == nil {
-		var ref dsfetch.Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
-		id, hasValue := c.AgendaItemID.Value()
-		if hasValue {
-			value := &ValueCollection[AgendaItem, *AgendaItem]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.agendaItem = &MaybeRelation[AgendaItem, *AgendaItem]{ref}
+func (b *motionBlockBuilder) Preload(rel builderWrapperI) *motionBlockBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionBlockBuilder) AgendaItem() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "AgendaItemID",
+			relField: "AgendaItem",
+		},
 	}
-	return c.agendaItem
 }
 
-func (c *MotionBlock) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		c.listOfSpeakers = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-			id:    c.ListOfSpeakersID,
-			fetch: c.fetch,
-		}
+func (b *motionBlockBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *MotionBlock) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionBlockBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionBlock) MotionList() *RelationList[Motion, *Motion] {
-	if c.motionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
-		for i, id := range c.MotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionBlockBuilder) MotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionIDs",
+			relField: "MotionList",
+			many:     true,
+		},
 	}
-	return c.motionList
 }
 
-func (c *MotionBlock) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *motionBlockBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (r *Fetch) MotionBlock(id int) *ValueCollection[MotionBlock, *MotionBlock] {
-	return &ValueCollection[MotionBlock, *MotionBlock]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionBlock(id int) *motionBlockBuilder {
+	return &motionBlockBuilder{
+		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4507,15 +3926,18 @@ type MotionCategory struct {
 	Prefix           string
 	SequentialNumber int
 	Weight           int
-	childList        *RelationList[MotionCategory, *MotionCategory]
-	meeting          *ValueCollection[Meeting, *Meeting]
-	motionList       *RelationList[Motion, *Motion]
-	parent           *MaybeRelation[MotionCategory, *MotionCategory]
-	fetch            *Fetch
+	ChildList        []MotionCategory
+	Meeting          *Meeting
+	MotionList       []Motion
+	Parent           *dsfetch.Maybe[MotionCategory]
 }
 
-func (c *MotionCategory) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionCategoryBuilder struct {
+	builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]
+}
+
+func (b *motionCategoryBuilder) lazy(ds *Fetch, id int) *MotionCategory {
+	c := MotionCategory{}
 	ds.MotionCategory_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.MotionCategory_ID(id).Lazy(&c.ID)
 	ds.MotionCategory_Level(id).Lazy(&c.Level)
@@ -4526,66 +3948,62 @@ func (c *MotionCategory) lazy(ds *Fetch, id int) {
 	ds.MotionCategory_Prefix(id).Lazy(&c.Prefix)
 	ds.MotionCategory_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.MotionCategory_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *MotionCategory) ChildList() *RelationList[MotionCategory, *MotionCategory] {
-	if c.childList == nil {
-		refs := make([]*ValueCollection[MotionCategory, *MotionCategory], len(c.ChildIDs))
-		for i, id := range c.ChildIDs {
-			refs[i] = &ValueCollection[MotionCategory, *MotionCategory]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.childList = &RelationList[MotionCategory, *MotionCategory]{refs}
+func (b *motionCategoryBuilder) Preload(rel builderWrapperI) *motionCategoryBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionCategoryBuilder) ChildList() *motionCategoryBuilder {
+	return &motionCategoryBuilder{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+			fetch:    b.fetch,
+			idField:  "ChildIDs",
+			relField: "ChildList",
+			many:     true,
+		},
 	}
-	return c.childList
 }
 
-func (c *MotionCategory) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionCategoryBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionCategory) MotionList() *RelationList[Motion, *Motion] {
-	if c.motionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
-		for i, id := range c.MotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionCategoryBuilder) MotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionIDs",
+			relField: "MotionList",
+			many:     true,
+		},
 	}
-	return c.motionList
 }
 
-func (c *MotionCategory) Parent() *MaybeRelation[MotionCategory, *MotionCategory] {
-	if c.parent == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MotionCategory, *MotionCategory]]
-		id, hasValue := c.ParentID.Value()
-		if hasValue {
-			value := &ValueCollection[MotionCategory, *MotionCategory]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.parent = &MaybeRelation[MotionCategory, *MotionCategory]{ref}
+func (b *motionCategoryBuilder) Parent() *motionCategoryBuilder {
+	return &motionCategoryBuilder{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+			fetch:    b.fetch,
+			idField:  "ParentID",
+			relField: "Parent",
+		},
 	}
-	return c.parent
 }
 
-func (r *Fetch) MotionCategory(id int) *ValueCollection[MotionCategory, *MotionCategory] {
-	return &ValueCollection[MotionCategory, *MotionCategory]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionCategory(id int) *motionCategoryBuilder {
+	return &motionCategoryBuilder{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4602,13 +4020,16 @@ type MotionChangeRecommendation struct {
 	Rejected         bool
 	Text             string
 	Type             string
-	meeting          *ValueCollection[Meeting, *Meeting]
-	motion           *ValueCollection[Motion, *Motion]
-	fetch            *Fetch
+	Meeting          *Meeting
+	Motion           *Motion
 }
 
-func (c *MotionChangeRecommendation) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionChangeRecommendationBuilder struct {
+	builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]
+}
+
+func (b *motionChangeRecommendationBuilder) lazy(ds *Fetch, id int) *MotionChangeRecommendation {
+	c := MotionChangeRecommendation{}
 	ds.MotionChangeRecommendation_CreationTime(id).Lazy(&c.CreationTime)
 	ds.MotionChangeRecommendation_ID(id).Lazy(&c.ID)
 	ds.MotionChangeRecommendation_Internal(id).Lazy(&c.Internal)
@@ -4620,32 +4041,40 @@ func (c *MotionChangeRecommendation) lazy(ds *Fetch, id int) {
 	ds.MotionChangeRecommendation_Rejected(id).Lazy(&c.Rejected)
 	ds.MotionChangeRecommendation_Text(id).Lazy(&c.Text)
 	ds.MotionChangeRecommendation_Type(id).Lazy(&c.Type)
+	return &c
 }
 
-func (c *MotionChangeRecommendation) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionChangeRecommendationBuilder) Preload(rel builderWrapperI) *motionChangeRecommendationBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionChangeRecommendationBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionChangeRecommendation) Motion() *ValueCollection[Motion, *Motion] {
-	if c.motion == nil {
-		c.motion = &ValueCollection[Motion, *Motion]{
-			id:    c.MotionID,
-			fetch: c.fetch,
-		}
+func (b *motionChangeRecommendationBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
 	}
-	return c.motion
 }
 
-func (r *Fetch) MotionChangeRecommendation(id int) *ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation] {
-	return &ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionChangeRecommendation(id int) *motionChangeRecommendationBuilder {
+	return &motionChangeRecommendationBuilder{
+		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4656,55 +4085,66 @@ type MotionComment struct {
 	MeetingID int
 	MotionID  int
 	SectionID int
-	meeting   *ValueCollection[Meeting, *Meeting]
-	motion    *ValueCollection[Motion, *Motion]
-	section   *ValueCollection[MotionCommentSection, *MotionCommentSection]
-	fetch     *Fetch
+	Meeting   *Meeting
+	Motion    *Motion
+	Section   *MotionCommentSection
 }
 
-func (c *MotionComment) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionCommentBuilder struct {
+	builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]
+}
+
+func (b *motionCommentBuilder) lazy(ds *Fetch, id int) *MotionComment {
+	c := MotionComment{}
 	ds.MotionComment_Comment(id).Lazy(&c.Comment)
 	ds.MotionComment_ID(id).Lazy(&c.ID)
 	ds.MotionComment_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MotionComment_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionComment_SectionID(id).Lazy(&c.SectionID)
+	return &c
 }
 
-func (c *MotionComment) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionCommentBuilder) Preload(rel builderWrapperI) *motionCommentBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionCommentBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionComment) Motion() *ValueCollection[Motion, *Motion] {
-	if c.motion == nil {
-		c.motion = &ValueCollection[Motion, *Motion]{
-			id:    c.MotionID,
-			fetch: c.fetch,
-		}
+func (b *motionCommentBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
 	}
-	return c.motion
 }
 
-func (c *MotionComment) Section() *ValueCollection[MotionCommentSection, *MotionCommentSection] {
-	if c.section == nil {
-		c.section = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
-			id:    c.SectionID,
-			fetch: c.fetch,
-		}
+func (b *motionCommentBuilder) Section() *motionCommentSectionBuilder {
+	return &motionCommentSectionBuilder{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+			fetch:    b.fetch,
+			idField:  "SectionID",
+			relField: "Section",
+		},
 	}
-	return c.section
 }
 
-func (r *Fetch) MotionComment(id int) *ValueCollection[MotionComment, *MotionComment] {
-	return &ValueCollection[MotionComment, *MotionComment]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionComment(id int) *motionCommentBuilder {
+	return &motionCommentBuilder{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4719,15 +4159,18 @@ type MotionCommentSection struct {
 	SubmitterCanWrite bool
 	Weight            int
 	WriteGroupIDs     []int
-	commentList       *RelationList[MotionComment, *MotionComment]
-	meeting           *ValueCollection[Meeting, *Meeting]
-	readGroupList     *RelationList[Group, *Group]
-	writeGroupList    *RelationList[Group, *Group]
-	fetch             *Fetch
+	CommentList       []MotionComment
+	Meeting           *Meeting
+	ReadGroupList     []Group
+	WriteGroupList    []Group
 }
 
-func (c *MotionCommentSection) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionCommentSectionBuilder struct {
+	builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]
+}
+
+func (b *motionCommentSectionBuilder) lazy(ds *Fetch, id int) *MotionCommentSection {
+	c := MotionCommentSection{}
 	ds.MotionCommentSection_CommentIDs(id).Lazy(&c.CommentIDs)
 	ds.MotionCommentSection_ID(id).Lazy(&c.ID)
 	ds.MotionCommentSection_MeetingID(id).Lazy(&c.MeetingID)
@@ -4737,64 +4180,63 @@ func (c *MotionCommentSection) lazy(ds *Fetch, id int) {
 	ds.MotionCommentSection_SubmitterCanWrite(id).Lazy(&c.SubmitterCanWrite)
 	ds.MotionCommentSection_Weight(id).Lazy(&c.Weight)
 	ds.MotionCommentSection_WriteGroupIDs(id).Lazy(&c.WriteGroupIDs)
+	return &c
 }
 
-func (c *MotionCommentSection) CommentList() *RelationList[MotionComment, *MotionComment] {
-	if c.commentList == nil {
-		refs := make([]*ValueCollection[MotionComment, *MotionComment], len(c.CommentIDs))
-		for i, id := range c.CommentIDs {
-			refs[i] = &ValueCollection[MotionComment, *MotionComment]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.commentList = &RelationList[MotionComment, *MotionComment]{refs}
+func (b *motionCommentSectionBuilder) Preload(rel builderWrapperI) *motionCommentSectionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionCommentSectionBuilder) CommentList() *motionCommentBuilder {
+	return &motionCommentBuilder{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+			fetch:    b.fetch,
+			idField:  "CommentIDs",
+			relField: "CommentList",
+			many:     true,
+		},
 	}
-	return c.commentList
 }
 
-func (c *MotionCommentSection) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionCommentSectionBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionCommentSection) ReadGroupList() *RelationList[Group, *Group] {
-	if c.readGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.ReadGroupIDs))
-		for i, id := range c.ReadGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.readGroupList = &RelationList[Group, *Group]{refs}
+func (b *motionCommentSectionBuilder) ReadGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "ReadGroupIDs",
+			relField: "ReadGroupList",
+			many:     true,
+		},
 	}
-	return c.readGroupList
 }
 
-func (c *MotionCommentSection) WriteGroupList() *RelationList[Group, *Group] {
-	if c.writeGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.WriteGroupIDs))
-		for i, id := range c.WriteGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.writeGroupList = &RelationList[Group, *Group]{refs}
+func (b *motionCommentSectionBuilder) WriteGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "WriteGroupIDs",
+			relField: "WriteGroupList",
+			many:     true,
+		},
 	}
-	return c.writeGroupList
 }
 
-func (r *Fetch) MotionCommentSection(id int) *ValueCollection[MotionCommentSection, *MotionCommentSection] {
-	return &ValueCollection[MotionCommentSection, *MotionCommentSection]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionCommentSection(id int) *motionCommentSectionBuilder {
+	return &motionCommentSectionBuilder{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4805,55 +4247,66 @@ type MotionEditor struct {
 	MeetingUserID int
 	MotionID      int
 	Weight        int
-	meeting       *ValueCollection[Meeting, *Meeting]
-	meetingUser   *ValueCollection[MeetingUser, *MeetingUser]
-	motion        *ValueCollection[Motion, *Motion]
-	fetch         *Fetch
+	Meeting       *Meeting
+	MeetingUser   *MeetingUser
+	Motion        *Motion
 }
 
-func (c *MotionEditor) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionEditorBuilder struct {
+	builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]
+}
+
+func (b *motionEditorBuilder) lazy(ds *Fetch, id int) *MotionEditor {
+	c := MotionEditor{}
 	ds.MotionEditor_ID(id).Lazy(&c.ID)
 	ds.MotionEditor_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MotionEditor_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.MotionEditor_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionEditor_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *MotionEditor) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionEditorBuilder) Preload(rel builderWrapperI) *motionEditorBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionEditorBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionEditor) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		c.meetingUser = &ValueCollection[MeetingUser, *MeetingUser]{
-			id:    c.MeetingUserID,
-			fetch: c.fetch,
-		}
+func (b *motionEditorBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (c *MotionEditor) Motion() *ValueCollection[Motion, *Motion] {
-	if c.motion == nil {
-		c.motion = &ValueCollection[Motion, *Motion]{
-			id:    c.MotionID,
-			fetch: c.fetch,
-		}
+func (b *motionEditorBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
 	}
-	return c.motion
 }
 
-func (r *Fetch) MotionEditor(id int) *ValueCollection[MotionEditor, *MotionEditor] {
-	return &ValueCollection[MotionEditor, *MotionEditor]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionEditor(id int) *motionEditorBuilder {
+	return &motionEditorBuilder{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -4884,20 +4337,23 @@ type MotionState struct {
 	SubmitterWithdrawStateID         dsfetch.Maybe[int]
 	Weight                           int
 	WorkflowID                       int
-	firstStateOfWorkflow             *MaybeRelation[MotionWorkflow, *MotionWorkflow]
-	meeting                          *ValueCollection[Meeting, *Meeting]
-	motionList                       *RelationList[Motion, *Motion]
-	motionRecommendationList         *RelationList[Motion, *Motion]
-	nextStateList                    *RelationList[MotionState, *MotionState]
-	previousStateList                *RelationList[MotionState, *MotionState]
-	submitterWithdrawBackList        *RelationList[MotionState, *MotionState]
-	submitterWithdrawState           *MaybeRelation[MotionState, *MotionState]
-	workflow                         *ValueCollection[MotionWorkflow, *MotionWorkflow]
-	fetch                            *Fetch
+	FirstStateOfWorkflow             *dsfetch.Maybe[MotionWorkflow]
+	Meeting                          *Meeting
+	MotionList                       []Motion
+	MotionRecommendationList         []Motion
+	NextStateList                    []MotionState
+	PreviousStateList                []MotionState
+	SubmitterWithdrawBackList        []MotionState
+	SubmitterWithdrawState           *dsfetch.Maybe[MotionState]
+	Workflow                         *MotionWorkflow
 }
 
-func (c *MotionState) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionStateBuilder struct {
+	builder[motionStateBuilder, *motionStateBuilder, MotionState]
+}
+
+func (b *motionStateBuilder) lazy(ds *Fetch, id int) *MotionState {
+	c := MotionState{}
 	ds.MotionState_AllowCreatePoll(id).Lazy(&c.AllowCreatePoll)
 	ds.MotionState_AllowMotionForwarding(id).Lazy(&c.AllowMotionForwarding)
 	ds.MotionState_AllowSubmitterEdit(id).Lazy(&c.AllowSubmitterEdit)
@@ -4923,134 +4379,115 @@ func (c *MotionState) lazy(ds *Fetch, id int) {
 	ds.MotionState_SubmitterWithdrawStateID(id).Lazy(&c.SubmitterWithdrawStateID)
 	ds.MotionState_Weight(id).Lazy(&c.Weight)
 	ds.MotionState_WorkflowID(id).Lazy(&c.WorkflowID)
+	return &c
 }
 
-func (c *MotionState) FirstStateOfWorkflow() *MaybeRelation[MotionWorkflow, *MotionWorkflow] {
-	if c.firstStateOfWorkflow == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MotionWorkflow, *MotionWorkflow]]
-		id, hasValue := c.FirstStateOfWorkflowID.Value()
-		if hasValue {
-			value := &ValueCollection[MotionWorkflow, *MotionWorkflow]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.firstStateOfWorkflow = &MaybeRelation[MotionWorkflow, *MotionWorkflow]{ref}
+func (b *motionStateBuilder) Preload(rel builderWrapperI) *motionStateBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionStateBuilder) FirstStateOfWorkflow() *motionWorkflowBuilder {
+	return &motionWorkflowBuilder{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+			fetch:    b.fetch,
+			idField:  "FirstStateOfWorkflowID",
+			relField: "FirstStateOfWorkflow",
+		},
 	}
-	return c.firstStateOfWorkflow
 }
 
-func (c *MotionState) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionStateBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionState) MotionList() *RelationList[Motion, *Motion] {
-	if c.motionList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
-		for i, id := range c.MotionIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionList = &RelationList[Motion, *Motion]{refs}
+func (b *motionStateBuilder) MotionList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionIDs",
+			relField: "MotionList",
+			many:     true,
+		},
 	}
-	return c.motionList
 }
 
-func (c *MotionState) MotionRecommendationList() *RelationList[Motion, *Motion] {
-	if c.motionRecommendationList == nil {
-		refs := make([]*ValueCollection[Motion, *Motion], len(c.MotionRecommendationIDs))
-		for i, id := range c.MotionRecommendationIDs {
-			refs[i] = &ValueCollection[Motion, *Motion]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.motionRecommendationList = &RelationList[Motion, *Motion]{refs}
+func (b *motionStateBuilder) MotionRecommendationList() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionRecommendationIDs",
+			relField: "MotionRecommendationList",
+			many:     true,
+		},
 	}
-	return c.motionRecommendationList
 }
 
-func (c *MotionState) NextStateList() *RelationList[MotionState, *MotionState] {
-	if c.nextStateList == nil {
-		refs := make([]*ValueCollection[MotionState, *MotionState], len(c.NextStateIDs))
-		for i, id := range c.NextStateIDs {
-			refs[i] = &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.nextStateList = &RelationList[MotionState, *MotionState]{refs}
+func (b *motionStateBuilder) NextStateList() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "NextStateIDs",
+			relField: "NextStateList",
+			many:     true,
+		},
 	}
-	return c.nextStateList
 }
 
-func (c *MotionState) PreviousStateList() *RelationList[MotionState, *MotionState] {
-	if c.previousStateList == nil {
-		refs := make([]*ValueCollection[MotionState, *MotionState], len(c.PreviousStateIDs))
-		for i, id := range c.PreviousStateIDs {
-			refs[i] = &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.previousStateList = &RelationList[MotionState, *MotionState]{refs}
+func (b *motionStateBuilder) PreviousStateList() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "PreviousStateIDs",
+			relField: "PreviousStateList",
+			many:     true,
+		},
 	}
-	return c.previousStateList
 }
 
-func (c *MotionState) SubmitterWithdrawBackList() *RelationList[MotionState, *MotionState] {
-	if c.submitterWithdrawBackList == nil {
-		refs := make([]*ValueCollection[MotionState, *MotionState], len(c.SubmitterWithdrawBackIDs))
-		for i, id := range c.SubmitterWithdrawBackIDs {
-			refs[i] = &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.submitterWithdrawBackList = &RelationList[MotionState, *MotionState]{refs}
+func (b *motionStateBuilder) SubmitterWithdrawBackList() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "SubmitterWithdrawBackIDs",
+			relField: "SubmitterWithdrawBackList",
+			many:     true,
+		},
 	}
-	return c.submitterWithdrawBackList
 }
 
-func (c *MotionState) SubmitterWithdrawState() *MaybeRelation[MotionState, *MotionState] {
-	if c.submitterWithdrawState == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MotionState, *MotionState]]
-		id, hasValue := c.SubmitterWithdrawStateID.Value()
-		if hasValue {
-			value := &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.submitterWithdrawState = &MaybeRelation[MotionState, *MotionState]{ref}
+func (b *motionStateBuilder) SubmitterWithdrawState() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "SubmitterWithdrawStateID",
+			relField: "SubmitterWithdrawState",
+		},
 	}
-	return c.submitterWithdrawState
 }
 
-func (c *MotionState) Workflow() *ValueCollection[MotionWorkflow, *MotionWorkflow] {
-	if c.workflow == nil {
-		c.workflow = &ValueCollection[MotionWorkflow, *MotionWorkflow]{
-			id:    c.WorkflowID,
-			fetch: c.fetch,
-		}
+func (b *motionStateBuilder) Workflow() *motionWorkflowBuilder {
+	return &motionWorkflowBuilder{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+			fetch:    b.fetch,
+			idField:  "WorkflowID",
+			relField: "Workflow",
+		},
 	}
-	return c.workflow
 }
 
-func (r *Fetch) MotionState(id int) *ValueCollection[MotionState, *MotionState] {
-	return &ValueCollection[MotionState, *MotionState]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionState(id int) *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5061,55 +4498,66 @@ type MotionSubmitter struct {
 	MeetingUserID int
 	MotionID      int
 	Weight        int
-	meeting       *ValueCollection[Meeting, *Meeting]
-	meetingUser   *ValueCollection[MeetingUser, *MeetingUser]
-	motion        *ValueCollection[Motion, *Motion]
-	fetch         *Fetch
+	Meeting       *Meeting
+	MeetingUser   *MeetingUser
+	Motion        *Motion
 }
 
-func (c *MotionSubmitter) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionSubmitterBuilder struct {
+	builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]
+}
+
+func (b *motionSubmitterBuilder) lazy(ds *Fetch, id int) *MotionSubmitter {
+	c := MotionSubmitter{}
 	ds.MotionSubmitter_ID(id).Lazy(&c.ID)
 	ds.MotionSubmitter_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MotionSubmitter_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.MotionSubmitter_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionSubmitter_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *MotionSubmitter) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionSubmitterBuilder) Preload(rel builderWrapperI) *motionSubmitterBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionSubmitterBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionSubmitter) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		c.meetingUser = &ValueCollection[MeetingUser, *MeetingUser]{
-			id:    c.MeetingUserID,
-			fetch: c.fetch,
-		}
+func (b *motionSubmitterBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (c *MotionSubmitter) Motion() *ValueCollection[Motion, *Motion] {
-	if c.motion == nil {
-		c.motion = &ValueCollection[Motion, *Motion]{
-			id:    c.MotionID,
-			fetch: c.fetch,
-		}
+func (b *motionSubmitterBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
 	}
-	return c.motion
 }
 
-func (r *Fetch) MotionSubmitter(id int) *ValueCollection[MotionSubmitter, *MotionSubmitter] {
-	return &ValueCollection[MotionSubmitter, *MotionSubmitter]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionSubmitter(id int) *motionSubmitterBuilder {
+	return &motionSubmitterBuilder{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5123,16 +4571,19 @@ type MotionWorkflow struct {
 	Name                              string
 	SequentialNumber                  int
 	StateIDs                          []int
-	defaultAmendmentWorkflowMeeting   *MaybeRelation[Meeting, *Meeting]
-	defaultWorkflowMeeting            *MaybeRelation[Meeting, *Meeting]
-	firstState                        *ValueCollection[MotionState, *MotionState]
-	meeting                           *ValueCollection[Meeting, *Meeting]
-	stateList                         *RelationList[MotionState, *MotionState]
-	fetch                             *Fetch
+	DefaultAmendmentWorkflowMeeting   *dsfetch.Maybe[Meeting]
+	DefaultWorkflowMeeting            *dsfetch.Maybe[Meeting]
+	FirstState                        *MotionState
+	Meeting                           *Meeting
+	StateList                         []MotionState
 }
 
-func (c *MotionWorkflow) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionWorkflowBuilder struct {
+	builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]
+}
+
+func (b *motionWorkflowBuilder) lazy(ds *Fetch, id int) *MotionWorkflow {
+	c := MotionWorkflow{}
 	ds.MotionWorkflow_DefaultAmendmentWorkflowMeetingID(id).Lazy(&c.DefaultAmendmentWorkflowMeetingID)
 	ds.MotionWorkflow_DefaultWorkflowMeetingID(id).Lazy(&c.DefaultWorkflowMeetingID)
 	ds.MotionWorkflow_FirstStateID(id).Lazy(&c.FirstStateID)
@@ -5141,78 +4592,71 @@ func (c *MotionWorkflow) lazy(ds *Fetch, id int) {
 	ds.MotionWorkflow_Name(id).Lazy(&c.Name)
 	ds.MotionWorkflow_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.MotionWorkflow_StateIDs(id).Lazy(&c.StateIDs)
+	return &c
 }
 
-func (c *MotionWorkflow) DefaultAmendmentWorkflowMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.defaultAmendmentWorkflowMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.DefaultAmendmentWorkflowMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.defaultAmendmentWorkflowMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *motionWorkflowBuilder) Preload(rel builderWrapperI) *motionWorkflowBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionWorkflowBuilder) DefaultAmendmentWorkflowMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "DefaultAmendmentWorkflowMeetingID",
+			relField: "DefaultAmendmentWorkflowMeeting",
+		},
 	}
-	return c.defaultAmendmentWorkflowMeeting
 }
 
-func (c *MotionWorkflow) DefaultWorkflowMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.defaultWorkflowMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.DefaultWorkflowMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.defaultWorkflowMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *motionWorkflowBuilder) DefaultWorkflowMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "DefaultWorkflowMeetingID",
+			relField: "DefaultWorkflowMeeting",
+		},
 	}
-	return c.defaultWorkflowMeeting
 }
 
-func (c *MotionWorkflow) FirstState() *ValueCollection[MotionState, *MotionState] {
-	if c.firstState == nil {
-		c.firstState = &ValueCollection[MotionState, *MotionState]{
-			id:    c.FirstStateID,
-			fetch: c.fetch,
-		}
+func (b *motionWorkflowBuilder) FirstState() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "FirstStateID",
+			relField: "FirstState",
+		},
 	}
-	return c.firstState
 }
 
-func (c *MotionWorkflow) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionWorkflowBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionWorkflow) StateList() *RelationList[MotionState, *MotionState] {
-	if c.stateList == nil {
-		refs := make([]*ValueCollection[MotionState, *MotionState], len(c.StateIDs))
-		for i, id := range c.StateIDs {
-			refs[i] = &ValueCollection[MotionState, *MotionState]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.stateList = &RelationList[MotionState, *MotionState]{refs}
+func (b *motionWorkflowBuilder) StateList() *motionStateBuilder {
+	return &motionStateBuilder{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+			fetch:    b.fetch,
+			idField:  "StateIDs",
+			relField: "StateList",
+			many:     true,
+		},
 	}
-	return c.stateList
 }
 
-func (r *Fetch) MotionWorkflow(id int) *ValueCollection[MotionWorkflow, *MotionWorkflow] {
-	return &ValueCollection[MotionWorkflow, *MotionWorkflow]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionWorkflow(id int) *motionWorkflowBuilder {
+	return &motionWorkflowBuilder{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5223,55 +4667,66 @@ type MotionWorkingGroupSpeaker struct {
 	MeetingUserID int
 	MotionID      int
 	Weight        int
-	meeting       *ValueCollection[Meeting, *Meeting]
-	meetingUser   *ValueCollection[MeetingUser, *MeetingUser]
-	motion        *ValueCollection[Motion, *Motion]
-	fetch         *Fetch
+	Meeting       *Meeting
+	MeetingUser   *MeetingUser
+	Motion        *Motion
 }
 
-func (c *MotionWorkingGroupSpeaker) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type motionWorkingGroupSpeakerBuilder struct {
+	builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]
+}
+
+func (b *motionWorkingGroupSpeakerBuilder) lazy(ds *Fetch, id int) *MotionWorkingGroupSpeaker {
+	c := MotionWorkingGroupSpeaker{}
 	ds.MotionWorkingGroupSpeaker_ID(id).Lazy(&c.ID)
 	ds.MotionWorkingGroupSpeaker_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MotionWorkingGroupSpeaker_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.MotionWorkingGroupSpeaker_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionWorkingGroupSpeaker_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *MotionWorkingGroupSpeaker) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *motionWorkingGroupSpeakerBuilder) Preload(rel builderWrapperI) *motionWorkingGroupSpeakerBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionWorkingGroupSpeakerBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *MotionWorkingGroupSpeaker) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		c.meetingUser = &ValueCollection[MeetingUser, *MeetingUser]{
-			id:    c.MeetingUserID,
-			fetch: c.fetch,
-		}
+func (b *motionWorkingGroupSpeakerBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (c *MotionWorkingGroupSpeaker) Motion() *ValueCollection[Motion, *Motion] {
-	if c.motion == nil {
-		c.motion = &ValueCollection[Motion, *Motion]{
-			id:    c.MotionID,
-			fetch: c.fetch,
-		}
+func (b *motionWorkingGroupSpeakerBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
 	}
-	return c.motion
 }
 
-func (r *Fetch) MotionWorkingGroupSpeaker(id int) *ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
-	return &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) MotionWorkingGroupSpeaker(id int) *motionWorkingGroupSpeakerBuilder {
+	return &motionWorkingGroupSpeakerBuilder{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5288,15 +4743,18 @@ type Option struct {
 	VoteIDs                    []int
 	Weight                     int
 	Yes                        string
-	meeting                    *ValueCollection[Meeting, *Meeting]
-	poll                       *MaybeRelation[Poll, *Poll]
-	usedAsGlobalOptionInPoll   *MaybeRelation[Poll, *Poll]
-	voteList                   *RelationList[Vote, *Vote]
-	fetch                      *Fetch
+	Meeting                    *Meeting
+	Poll                       *dsfetch.Maybe[Poll]
+	UsedAsGlobalOptionInPoll   *dsfetch.Maybe[Poll]
+	VoteList                   []Vote
 }
 
-func (c *Option) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type optionBuilder struct {
+	builder[optionBuilder, *optionBuilder, Option]
+}
+
+func (b *optionBuilder) lazy(ds *Fetch, id int) *Option {
+	c := Option{}
 	ds.Option_Abstain(id).Lazy(&c.Abstain)
 	ds.Option_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Option_ID(id).Lazy(&c.ID)
@@ -5308,68 +4766,61 @@ func (c *Option) lazy(ds *Fetch, id int) {
 	ds.Option_VoteIDs(id).Lazy(&c.VoteIDs)
 	ds.Option_Weight(id).Lazy(&c.Weight)
 	ds.Option_Yes(id).Lazy(&c.Yes)
+	return &c
 }
 
-func (c *Option) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *optionBuilder) Preload(rel builderWrapperI) *optionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *optionBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Option) Poll() *MaybeRelation[Poll, *Poll] {
-	if c.poll == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Poll, *Poll]]
-		id, hasValue := c.PollID.Value()
-		if hasValue {
-			value := &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.poll = &MaybeRelation[Poll, *Poll]{ref}
+func (b *optionBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollID",
+			relField: "Poll",
+		},
 	}
-	return c.poll
 }
 
-func (c *Option) UsedAsGlobalOptionInPoll() *MaybeRelation[Poll, *Poll] {
-	if c.usedAsGlobalOptionInPoll == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Poll, *Poll]]
-		id, hasValue := c.UsedAsGlobalOptionInPollID.Value()
-		if hasValue {
-			value := &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsGlobalOptionInPoll = &MaybeRelation[Poll, *Poll]{ref}
+func (b *optionBuilder) UsedAsGlobalOptionInPoll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "UsedAsGlobalOptionInPollID",
+			relField: "UsedAsGlobalOptionInPoll",
+		},
 	}
-	return c.usedAsGlobalOptionInPoll
 }
 
-func (c *Option) VoteList() *RelationList[Vote, *Vote] {
-	if c.voteList == nil {
-		refs := make([]*ValueCollection[Vote, *Vote], len(c.VoteIDs))
-		for i, id := range c.VoteIDs {
-			refs[i] = &ValueCollection[Vote, *Vote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.voteList = &RelationList[Vote, *Vote]{refs}
+func (b *optionBuilder) VoteList() *voteBuilder {
+	return &voteBuilder{
+		builder: builder[voteBuilder, *voteBuilder, Vote]{
+			fetch:    b.fetch,
+			idField:  "VoteIDs",
+			relField: "VoteList",
+			many:     true,
+		},
 	}
-	return c.voteList
 }
 
-func (r *Fetch) Option(id int) *ValueCollection[Option, *Option] {
-	return &ValueCollection[Option, *Option]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Option(id int) *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5412,22 +4863,25 @@ type Organization struct {
 	UsersEmailSender           string
 	UsersEmailSubject          string
 	VoteDecryptPublicMainKey   string
-	activeMeetingList          *RelationList[Meeting, *Meeting]
-	archivedMeetingList        *RelationList[Meeting, *Meeting]
-	committeeList              *RelationList[Committee, *Committee]
-	genderList                 *RelationList[Gender, *Gender]
-	mediafileList              *RelationList[Mediafile, *Mediafile]
-	organizationTagList        *RelationList[OrganizationTag, *OrganizationTag]
-	publishedMediafileList     *RelationList[Mediafile, *Mediafile]
-	templateMeetingList        *RelationList[Meeting, *Meeting]
-	theme                      *ValueCollection[Theme, *Theme]
-	themeList                  *RelationList[Theme, *Theme]
-	userList                   *RelationList[User, *User]
-	fetch                      *Fetch
+	ActiveMeetingList          []Meeting
+	ArchivedMeetingList        []Meeting
+	CommitteeList              []Committee
+	GenderList                 []Gender
+	MediafileList              []Mediafile
+	OrganizationTagList        []OrganizationTag
+	PublishedMediafileList     []Mediafile
+	TemplateMeetingList        []Meeting
+	Theme                      *Theme
+	ThemeList                  []Theme
+	UserList                   []User
 }
 
-func (c *Organization) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type organizationBuilder struct {
+	builder[organizationBuilder, *organizationBuilder, Organization]
+}
+
+func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
+	c := Organization{}
 	ds.Organization_ActiveMeetingIDs(id).Lazy(&c.ActiveMeetingIDs)
 	ds.Organization_ArchivedMeetingIDs(id).Lazy(&c.ArchivedMeetingIDs)
 	ds.Organization_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
@@ -5465,162 +4919,140 @@ func (c *Organization) lazy(ds *Fetch, id int) {
 	ds.Organization_UsersEmailSender(id).Lazy(&c.UsersEmailSender)
 	ds.Organization_UsersEmailSubject(id).Lazy(&c.UsersEmailSubject)
 	ds.Organization_VoteDecryptPublicMainKey(id).Lazy(&c.VoteDecryptPublicMainKey)
+	return &c
 }
 
-func (c *Organization) ActiveMeetingList() *RelationList[Meeting, *Meeting] {
-	if c.activeMeetingList == nil {
-		refs := make([]*ValueCollection[Meeting, *Meeting], len(c.ActiveMeetingIDs))
-		for i, id := range c.ActiveMeetingIDs {
-			refs[i] = &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.activeMeetingList = &RelationList[Meeting, *Meeting]{refs}
+func (b *organizationBuilder) Preload(rel builderWrapperI) *organizationBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *organizationBuilder) ActiveMeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "ActiveMeetingIDs",
+			relField: "ActiveMeetingList",
+			many:     true,
+		},
 	}
-	return c.activeMeetingList
 }
 
-func (c *Organization) ArchivedMeetingList() *RelationList[Meeting, *Meeting] {
-	if c.archivedMeetingList == nil {
-		refs := make([]*ValueCollection[Meeting, *Meeting], len(c.ArchivedMeetingIDs))
-		for i, id := range c.ArchivedMeetingIDs {
-			refs[i] = &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.archivedMeetingList = &RelationList[Meeting, *Meeting]{refs}
+func (b *organizationBuilder) ArchivedMeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "ArchivedMeetingIDs",
+			relField: "ArchivedMeetingList",
+			many:     true,
+		},
 	}
-	return c.archivedMeetingList
 }
 
-func (c *Organization) CommitteeList() *RelationList[Committee, *Committee] {
-	if c.committeeList == nil {
-		refs := make([]*ValueCollection[Committee, *Committee], len(c.CommitteeIDs))
-		for i, id := range c.CommitteeIDs {
-			refs[i] = &ValueCollection[Committee, *Committee]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.committeeList = &RelationList[Committee, *Committee]{refs}
+func (b *organizationBuilder) CommitteeList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "CommitteeIDs",
+			relField: "CommitteeList",
+			many:     true,
+		},
 	}
-	return c.committeeList
 }
 
-func (c *Organization) GenderList() *RelationList[Gender, *Gender] {
-	if c.genderList == nil {
-		refs := make([]*ValueCollection[Gender, *Gender], len(c.GenderIDs))
-		for i, id := range c.GenderIDs {
-			refs[i] = &ValueCollection[Gender, *Gender]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.genderList = &RelationList[Gender, *Gender]{refs}
+func (b *organizationBuilder) GenderList() *genderBuilder {
+	return &genderBuilder{
+		builder: builder[genderBuilder, *genderBuilder, Gender]{
+			fetch:    b.fetch,
+			idField:  "GenderIDs",
+			relField: "GenderList",
+			many:     true,
+		},
 	}
-	return c.genderList
 }
 
-func (c *Organization) MediafileList() *RelationList[Mediafile, *Mediafile] {
-	if c.mediafileList == nil {
-		refs := make([]*ValueCollection[Mediafile, *Mediafile], len(c.MediafileIDs))
-		for i, id := range c.MediafileIDs {
-			refs[i] = &ValueCollection[Mediafile, *Mediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.mediafileList = &RelationList[Mediafile, *Mediafile]{refs}
+func (b *organizationBuilder) MediafileList() *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			fetch:    b.fetch,
+			idField:  "MediafileIDs",
+			relField: "MediafileList",
+			many:     true,
+		},
 	}
-	return c.mediafileList
 }
 
-func (c *Organization) OrganizationTagList() *RelationList[OrganizationTag, *OrganizationTag] {
-	if c.organizationTagList == nil {
-		refs := make([]*ValueCollection[OrganizationTag, *OrganizationTag], len(c.OrganizationTagIDs))
-		for i, id := range c.OrganizationTagIDs {
-			refs[i] = &ValueCollection[OrganizationTag, *OrganizationTag]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.organizationTagList = &RelationList[OrganizationTag, *OrganizationTag]{refs}
+func (b *organizationBuilder) OrganizationTagList() *organizationTagBuilder {
+	return &organizationTagBuilder{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+			fetch:    b.fetch,
+			idField:  "OrganizationTagIDs",
+			relField: "OrganizationTagList",
+			many:     true,
+		},
 	}
-	return c.organizationTagList
 }
 
-func (c *Organization) PublishedMediafileList() *RelationList[Mediafile, *Mediafile] {
-	if c.publishedMediafileList == nil {
-		refs := make([]*ValueCollection[Mediafile, *Mediafile], len(c.PublishedMediafileIDs))
-		for i, id := range c.PublishedMediafileIDs {
-			refs[i] = &ValueCollection[Mediafile, *Mediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.publishedMediafileList = &RelationList[Mediafile, *Mediafile]{refs}
+func (b *organizationBuilder) PublishedMediafileList() *mediafileBuilder {
+	return &mediafileBuilder{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+			fetch:    b.fetch,
+			idField:  "PublishedMediafileIDs",
+			relField: "PublishedMediafileList",
+			many:     true,
+		},
 	}
-	return c.publishedMediafileList
 }
 
-func (c *Organization) TemplateMeetingList() *RelationList[Meeting, *Meeting] {
-	if c.templateMeetingList == nil {
-		refs := make([]*ValueCollection[Meeting, *Meeting], len(c.TemplateMeetingIDs))
-		for i, id := range c.TemplateMeetingIDs {
-			refs[i] = &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.templateMeetingList = &RelationList[Meeting, *Meeting]{refs}
+func (b *organizationBuilder) TemplateMeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "TemplateMeetingIDs",
+			relField: "TemplateMeetingList",
+			many:     true,
+		},
 	}
-	return c.templateMeetingList
 }
 
-func (c *Organization) Theme() *ValueCollection[Theme, *Theme] {
-	if c.theme == nil {
-		c.theme = &ValueCollection[Theme, *Theme]{
-			id:    c.ThemeID,
-			fetch: c.fetch,
-		}
+func (b *organizationBuilder) Theme() *themeBuilder {
+	return &themeBuilder{
+		builder: builder[themeBuilder, *themeBuilder, Theme]{
+			fetch:    b.fetch,
+			idField:  "ThemeID",
+			relField: "Theme",
+		},
 	}
-	return c.theme
 }
 
-func (c *Organization) ThemeList() *RelationList[Theme, *Theme] {
-	if c.themeList == nil {
-		refs := make([]*ValueCollection[Theme, *Theme], len(c.ThemeIDs))
-		for i, id := range c.ThemeIDs {
-			refs[i] = &ValueCollection[Theme, *Theme]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.themeList = &RelationList[Theme, *Theme]{refs}
+func (b *organizationBuilder) ThemeList() *themeBuilder {
+	return &themeBuilder{
+		builder: builder[themeBuilder, *themeBuilder, Theme]{
+			fetch:    b.fetch,
+			idField:  "ThemeIDs",
+			relField: "ThemeList",
+			many:     true,
+		},
 	}
-	return c.themeList
 }
 
-func (c *Organization) UserList() *RelationList[User, *User] {
-	if c.userList == nil {
-		refs := make([]*ValueCollection[User, *User], len(c.UserIDs))
-		for i, id := range c.UserIDs {
-			refs[i] = &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.userList = &RelationList[User, *User]{refs}
+func (b *organizationBuilder) UserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "UserIDs",
+			relField: "UserList",
+			many:     true,
+		},
 	}
-	return c.userList
 }
 
-func (r *Fetch) Organization(id int) *ValueCollection[Organization, *Organization] {
-	return &ValueCollection[Organization, *Organization]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Organization(id int) *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5631,33 +5063,44 @@ type OrganizationTag struct {
 	Name           string
 	OrganizationID int
 	TaggedIDs      []string
-	organization   *ValueCollection[Organization, *Organization]
-	fetch          *Fetch
+	Organization   *Organization
 }
 
-func (c *OrganizationTag) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type organizationTagBuilder struct {
+	builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]
+}
+
+func (b *organizationTagBuilder) lazy(ds *Fetch, id int) *OrganizationTag {
+	c := OrganizationTag{}
 	ds.OrganizationTag_Color(id).Lazy(&c.Color)
 	ds.OrganizationTag_ID(id).Lazy(&c.ID)
 	ds.OrganizationTag_Name(id).Lazy(&c.Name)
 	ds.OrganizationTag_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.OrganizationTag_TaggedIDs(id).Lazy(&c.TaggedIDs)
+	return &c
 }
 
-func (c *OrganizationTag) Organization() *ValueCollection[Organization, *Organization] {
-	if c.organization == nil {
-		c.organization = &ValueCollection[Organization, *Organization]{
-			id:    c.OrganizationID,
-			fetch: c.fetch,
-		}
+func (b *organizationTagBuilder) Preload(rel builderWrapperI) *organizationTagBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *organizationTagBuilder) Organization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "OrganizationID",
+			relField: "Organization",
+		},
 	}
-	return c.organization
 }
 
-func (r *Fetch) OrganizationTag(id int) *ValueCollection[OrganizationTag, *OrganizationTag] {
-	return &ValueCollection[OrganizationTag, *OrganizationTag]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) OrganizationTag(id int) *organizationTagBuilder {
+	return &organizationTagBuilder{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5669,45 +5112,56 @@ type PersonalNote struct {
 	MeetingUserID   int
 	Note            string
 	Star            bool
-	meeting         *ValueCollection[Meeting, *Meeting]
-	meetingUser     *ValueCollection[MeetingUser, *MeetingUser]
-	fetch           *Fetch
+	Meeting         *Meeting
+	MeetingUser     *MeetingUser
 }
 
-func (c *PersonalNote) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type personalNoteBuilder struct {
+	builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]
+}
+
+func (b *personalNoteBuilder) lazy(ds *Fetch, id int) *PersonalNote {
+	c := PersonalNote{}
 	ds.PersonalNote_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.PersonalNote_ID(id).Lazy(&c.ID)
 	ds.PersonalNote_MeetingID(id).Lazy(&c.MeetingID)
 	ds.PersonalNote_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.PersonalNote_Note(id).Lazy(&c.Note)
 	ds.PersonalNote_Star(id).Lazy(&c.Star)
+	return &c
 }
 
-func (c *PersonalNote) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *personalNoteBuilder) Preload(rel builderWrapperI) *personalNoteBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *personalNoteBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *PersonalNote) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		c.meetingUser = &ValueCollection[MeetingUser, *MeetingUser]{
-			id:    c.MeetingUserID,
-			fetch: c.fetch,
-		}
+func (b *personalNoteBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (r *Fetch) PersonalNote(id int) *ValueCollection[PersonalNote, *PersonalNote] {
-	return &ValueCollection[PersonalNote, *PersonalNote]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) PersonalNote(id int) *personalNoteBuilder {
+	return &personalNoteBuilder{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5718,48 +5172,56 @@ type PointOfOrderCategory struct {
 	Rank        int
 	SpeakerIDs  []int
 	Text        string
-	meeting     *ValueCollection[Meeting, *Meeting]
-	speakerList *RelationList[Speaker, *Speaker]
-	fetch       *Fetch
+	Meeting     *Meeting
+	SpeakerList []Speaker
 }
 
-func (c *PointOfOrderCategory) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type pointOfOrderCategoryBuilder struct {
+	builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]
+}
+
+func (b *pointOfOrderCategoryBuilder) lazy(ds *Fetch, id int) *PointOfOrderCategory {
+	c := PointOfOrderCategory{}
 	ds.PointOfOrderCategory_ID(id).Lazy(&c.ID)
 	ds.PointOfOrderCategory_MeetingID(id).Lazy(&c.MeetingID)
 	ds.PointOfOrderCategory_Rank(id).Lazy(&c.Rank)
 	ds.PointOfOrderCategory_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.PointOfOrderCategory_Text(id).Lazy(&c.Text)
+	return &c
 }
 
-func (c *PointOfOrderCategory) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *pointOfOrderCategoryBuilder) Preload(rel builderWrapperI) *pointOfOrderCategoryBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pointOfOrderCategoryBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *PointOfOrderCategory) SpeakerList() *RelationList[Speaker, *Speaker] {
-	if c.speakerList == nil {
-		refs := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
-		for i, id := range c.SpeakerIDs {
-			refs[i] = &ValueCollection[Speaker, *Speaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.speakerList = &RelationList[Speaker, *Speaker]{refs}
+func (b *pointOfOrderCategoryBuilder) SpeakerList() *speakerBuilder {
+	return &speakerBuilder{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+			fetch:    b.fetch,
+			idField:  "SpeakerIDs",
+			relField: "SpeakerList",
+			many:     true,
+		},
 	}
-	return c.speakerList
 }
 
-func (r *Fetch) PointOfOrderCategory(id int) *ValueCollection[PointOfOrderCategory, *PointOfOrderCategory] {
-	return &ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) PointOfOrderCategory(id int) *pointOfOrderCategoryBuilder {
+	return &pointOfOrderCategoryBuilder{
+		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5797,17 +5259,20 @@ type Poll struct {
 	Votescast             string
 	Votesinvalid          string
 	Votesvalid            string
-	entitledGroupList     *RelationList[Group, *Group]
-	globalOption          *MaybeRelation[Option, *Option]
-	meeting               *ValueCollection[Meeting, *Meeting]
-	optionList            *RelationList[Option, *Option]
-	projectionList        *RelationList[Projection, *Projection]
-	votedList             *RelationList[User, *User]
-	fetch                 *Fetch
+	EntitledGroupList     []Group
+	GlobalOption          *dsfetch.Maybe[Option]
+	Meeting               *Meeting
+	OptionList            []Option
+	ProjectionList        []Projection
+	VotedList             []User
 }
 
-func (c *Poll) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type pollBuilder struct {
+	builder[pollBuilder, *pollBuilder, Poll]
+}
+
+func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
+	c := Poll{}
 	ds.Poll_Backend(id).Lazy(&c.Backend)
 	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Poll_CryptKey(id).Lazy(&c.CryptKey)
@@ -5840,94 +5305,84 @@ func (c *Poll) lazy(ds *Fetch, id int) {
 	ds.Poll_Votescast(id).Lazy(&c.Votescast)
 	ds.Poll_Votesinvalid(id).Lazy(&c.Votesinvalid)
 	ds.Poll_Votesvalid(id).Lazy(&c.Votesvalid)
+	return &c
 }
 
-func (c *Poll) EntitledGroupList() *RelationList[Group, *Group] {
-	if c.entitledGroupList == nil {
-		refs := make([]*ValueCollection[Group, *Group], len(c.EntitledGroupIDs))
-		for i, id := range c.EntitledGroupIDs {
-			refs[i] = &ValueCollection[Group, *Group]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.entitledGroupList = &RelationList[Group, *Group]{refs}
+func (b *pollBuilder) Preload(rel builderWrapperI) *pollBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollBuilder) EntitledGroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			idField:  "EntitledGroupIDs",
+			relField: "EntitledGroupList",
+			many:     true,
+		},
 	}
-	return c.entitledGroupList
 }
 
-func (c *Poll) GlobalOption() *MaybeRelation[Option, *Option] {
-	if c.globalOption == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Option, *Option]]
-		id, hasValue := c.GlobalOptionID.Value()
-		if hasValue {
-			value := &ValueCollection[Option, *Option]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.globalOption = &MaybeRelation[Option, *Option]{ref}
+func (b *pollBuilder) GlobalOption() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "GlobalOptionID",
+			relField: "GlobalOption",
+		},
 	}
-	return c.globalOption
 }
 
-func (c *Poll) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *pollBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Poll) OptionList() *RelationList[Option, *Option] {
-	if c.optionList == nil {
-		refs := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
-		for i, id := range c.OptionIDs {
-			refs[i] = &ValueCollection[Option, *Option]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.optionList = &RelationList[Option, *Option]{refs}
+func (b *pollBuilder) OptionList() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "OptionIDs",
+			relField: "OptionList",
+			many:     true,
+		},
 	}
-	return c.optionList
 }
 
-func (c *Poll) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *pollBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *Poll) VotedList() *RelationList[User, *User] {
-	if c.votedList == nil {
-		refs := make([]*ValueCollection[User, *User], len(c.VotedIDs))
-		for i, id := range c.VotedIDs {
-			refs[i] = &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.votedList = &RelationList[User, *User]{refs}
+func (b *pollBuilder) VotedList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "VotedIDs",
+			relField: "VotedList",
+			many:     true,
+		},
 	}
-	return c.votedList
 }
 
-func (r *Fetch) Poll(id int) *ValueCollection[Poll, *Poll] {
-	return &ValueCollection[Poll, *Poll]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Poll(id int) *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -5938,61 +5393,66 @@ type PollCandidate struct {
 	PollCandidateListID int
 	UserID              dsfetch.Maybe[int]
 	Weight              int
-	meeting             *ValueCollection[Meeting, *Meeting]
-	pollCandidateList   *ValueCollection[PollCandidateList, *PollCandidateList]
-	user                *MaybeRelation[User, *User]
-	fetch               *Fetch
+	Meeting             *Meeting
+	PollCandidateList   *PollCandidateList
+	User                *dsfetch.Maybe[User]
 }
 
-func (c *PollCandidate) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type pollCandidateBuilder struct {
+	builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]
+}
+
+func (b *pollCandidateBuilder) lazy(ds *Fetch, id int) *PollCandidate {
+	c := PollCandidate{}
 	ds.PollCandidate_ID(id).Lazy(&c.ID)
 	ds.PollCandidate_MeetingID(id).Lazy(&c.MeetingID)
 	ds.PollCandidate_PollCandidateListID(id).Lazy(&c.PollCandidateListID)
 	ds.PollCandidate_UserID(id).Lazy(&c.UserID)
 	ds.PollCandidate_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *PollCandidate) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *pollCandidateBuilder) Preload(rel builderWrapperI) *pollCandidateBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollCandidateBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *PollCandidate) PollCandidateList() *ValueCollection[PollCandidateList, *PollCandidateList] {
-	if c.pollCandidateList == nil {
-		c.pollCandidateList = &ValueCollection[PollCandidateList, *PollCandidateList]{
-			id:    c.PollCandidateListID,
-			fetch: c.fetch,
-		}
+func (b *pollCandidateBuilder) PollCandidateList() *pollCandidateListBuilder {
+	return &pollCandidateListBuilder{
+		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
+			fetch:    b.fetch,
+			idField:  "PollCandidateListID",
+			relField: "PollCandidateList",
+		},
 	}
-	return c.pollCandidateList
 }
 
-func (c *PollCandidate) User() *MaybeRelation[User, *User] {
-	if c.user == nil {
-		var ref dsfetch.Maybe[*ValueCollection[User, *User]]
-		id, hasValue := c.UserID.Value()
-		if hasValue {
-			value := &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.user = &MaybeRelation[User, *User]{ref}
+func (b *pollCandidateBuilder) User() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "UserID",
+			relField: "User",
+		},
 	}
-	return c.user
 }
 
-func (r *Fetch) PollCandidate(id int) *ValueCollection[PollCandidate, *PollCandidate] {
-	return &ValueCollection[PollCandidate, *PollCandidate]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) PollCandidate(id int) *pollCandidateBuilder {
+	return &pollCandidateBuilder{
+		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6002,58 +5462,66 @@ type PollCandidateList struct {
 	MeetingID         int
 	OptionID          int
 	PollCandidateIDs  []int
-	meeting           *ValueCollection[Meeting, *Meeting]
-	option            *ValueCollection[Option, *Option]
-	pollCandidateList *RelationList[PollCandidate, *PollCandidate]
-	fetch             *Fetch
+	Meeting           *Meeting
+	Option            *Option
+	PollCandidateList []PollCandidate
 }
 
-func (c *PollCandidateList) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type pollCandidateListBuilder struct {
+	builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]
+}
+
+func (b *pollCandidateListBuilder) lazy(ds *Fetch, id int) *PollCandidateList {
+	c := PollCandidateList{}
 	ds.PollCandidateList_ID(id).Lazy(&c.ID)
 	ds.PollCandidateList_MeetingID(id).Lazy(&c.MeetingID)
 	ds.PollCandidateList_OptionID(id).Lazy(&c.OptionID)
 	ds.PollCandidateList_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
+	return &c
 }
 
-func (c *PollCandidateList) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *pollCandidateListBuilder) Preload(rel builderWrapperI) *pollCandidateListBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollCandidateListBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *PollCandidateList) Option() *ValueCollection[Option, *Option] {
-	if c.option == nil {
-		c.option = &ValueCollection[Option, *Option]{
-			id:    c.OptionID,
-			fetch: c.fetch,
-		}
+func (b *pollCandidateListBuilder) Option() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "OptionID",
+			relField: "Option",
+		},
 	}
-	return c.option
 }
 
-func (c *PollCandidateList) PollCandidateList() *RelationList[PollCandidate, *PollCandidate] {
-	if c.pollCandidateList == nil {
-		refs := make([]*ValueCollection[PollCandidate, *PollCandidate], len(c.PollCandidateIDs))
-		for i, id := range c.PollCandidateIDs {
-			refs[i] = &ValueCollection[PollCandidate, *PollCandidate]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollCandidateList = &RelationList[PollCandidate, *PollCandidate]{refs}
+func (b *pollCandidateListBuilder) PollCandidateList() *pollCandidateBuilder {
+	return &pollCandidateBuilder{
+		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
+			fetch:    b.fetch,
+			idField:  "PollCandidateIDs",
+			relField: "PollCandidateList",
+			many:     true,
+		},
 	}
-	return c.pollCandidateList
 }
 
-func (r *Fetch) PollCandidateList(id int) *ValueCollection[PollCandidateList, *PollCandidateList] {
-	return &ValueCollection[PollCandidateList, *PollCandidateList]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) PollCandidateList(id int) *pollCandidateListBuilder {
+	return &pollCandidateListBuilder{
+		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6070,15 +5538,18 @@ type Projection struct {
 	Stable             bool
 	Type               string
 	Weight             int
-	currentProjector   *MaybeRelation[Projector, *Projector]
-	historyProjector   *MaybeRelation[Projector, *Projector]
-	meeting            *ValueCollection[Meeting, *Meeting]
-	previewProjector   *MaybeRelation[Projector, *Projector]
-	fetch              *Fetch
+	CurrentProjector   *dsfetch.Maybe[Projector]
+	HistoryProjector   *dsfetch.Maybe[Projector]
+	Meeting            *Meeting
+	PreviewProjector   *dsfetch.Maybe[Projector]
 }
 
-func (c *Projection) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type projectionBuilder struct {
+	builder[projectionBuilder, *projectionBuilder, Projection]
+}
+
+func (b *projectionBuilder) lazy(ds *Fetch, id int) *Projection {
+	c := Projection{}
 	ds.Projection_Content(id).Lazy(&c.Content)
 	ds.Projection_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Projection_CurrentProjectorID(id).Lazy(&c.CurrentProjectorID)
@@ -6090,70 +5561,60 @@ func (c *Projection) lazy(ds *Fetch, id int) {
 	ds.Projection_Stable(id).Lazy(&c.Stable)
 	ds.Projection_Type(id).Lazy(&c.Type)
 	ds.Projection_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *Projection) CurrentProjector() *MaybeRelation[Projector, *Projector] {
-	if c.currentProjector == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Projector, *Projector]]
-		id, hasValue := c.CurrentProjectorID.Value()
-		if hasValue {
-			value := &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.currentProjector = &MaybeRelation[Projector, *Projector]{ref}
+func (b *projectionBuilder) Preload(rel builderWrapperI) *projectionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *projectionBuilder) CurrentProjector() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "CurrentProjectorID",
+			relField: "CurrentProjector",
+		},
 	}
-	return c.currentProjector
 }
 
-func (c *Projection) HistoryProjector() *MaybeRelation[Projector, *Projector] {
-	if c.historyProjector == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Projector, *Projector]]
-		id, hasValue := c.HistoryProjectorID.Value()
-		if hasValue {
-			value := &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.historyProjector = &MaybeRelation[Projector, *Projector]{ref}
+func (b *projectionBuilder) HistoryProjector() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "HistoryProjectorID",
+			relField: "HistoryProjector",
+		},
 	}
-	return c.historyProjector
 }
 
-func (c *Projection) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *projectionBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Projection) PreviewProjector() *MaybeRelation[Projector, *Projector] {
-	if c.previewProjector == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Projector, *Projector]]
-		id, hasValue := c.PreviewProjectorID.Value()
-		if hasValue {
-			value := &ValueCollection[Projector, *Projector]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.previewProjector = &MaybeRelation[Projector, *Projector]{ref}
+func (b *projectionBuilder) PreviewProjector() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			idField:  "PreviewProjectorID",
+			relField: "PreviewProjector",
+		},
 	}
-	return c.previewProjector
 }
 
-func (r *Fetch) Projection(id int) *ValueCollection[Projection, *Projection] {
-	return &ValueCollection[Projection, *Projection]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Projection(id int) *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6200,30 +5661,33 @@ type Projector struct {
 	UsedAsDefaultProjectorForTopicInMeetingID          dsfetch.Maybe[int]
 	UsedAsReferenceProjectorMeetingID                  dsfetch.Maybe[int]
 	Width                                              int
-	currentProjectionList                              *RelationList[Projection, *Projection]
-	historyProjectionList                              *RelationList[Projection, *Projection]
-	meeting                                            *ValueCollection[Meeting, *Meeting]
-	previewProjectionList                              *RelationList[Projection, *Projection]
-	usedAsDefaultProjectorForAgendaItemListInMeeting   *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForAmendmentInMeeting        *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForAssignmentInMeeting       *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForAssignmentPollInMeeting   *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForCountdownInMeeting        *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForCurrentLosInMeeting       *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForListOfSpeakersInMeeting   *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForMediafileInMeeting        *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForMessageInMeeting          *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForMotionBlockInMeeting      *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForMotionInMeeting           *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForMotionPollInMeeting       *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForPollInMeeting             *MaybeRelation[Meeting, *Meeting]
-	usedAsDefaultProjectorForTopicInMeeting            *MaybeRelation[Meeting, *Meeting]
-	usedAsReferenceProjectorMeeting                    *MaybeRelation[Meeting, *Meeting]
-	fetch                                              *Fetch
+	CurrentProjectionList                              []Projection
+	HistoryProjectionList                              []Projection
+	Meeting                                            *Meeting
+	PreviewProjectionList                              []Projection
+	UsedAsDefaultProjectorForAgendaItemListInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAmendmentInMeeting        *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAssignmentInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAssignmentPollInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForCountdownInMeeting        *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForCurrentLosInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForListOfSpeakersInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMediafileInMeeting        *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMessageInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMotionBlockInMeeting      *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMotionInMeeting           *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMotionPollInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForPollInMeeting             *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForTopicInMeeting            *dsfetch.Maybe[Meeting]
+	UsedAsReferenceProjectorMeeting                    *dsfetch.Maybe[Meeting]
 }
 
-func (c *Projector) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type projectorBuilder struct {
+	builder[projectorBuilder, *projectorBuilder, Projector]
+}
+
+func (b *projectorBuilder) lazy(ds *Fetch, id int) *Projector {
+	c := Projector{}
 	ds.Projector_AspectRatioDenominator(id).Lazy(&c.AspectRatioDenominator)
 	ds.Projector_AspectRatioNumerator(id).Lazy(&c.AspectRatioNumerator)
 	ds.Projector_BackgroundColor(id).Lazy(&c.BackgroundColor)
@@ -6265,304 +5729,213 @@ func (c *Projector) lazy(ds *Fetch, id int) {
 	ds.Projector_UsedAsDefaultProjectorForTopicInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForTopicInMeetingID)
 	ds.Projector_UsedAsReferenceProjectorMeetingID(id).Lazy(&c.UsedAsReferenceProjectorMeetingID)
 	ds.Projector_Width(id).Lazy(&c.Width)
+	return &c
 }
 
-func (c *Projector) CurrentProjectionList() *RelationList[Projection, *Projection] {
-	if c.currentProjectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.CurrentProjectionIDs))
-		for i, id := range c.CurrentProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.currentProjectionList = &RelationList[Projection, *Projection]{refs}
+func (b *projectorBuilder) Preload(rel builderWrapperI) *projectorBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *projectorBuilder) CurrentProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "CurrentProjectionIDs",
+			relField: "CurrentProjectionList",
+			many:     true,
+		},
 	}
-	return c.currentProjectionList
 }
 
-func (c *Projector) HistoryProjectionList() *RelationList[Projection, *Projection] {
-	if c.historyProjectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.HistoryProjectionIDs))
-		for i, id := range c.HistoryProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.historyProjectionList = &RelationList[Projection, *Projection]{refs}
+func (b *projectorBuilder) HistoryProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "HistoryProjectionIDs",
+			relField: "HistoryProjectionList",
+			many:     true,
+		},
 	}
-	return c.historyProjectionList
 }
 
-func (c *Projector) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *projectorBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Projector) PreviewProjectionList() *RelationList[Projection, *Projection] {
-	if c.previewProjectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.PreviewProjectionIDs))
-		for i, id := range c.PreviewProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.previewProjectionList = &RelationList[Projection, *Projection]{refs}
+func (b *projectorBuilder) PreviewProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "PreviewProjectionIDs",
+			relField: "PreviewProjectionList",
+			many:     true,
+		},
 	}
-	return c.previewProjectionList
 }
 
-func (c *Projector) UsedAsDefaultProjectorForAgendaItemListInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForAgendaItemListInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForAgendaItemListInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForAgendaItemListInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForAgendaItemListInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForAgendaItemListInMeetingID",
+			relField: "UsedAsDefaultProjectorForAgendaItemListInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForAgendaItemListInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForAmendmentInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForAmendmentInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForAmendmentInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForAmendmentInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForAmendmentInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForAmendmentInMeetingID",
+			relField: "UsedAsDefaultProjectorForAmendmentInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForAmendmentInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForAssignmentInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForAssignmentInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForAssignmentInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForAssignmentInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForAssignmentInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForAssignmentInMeetingID",
+			relField: "UsedAsDefaultProjectorForAssignmentInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForAssignmentInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForAssignmentPollInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForAssignmentPollInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForAssignmentPollInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForAssignmentPollInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForAssignmentPollInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForAssignmentPollInMeetingID",
+			relField: "UsedAsDefaultProjectorForAssignmentPollInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForAssignmentPollInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForCountdownInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForCountdownInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForCountdownInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForCountdownInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForCountdownInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForCountdownInMeetingID",
+			relField: "UsedAsDefaultProjectorForCountdownInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForCountdownInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForCurrentLosInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForCurrentLosInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForCurrentLosInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForCurrentLosInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForCurrentLosInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForCurrentLosInMeetingID",
+			relField: "UsedAsDefaultProjectorForCurrentLosInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForCurrentLosInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForListOfSpeakersInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForListOfSpeakersInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForListOfSpeakersInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForListOfSpeakersInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForListOfSpeakersInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForListOfSpeakersInMeetingID",
+			relField: "UsedAsDefaultProjectorForListOfSpeakersInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForListOfSpeakersInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForMediafileInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForMediafileInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForMediafileInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForMediafileInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForMediafileInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForMediafileInMeetingID",
+			relField: "UsedAsDefaultProjectorForMediafileInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForMediafileInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForMessageInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForMessageInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForMessageInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForMessageInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForMessageInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForMessageInMeetingID",
+			relField: "UsedAsDefaultProjectorForMessageInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForMessageInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForMotionBlockInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForMotionBlockInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForMotionBlockInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForMotionBlockInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForMotionBlockInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForMotionBlockInMeetingID",
+			relField: "UsedAsDefaultProjectorForMotionBlockInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForMotionBlockInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForMotionInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForMotionInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForMotionInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForMotionInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForMotionInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForMotionInMeetingID",
+			relField: "UsedAsDefaultProjectorForMotionInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForMotionInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForMotionPollInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForMotionPollInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForMotionPollInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForMotionPollInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForMotionPollInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForMotionPollInMeetingID",
+			relField: "UsedAsDefaultProjectorForMotionPollInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForMotionPollInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForPollInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForPollInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForPollInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForPollInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForPollInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForPollInMeetingID",
+			relField: "UsedAsDefaultProjectorForPollInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForPollInMeeting
 }
 
-func (c *Projector) UsedAsDefaultProjectorForTopicInMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsDefaultProjectorForTopicInMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsDefaultProjectorForTopicInMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsDefaultProjectorForTopicInMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsDefaultProjectorForTopicInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsDefaultProjectorForTopicInMeetingID",
+			relField: "UsedAsDefaultProjectorForTopicInMeeting",
+		},
 	}
-	return c.usedAsDefaultProjectorForTopicInMeeting
 }
 
-func (c *Projector) UsedAsReferenceProjectorMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsReferenceProjectorMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsReferenceProjectorMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsReferenceProjectorMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorBuilder) UsedAsReferenceProjectorMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsReferenceProjectorMeetingID",
+			relField: "UsedAsReferenceProjectorMeeting",
+		},
 	}
-	return c.usedAsReferenceProjectorMeeting
 }
 
-func (r *Fetch) Projector(id int) *ValueCollection[Projector, *Projector] {
-	return &ValueCollection[Projector, *Projector]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Projector(id int) *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6578,15 +5951,18 @@ type ProjectorCountdown struct {
 	Title                                  string
 	UsedAsListOfSpeakersCountdownMeetingID dsfetch.Maybe[int]
 	UsedAsPollCountdownMeetingID           dsfetch.Maybe[int]
-	meeting                                *ValueCollection[Meeting, *Meeting]
-	projectionList                         *RelationList[Projection, *Projection]
-	usedAsListOfSpeakersCountdownMeeting   *MaybeRelation[Meeting, *Meeting]
-	usedAsPollCountdownMeeting             *MaybeRelation[Meeting, *Meeting]
-	fetch                                  *Fetch
+	Meeting                                *Meeting
+	ProjectionList                         []Projection
+	UsedAsListOfSpeakersCountdownMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsPollCountdownMeeting             *dsfetch.Maybe[Meeting]
 }
 
-func (c *ProjectorCountdown) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type projectorCountdownBuilder struct {
+	builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]
+}
+
+func (b *projectorCountdownBuilder) lazy(ds *Fetch, id int) *ProjectorCountdown {
+	c := ProjectorCountdown{}
 	ds.ProjectorCountdown_CountdownTime(id).Lazy(&c.CountdownTime)
 	ds.ProjectorCountdown_DefaultTime(id).Lazy(&c.DefaultTime)
 	ds.ProjectorCountdown_Description(id).Lazy(&c.Description)
@@ -6597,68 +5973,61 @@ func (c *ProjectorCountdown) lazy(ds *Fetch, id int) {
 	ds.ProjectorCountdown_Title(id).Lazy(&c.Title)
 	ds.ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(id).Lazy(&c.UsedAsListOfSpeakersCountdownMeetingID)
 	ds.ProjectorCountdown_UsedAsPollCountdownMeetingID(id).Lazy(&c.UsedAsPollCountdownMeetingID)
+	return &c
 }
 
-func (c *ProjectorCountdown) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *projectorCountdownBuilder) Preload(rel builderWrapperI) *projectorCountdownBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *projectorCountdownBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *ProjectorCountdown) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *projectorCountdownBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (c *ProjectorCountdown) UsedAsListOfSpeakersCountdownMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsListOfSpeakersCountdownMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsListOfSpeakersCountdownMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsListOfSpeakersCountdownMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorCountdownBuilder) UsedAsListOfSpeakersCountdownMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsListOfSpeakersCountdownMeetingID",
+			relField: "UsedAsListOfSpeakersCountdownMeeting",
+		},
 	}
-	return c.usedAsListOfSpeakersCountdownMeeting
 }
 
-func (c *ProjectorCountdown) UsedAsPollCountdownMeeting() *MaybeRelation[Meeting, *Meeting] {
-	if c.usedAsPollCountdownMeeting == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Meeting, *Meeting]]
-		id, hasValue := c.UsedAsPollCountdownMeetingID.Value()
-		if hasValue {
-			value := &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.usedAsPollCountdownMeeting = &MaybeRelation[Meeting, *Meeting]{ref}
+func (b *projectorCountdownBuilder) UsedAsPollCountdownMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "UsedAsPollCountdownMeetingID",
+			relField: "UsedAsPollCountdownMeeting",
+		},
 	}
-	return c.usedAsPollCountdownMeeting
 }
 
-func (r *Fetch) ProjectorCountdown(id int) *ValueCollection[ProjectorCountdown, *ProjectorCountdown] {
-	return &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) ProjectorCountdown(id int) *projectorCountdownBuilder {
+	return &projectorCountdownBuilder{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6668,47 +6037,55 @@ type ProjectorMessage struct {
 	MeetingID      int
 	Message        string
 	ProjectionIDs  []int
-	meeting        *ValueCollection[Meeting, *Meeting]
-	projectionList *RelationList[Projection, *Projection]
-	fetch          *Fetch
+	Meeting        *Meeting
+	ProjectionList []Projection
 }
 
-func (c *ProjectorMessage) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type projectorMessageBuilder struct {
+	builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]
+}
+
+func (b *projectorMessageBuilder) lazy(ds *Fetch, id int) *ProjectorMessage {
+	c := ProjectorMessage{}
 	ds.ProjectorMessage_ID(id).Lazy(&c.ID)
 	ds.ProjectorMessage_MeetingID(id).Lazy(&c.MeetingID)
 	ds.ProjectorMessage_Message(id).Lazy(&c.Message)
 	ds.ProjectorMessage_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	return &c
 }
 
-func (c *ProjectorMessage) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *projectorMessageBuilder) Preload(rel builderWrapperI) *projectorMessageBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *projectorMessageBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *ProjectorMessage) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *projectorMessageBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (r *Fetch) ProjectorMessage(id int) *ValueCollection[ProjectorMessage, *ProjectorMessage] {
-	return &ValueCollection[ProjectorMessage, *ProjectorMessage]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) ProjectorMessage(id int) *projectorMessageBuilder {
+	return &projectorMessageBuilder{
+		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6729,16 +6106,19 @@ type Speaker struct {
 	TotalPause                     int
 	UnpauseTime                    int
 	Weight                         int
-	listOfSpeakers                 *ValueCollection[ListOfSpeakers, *ListOfSpeakers]
-	meeting                        *ValueCollection[Meeting, *Meeting]
-	meetingUser                    *MaybeRelation[MeetingUser, *MeetingUser]
-	pointOfOrderCategory           *MaybeRelation[PointOfOrderCategory, *PointOfOrderCategory]
-	structureLevelListOfSpeakers   *MaybeRelation[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]
-	fetch                          *Fetch
+	ListOfSpeakers                 *ListOfSpeakers
+	Meeting                        *Meeting
+	MeetingUser                    *dsfetch.Maybe[MeetingUser]
+	PointOfOrderCategory           *dsfetch.Maybe[PointOfOrderCategory]
+	StructureLevelListOfSpeakers   *dsfetch.Maybe[StructureLevelListOfSpeakers]
 }
 
-func (c *Speaker) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type speakerBuilder struct {
+	builder[speakerBuilder, *speakerBuilder, Speaker]
+}
+
+func (b *speakerBuilder) lazy(ds *Fetch, id int) *Speaker {
+	c := Speaker{}
 	ds.Speaker_BeginTime(id).Lazy(&c.BeginTime)
 	ds.Speaker_EndTime(id).Lazy(&c.EndTime)
 	ds.Speaker_ID(id).Lazy(&c.ID)
@@ -6754,80 +6134,70 @@ func (c *Speaker) lazy(ds *Fetch, id int) {
 	ds.Speaker_TotalPause(id).Lazy(&c.TotalPause)
 	ds.Speaker_UnpauseTime(id).Lazy(&c.UnpauseTime)
 	ds.Speaker_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *Speaker) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		c.listOfSpeakers = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-			id:    c.ListOfSpeakersID,
-			fetch: c.fetch,
-		}
+func (b *speakerBuilder) Preload(rel builderWrapperI) *speakerBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *speakerBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *Speaker) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *speakerBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Speaker) MeetingUser() *MaybeRelation[MeetingUser, *MeetingUser] {
-	if c.meetingUser == nil {
-		var ref dsfetch.Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
-		id, hasValue := c.MeetingUserID.Value()
-		if hasValue {
-			value := &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.meetingUser = &MaybeRelation[MeetingUser, *MeetingUser]{ref}
+func (b *speakerBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
 	}
-	return c.meetingUser
 }
 
-func (c *Speaker) PointOfOrderCategory() *MaybeRelation[PointOfOrderCategory, *PointOfOrderCategory] {
-	if c.pointOfOrderCategory == nil {
-		var ref dsfetch.Maybe[*ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]]
-		id, hasValue := c.PointOfOrderCategoryID.Value()
-		if hasValue {
-			value := &ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.pointOfOrderCategory = &MaybeRelation[PointOfOrderCategory, *PointOfOrderCategory]{ref}
+func (b *speakerBuilder) PointOfOrderCategory() *pointOfOrderCategoryBuilder {
+	return &pointOfOrderCategoryBuilder{
+		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
+			fetch:    b.fetch,
+			idField:  "PointOfOrderCategoryID",
+			relField: "PointOfOrderCategory",
+		},
 	}
-	return c.pointOfOrderCategory
 }
 
-func (c *Speaker) StructureLevelListOfSpeakers() *MaybeRelation[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
-	if c.structureLevelListOfSpeakers == nil {
-		var ref dsfetch.Maybe[*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]]
-		id, hasValue := c.StructureLevelListOfSpeakersID.Value()
-		if hasValue {
-			value := &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.structureLevelListOfSpeakers = &MaybeRelation[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{ref}
+func (b *speakerBuilder) StructureLevelListOfSpeakers() *structureLevelListOfSpeakersBuilder {
+	return &structureLevelListOfSpeakersBuilder{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelListOfSpeakersID",
+			relField: "StructureLevelListOfSpeakers",
+		},
 	}
-	return c.structureLevelListOfSpeakers
 }
 
-func (r *Fetch) Speaker(id int) *ValueCollection[Speaker, *Speaker] {
-	return &ValueCollection[Speaker, *Speaker]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Speaker(id int) *speakerBuilder {
+	return &speakerBuilder{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6840,14 +6210,17 @@ type StructureLevel struct {
 	MeetingUserIDs                   []int
 	Name                             string
 	StructureLevelListOfSpeakersIDs  []int
-	meeting                          *ValueCollection[Meeting, *Meeting]
-	meetingUserList                  *RelationList[MeetingUser, *MeetingUser]
-	structureLevelListOfSpeakersList *RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]
-	fetch                            *Fetch
+	Meeting                          *Meeting
+	MeetingUserList                  []MeetingUser
+	StructureLevelListOfSpeakersList []StructureLevelListOfSpeakers
 }
 
-func (c *StructureLevel) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type structureLevelBuilder struct {
+	builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]
+}
+
+func (b *structureLevelBuilder) lazy(ds *Fetch, id int) *StructureLevel {
+	c := StructureLevel{}
 	ds.StructureLevel_Color(id).Lazy(&c.Color)
 	ds.StructureLevel_DefaultTime(id).Lazy(&c.DefaultTime)
 	ds.StructureLevel_ID(id).Lazy(&c.ID)
@@ -6855,50 +6228,52 @@ func (c *StructureLevel) lazy(ds *Fetch, id int) {
 	ds.StructureLevel_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
 	ds.StructureLevel_Name(id).Lazy(&c.Name)
 	ds.StructureLevel_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
+	return &c
 }
 
-func (c *StructureLevel) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *structureLevelBuilder) Preload(rel builderWrapperI) *structureLevelBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *structureLevelBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *StructureLevel) MeetingUserList() *RelationList[MeetingUser, *MeetingUser] {
-	if c.meetingUserList == nil {
-		refs := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
-		for i, id := range c.MeetingUserIDs {
-			refs[i] = &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingUserList = &RelationList[MeetingUser, *MeetingUser]{refs}
+func (b *structureLevelBuilder) MeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserIDs",
+			relField: "MeetingUserList",
+			many:     true,
+		},
 	}
-	return c.meetingUserList
 }
 
-func (c *StructureLevel) StructureLevelListOfSpeakersList() *RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
-	if c.structureLevelListOfSpeakersList == nil {
-		refs := make([]*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers], len(c.StructureLevelListOfSpeakersIDs))
-		for i, id := range c.StructureLevelListOfSpeakersIDs {
-			refs[i] = &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.structureLevelListOfSpeakersList = &RelationList[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{refs}
+func (b *structureLevelBuilder) StructureLevelListOfSpeakersList() *structureLevelListOfSpeakersBuilder {
+	return &structureLevelListOfSpeakersBuilder{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelListOfSpeakersIDs",
+			relField: "StructureLevelListOfSpeakersList",
+			many:     true,
+		},
 	}
-	return c.structureLevelListOfSpeakersList
 }
 
-func (r *Fetch) StructureLevel(id int) *ValueCollection[StructureLevel, *StructureLevel] {
-	return &ValueCollection[StructureLevel, *StructureLevel]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) StructureLevel(id int) *structureLevelBuilder {
+	return &structureLevelBuilder{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6913,15 +6288,18 @@ type StructureLevelListOfSpeakers struct {
 	RemainingTime    float32
 	SpeakerIDs       []int
 	StructureLevelID int
-	listOfSpeakers   *ValueCollection[ListOfSpeakers, *ListOfSpeakers]
-	meeting          *ValueCollection[Meeting, *Meeting]
-	speakerList      *RelationList[Speaker, *Speaker]
-	structureLevel   *ValueCollection[StructureLevel, *StructureLevel]
-	fetch            *Fetch
+	ListOfSpeakers   *ListOfSpeakers
+	Meeting          *Meeting
+	SpeakerList      []Speaker
+	StructureLevel   *StructureLevel
 }
 
-func (c *StructureLevelListOfSpeakers) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type structureLevelListOfSpeakersBuilder struct {
+	builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]
+}
+
+func (b *structureLevelListOfSpeakersBuilder) lazy(ds *Fetch, id int) *StructureLevelListOfSpeakers {
+	c := StructureLevelListOfSpeakers{}
 	ds.StructureLevelListOfSpeakers_AdditionalTime(id).Lazy(&c.AdditionalTime)
 	ds.StructureLevelListOfSpeakers_CurrentStartTime(id).Lazy(&c.CurrentStartTime)
 	ds.StructureLevelListOfSpeakers_ID(id).Lazy(&c.ID)
@@ -6931,56 +6309,61 @@ func (c *StructureLevelListOfSpeakers) lazy(ds *Fetch, id int) {
 	ds.StructureLevelListOfSpeakers_RemainingTime(id).Lazy(&c.RemainingTime)
 	ds.StructureLevelListOfSpeakers_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.StructureLevelListOfSpeakers_StructureLevelID(id).Lazy(&c.StructureLevelID)
+	return &c
 }
 
-func (c *StructureLevelListOfSpeakers) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		c.listOfSpeakers = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-			id:    c.ListOfSpeakersID,
-			fetch: c.fetch,
-		}
+func (b *structureLevelListOfSpeakersBuilder) Preload(rel builderWrapperI) *structureLevelListOfSpeakersBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *structureLevelListOfSpeakersBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *StructureLevelListOfSpeakers) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *structureLevelListOfSpeakersBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *StructureLevelListOfSpeakers) SpeakerList() *RelationList[Speaker, *Speaker] {
-	if c.speakerList == nil {
-		refs := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
-		for i, id := range c.SpeakerIDs {
-			refs[i] = &ValueCollection[Speaker, *Speaker]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.speakerList = &RelationList[Speaker, *Speaker]{refs}
+func (b *structureLevelListOfSpeakersBuilder) SpeakerList() *speakerBuilder {
+	return &speakerBuilder{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+			fetch:    b.fetch,
+			idField:  "SpeakerIDs",
+			relField: "SpeakerList",
+			many:     true,
+		},
 	}
-	return c.speakerList
 }
 
-func (c *StructureLevelListOfSpeakers) StructureLevel() *ValueCollection[StructureLevel, *StructureLevel] {
-	if c.structureLevel == nil {
-		c.structureLevel = &ValueCollection[StructureLevel, *StructureLevel]{
-			id:    c.StructureLevelID,
-			fetch: c.fetch,
-		}
+func (b *structureLevelListOfSpeakersBuilder) StructureLevel() *structureLevelBuilder {
+	return &structureLevelBuilder{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+			fetch:    b.fetch,
+			idField:  "StructureLevelID",
+			relField: "StructureLevel",
+		},
 	}
-	return c.structureLevel
 }
 
-func (r *Fetch) StructureLevelListOfSpeakers(id int) *ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
-	return &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) StructureLevelListOfSpeakers(id int) *structureLevelListOfSpeakersBuilder {
+	return &structureLevelListOfSpeakersBuilder{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -6990,32 +6373,43 @@ type Tag struct {
 	MeetingID int
 	Name      string
 	TaggedIDs []string
-	meeting   *ValueCollection[Meeting, *Meeting]
-	fetch     *Fetch
+	Meeting   *Meeting
 }
 
-func (c *Tag) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type tagBuilder struct {
+	builder[tagBuilder, *tagBuilder, Tag]
+}
+
+func (b *tagBuilder) lazy(ds *Fetch, id int) *Tag {
+	c := Tag{}
 	ds.Tag_ID(id).Lazy(&c.ID)
 	ds.Tag_MeetingID(id).Lazy(&c.MeetingID)
 	ds.Tag_Name(id).Lazy(&c.Name)
 	ds.Tag_TaggedIDs(id).Lazy(&c.TaggedIDs)
+	return &c
 }
 
-func (c *Tag) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *tagBuilder) Preload(rel builderWrapperI) *tagBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *tagBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (r *Fetch) Tag(id int) *ValueCollection[Tag, *Tag] {
-	return &ValueCollection[Tag, *Tag]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Tag(id int) *tagBuilder {
+	return &tagBuilder{
+		builder: builder[tagBuilder, *tagBuilder, Tag]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -7071,13 +6465,16 @@ type Theme struct {
 	WarnA400               string
 	WarnA700               string
 	Yes                    string
-	organization           *ValueCollection[Organization, *Organization]
-	themeForOrganization   *MaybeRelation[Organization, *Organization]
-	fetch                  *Fetch
+	Organization           *Organization
+	ThemeForOrganization   *dsfetch.Maybe[Organization]
 }
 
-func (c *Theme) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type themeBuilder struct {
+	builder[themeBuilder, *themeBuilder, Theme]
+}
+
+func (b *themeBuilder) lazy(ds *Fetch, id int) *Theme {
+	c := Theme{}
 	ds.Theme_Abstain(id).Lazy(&c.Abstain)
 	ds.Theme_Accent100(id).Lazy(&c.Accent100)
 	ds.Theme_Accent200(id).Lazy(&c.Accent200)
@@ -7128,38 +6525,40 @@ func (c *Theme) lazy(ds *Fetch, id int) {
 	ds.Theme_WarnA400(id).Lazy(&c.WarnA400)
 	ds.Theme_WarnA700(id).Lazy(&c.WarnA700)
 	ds.Theme_Yes(id).Lazy(&c.Yes)
+	return &c
 }
 
-func (c *Theme) Organization() *ValueCollection[Organization, *Organization] {
-	if c.organization == nil {
-		c.organization = &ValueCollection[Organization, *Organization]{
-			id:    c.OrganizationID,
-			fetch: c.fetch,
-		}
+func (b *themeBuilder) Preload(rel builderWrapperI) *themeBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *themeBuilder) Organization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "OrganizationID",
+			relField: "Organization",
+		},
 	}
-	return c.organization
 }
 
-func (c *Theme) ThemeForOrganization() *MaybeRelation[Organization, *Organization] {
-	if c.themeForOrganization == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Organization, *Organization]]
-		id, hasValue := c.ThemeForOrganizationID.Value()
-		if hasValue {
-			value := &ValueCollection[Organization, *Organization]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.themeForOrganization = &MaybeRelation[Organization, *Organization]{ref}
+func (b *themeBuilder) ThemeForOrganization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "ThemeForOrganizationID",
+			relField: "ThemeForOrganization",
+		},
 	}
-	return c.themeForOrganization
 }
 
-func (r *Fetch) Theme(id int) *ValueCollection[Theme, *Theme] {
-	return &ValueCollection[Theme, *Theme]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Theme(id int) *themeBuilder {
+	return &themeBuilder{
+		builder: builder[themeBuilder, *themeBuilder, Theme]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -7175,17 +6574,20 @@ type Topic struct {
 	SequentialNumber               int
 	Text                           string
 	Title                          string
-	agendaItem                     *ValueCollection[AgendaItem, *AgendaItem]
-	attachmentMeetingMediafileList *RelationList[MeetingMediafile, *MeetingMediafile]
-	listOfSpeakers                 *ValueCollection[ListOfSpeakers, *ListOfSpeakers]
-	meeting                        *ValueCollection[Meeting, *Meeting]
-	pollList                       *RelationList[Poll, *Poll]
-	projectionList                 *RelationList[Projection, *Projection]
-	fetch                          *Fetch
+	AgendaItem                     *AgendaItem
+	AttachmentMeetingMediafileList []MeetingMediafile
+	ListOfSpeakers                 *ListOfSpeakers
+	Meeting                        *Meeting
+	PollList                       []Poll
+	ProjectionList                 []Projection
 }
 
-func (c *Topic) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type topicBuilder struct {
+	builder[topicBuilder, *topicBuilder, Topic]
+}
+
+func (b *topicBuilder) lazy(ds *Fetch, id int) *Topic {
+	c := Topic{}
 	ds.Topic_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Topic_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
 	ds.Topic_ID(id).Lazy(&c.ID)
@@ -7196,84 +6598,83 @@ func (c *Topic) lazy(ds *Fetch, id int) {
 	ds.Topic_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.Topic_Text(id).Lazy(&c.Text)
 	ds.Topic_Title(id).Lazy(&c.Title)
+	return &c
 }
 
-func (c *Topic) AgendaItem() *ValueCollection[AgendaItem, *AgendaItem] {
-	if c.agendaItem == nil {
-		c.agendaItem = &ValueCollection[AgendaItem, *AgendaItem]{
-			id:    c.AgendaItemID,
-			fetch: c.fetch,
-		}
+func (b *topicBuilder) Preload(rel builderWrapperI) *topicBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *topicBuilder) AgendaItem() *agendaItemBuilder {
+	return &agendaItemBuilder{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+			fetch:    b.fetch,
+			idField:  "AgendaItemID",
+			relField: "AgendaItem",
+		},
 	}
-	return c.agendaItem
 }
 
-func (c *Topic) AttachmentMeetingMediafileList() *RelationList[MeetingMediafile, *MeetingMediafile] {
-	if c.attachmentMeetingMediafileList == nil {
-		refs := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.AttachmentMeetingMediafileIDs))
-		for i, id := range c.AttachmentMeetingMediafileIDs {
-			refs[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.attachmentMeetingMediafileList = &RelationList[MeetingMediafile, *MeetingMediafile]{refs}
+func (b *topicBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder {
+	return &meetingMediafileBuilder{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+			fetch:    b.fetch,
+			idField:  "AttachmentMeetingMediafileIDs",
+			relField: "AttachmentMeetingMediafileList",
+			many:     true,
+		},
 	}
-	return c.attachmentMeetingMediafileList
 }
 
-func (c *Topic) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
-	if c.listOfSpeakers == nil {
-		c.listOfSpeakers = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
-			id:    c.ListOfSpeakersID,
-			fetch: c.fetch,
-		}
+func (b *topicBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
+	return &listOfSpeakersBuilder{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+			fetch:    b.fetch,
+			idField:  "ListOfSpeakersID",
+			relField: "ListOfSpeakers",
+		},
 	}
-	return c.listOfSpeakers
 }
 
-func (c *Topic) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *topicBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Topic) PollList() *RelationList[Poll, *Poll] {
-	if c.pollList == nil {
-		refs := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
-		for i, id := range c.PollIDs {
-			refs[i] = &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollList = &RelationList[Poll, *Poll]{refs}
+func (b *topicBuilder) PollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollIDs",
+			relField: "PollList",
+			many:     true,
+		},
 	}
-	return c.pollList
 }
 
-func (c *Topic) ProjectionList() *RelationList[Projection, *Projection] {
-	if c.projectionList == nil {
-		refs := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
-		for i, id := range c.ProjectionIDs {
-			refs[i] = &ValueCollection[Projection, *Projection]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.projectionList = &RelationList[Projection, *Projection]{refs}
+func (b *topicBuilder) ProjectionList() *projectionBuilder {
+	return &projectionBuilder{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+			fetch:    b.fetch,
+			idField:  "ProjectionIDs",
+			relField: "ProjectionList",
+			many:     true,
+		},
 	}
-	return c.projectionList
 }
 
-func (r *Fetch) Topic(id int) *ValueCollection[Topic, *Topic] {
-	return &ValueCollection[Topic, *Topic]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Topic(id int) *topicBuilder {
+	return &topicBuilder{
+		builder: builder[topicBuilder, *topicBuilder, Topic]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -7310,22 +6711,25 @@ type User struct {
 	Title                       string
 	Username                    string
 	VoteIDs                     []int
-	committeeList               *RelationList[Committee, *Committee]
-	committeeManagementList     *RelationList[Committee, *Committee]
-	delegatedVoteList           *RelationList[Vote, *Vote]
-	gender                      *MaybeRelation[Gender, *Gender]
-	isPresentInMeetingList      *RelationList[Meeting, *Meeting]
-	meetingUserList             *RelationList[MeetingUser, *MeetingUser]
-	optionList                  *RelationList[Option, *Option]
-	organization                *ValueCollection[Organization, *Organization]
-	pollCandidateList           *RelationList[PollCandidate, *PollCandidate]
-	pollVotedList               *RelationList[Poll, *Poll]
-	voteList                    *RelationList[Vote, *Vote]
-	fetch                       *Fetch
+	CommitteeList               []Committee
+	CommitteeManagementList     []Committee
+	DelegatedVoteList           []Vote
+	Gender                      *dsfetch.Maybe[Gender]
+	IsPresentInMeetingList      []Meeting
+	MeetingUserList             []MeetingUser
+	OptionList                  []Option
+	Organization                *Organization
+	PollCandidateList           []PollCandidate
+	PollVotedList               []Poll
+	VoteList                    []Vote
 }
 
-func (c *User) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type userBuilder struct {
+	builder[userBuilder, *userBuilder, User]
+}
+
+func (b *userBuilder) lazy(ds *Fetch, id int) *User {
+	c := User{}
 	ds.User_CanChangeOwnPassword(id).Lazy(&c.CanChangeOwnPassword)
 	ds.User_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
 	ds.User_CommitteeManagementIDs(id).Lazy(&c.CommitteeManagementIDs)
@@ -7357,164 +6761,139 @@ func (c *User) lazy(ds *Fetch, id int) {
 	ds.User_Title(id).Lazy(&c.Title)
 	ds.User_Username(id).Lazy(&c.Username)
 	ds.User_VoteIDs(id).Lazy(&c.VoteIDs)
+	return &c
 }
 
-func (c *User) CommitteeList() *RelationList[Committee, *Committee] {
-	if c.committeeList == nil {
-		refs := make([]*ValueCollection[Committee, *Committee], len(c.CommitteeIDs))
-		for i, id := range c.CommitteeIDs {
-			refs[i] = &ValueCollection[Committee, *Committee]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.committeeList = &RelationList[Committee, *Committee]{refs}
+func (b *userBuilder) Preload(rel builderWrapperI) *userBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *userBuilder) CommitteeList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "CommitteeIDs",
+			relField: "CommitteeList",
+			many:     true,
+		},
 	}
-	return c.committeeList
 }
 
-func (c *User) CommitteeManagementList() *RelationList[Committee, *Committee] {
-	if c.committeeManagementList == nil {
-		refs := make([]*ValueCollection[Committee, *Committee], len(c.CommitteeManagementIDs))
-		for i, id := range c.CommitteeManagementIDs {
-			refs[i] = &ValueCollection[Committee, *Committee]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.committeeManagementList = &RelationList[Committee, *Committee]{refs}
+func (b *userBuilder) CommitteeManagementList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			idField:  "CommitteeManagementIDs",
+			relField: "CommitteeManagementList",
+			many:     true,
+		},
 	}
-	return c.committeeManagementList
 }
 
-func (c *User) DelegatedVoteList() *RelationList[Vote, *Vote] {
-	if c.delegatedVoteList == nil {
-		refs := make([]*ValueCollection[Vote, *Vote], len(c.DelegatedVoteIDs))
-		for i, id := range c.DelegatedVoteIDs {
-			refs[i] = &ValueCollection[Vote, *Vote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.delegatedVoteList = &RelationList[Vote, *Vote]{refs}
+func (b *userBuilder) DelegatedVoteList() *voteBuilder {
+	return &voteBuilder{
+		builder: builder[voteBuilder, *voteBuilder, Vote]{
+			fetch:    b.fetch,
+			idField:  "DelegatedVoteIDs",
+			relField: "DelegatedVoteList",
+			many:     true,
+		},
 	}
-	return c.delegatedVoteList
 }
 
-func (c *User) Gender() *MaybeRelation[Gender, *Gender] {
-	if c.gender == nil {
-		var ref dsfetch.Maybe[*ValueCollection[Gender, *Gender]]
-		id, hasValue := c.GenderID.Value()
-		if hasValue {
-			value := &ValueCollection[Gender, *Gender]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.gender = &MaybeRelation[Gender, *Gender]{ref}
+func (b *userBuilder) Gender() *genderBuilder {
+	return &genderBuilder{
+		builder: builder[genderBuilder, *genderBuilder, Gender]{
+			fetch:    b.fetch,
+			idField:  "GenderID",
+			relField: "Gender",
+		},
 	}
-	return c.gender
 }
 
-func (c *User) IsPresentInMeetingList() *RelationList[Meeting, *Meeting] {
-	if c.isPresentInMeetingList == nil {
-		refs := make([]*ValueCollection[Meeting, *Meeting], len(c.IsPresentInMeetingIDs))
-		for i, id := range c.IsPresentInMeetingIDs {
-			refs[i] = &ValueCollection[Meeting, *Meeting]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.isPresentInMeetingList = &RelationList[Meeting, *Meeting]{refs}
+func (b *userBuilder) IsPresentInMeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "IsPresentInMeetingIDs",
+			relField: "IsPresentInMeetingList",
+			many:     true,
+		},
 	}
-	return c.isPresentInMeetingList
 }
 
-func (c *User) MeetingUserList() *RelationList[MeetingUser, *MeetingUser] {
-	if c.meetingUserList == nil {
-		refs := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
-		for i, id := range c.MeetingUserIDs {
-			refs[i] = &ValueCollection[MeetingUser, *MeetingUser]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.meetingUserList = &RelationList[MeetingUser, *MeetingUser]{refs}
+func (b *userBuilder) MeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			idField:  "MeetingUserIDs",
+			relField: "MeetingUserList",
+			many:     true,
+		},
 	}
-	return c.meetingUserList
 }
 
-func (c *User) OptionList() *RelationList[Option, *Option] {
-	if c.optionList == nil {
-		refs := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
-		for i, id := range c.OptionIDs {
-			refs[i] = &ValueCollection[Option, *Option]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.optionList = &RelationList[Option, *Option]{refs}
+func (b *userBuilder) OptionList() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "OptionIDs",
+			relField: "OptionList",
+			many:     true,
+		},
 	}
-	return c.optionList
 }
 
-func (c *User) Organization() *ValueCollection[Organization, *Organization] {
-	if c.organization == nil {
-		c.organization = &ValueCollection[Organization, *Organization]{
-			id:    c.OrganizationID,
-			fetch: c.fetch,
-		}
+func (b *userBuilder) Organization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			idField:  "OrganizationID",
+			relField: "Organization",
+		},
 	}
-	return c.organization
 }
 
-func (c *User) PollCandidateList() *RelationList[PollCandidate, *PollCandidate] {
-	if c.pollCandidateList == nil {
-		refs := make([]*ValueCollection[PollCandidate, *PollCandidate], len(c.PollCandidateIDs))
-		for i, id := range c.PollCandidateIDs {
-			refs[i] = &ValueCollection[PollCandidate, *PollCandidate]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollCandidateList = &RelationList[PollCandidate, *PollCandidate]{refs}
+func (b *userBuilder) PollCandidateList() *pollCandidateBuilder {
+	return &pollCandidateBuilder{
+		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
+			fetch:    b.fetch,
+			idField:  "PollCandidateIDs",
+			relField: "PollCandidateList",
+			many:     true,
+		},
 	}
-	return c.pollCandidateList
 }
 
-func (c *User) PollVotedList() *RelationList[Poll, *Poll] {
-	if c.pollVotedList == nil {
-		refs := make([]*ValueCollection[Poll, *Poll], len(c.PollVotedIDs))
-		for i, id := range c.PollVotedIDs {
-			refs[i] = &ValueCollection[Poll, *Poll]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.pollVotedList = &RelationList[Poll, *Poll]{refs}
+func (b *userBuilder) PollVotedList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			idField:  "PollVotedIDs",
+			relField: "PollVotedList",
+			many:     true,
+		},
 	}
-	return c.pollVotedList
 }
 
-func (c *User) VoteList() *RelationList[Vote, *Vote] {
-	if c.voteList == nil {
-		refs := make([]*ValueCollection[Vote, *Vote], len(c.VoteIDs))
-		for i, id := range c.VoteIDs {
-			refs[i] = &ValueCollection[Vote, *Vote]{
-				id:    id,
-				fetch: c.fetch,
-			}
-		}
-		c.voteList = &RelationList[Vote, *Vote]{refs}
+func (b *userBuilder) VoteList() *voteBuilder {
+	return &voteBuilder{
+		builder: builder[voteBuilder, *voteBuilder, Vote]{
+			fetch:    b.fetch,
+			idField:  "VoteIDs",
+			relField: "VoteList",
+			many:     true,
+		},
 	}
-	return c.voteList
 }
 
-func (r *Fetch) User(id int) *ValueCollection[User, *User] {
-	return &ValueCollection[User, *User]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) User(id int) *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }
 
@@ -7528,15 +6907,18 @@ type Vote struct {
 	UserToken       string
 	Value           string
 	Weight          string
-	delegatedUser   *MaybeRelation[User, *User]
-	meeting         *ValueCollection[Meeting, *Meeting]
-	option          *ValueCollection[Option, *Option]
-	user            *MaybeRelation[User, *User]
-	fetch           *Fetch
+	DelegatedUser   *dsfetch.Maybe[User]
+	Meeting         *Meeting
+	Option          *Option
+	User            *dsfetch.Maybe[User]
 }
 
-func (c *Vote) lazy(ds *Fetch, id int) {
-	c.fetch = ds
+type voteBuilder struct {
+	builder[voteBuilder, *voteBuilder, Vote]
+}
+
+func (b *voteBuilder) lazy(ds *Fetch, id int) *Vote {
+	c := Vote{}
 	ds.Vote_DelegatedUserID(id).Lazy(&c.DelegatedUserID)
 	ds.Vote_ID(id).Lazy(&c.ID)
 	ds.Vote_MeetingID(id).Lazy(&c.MeetingID)
@@ -7545,63 +6927,59 @@ func (c *Vote) lazy(ds *Fetch, id int) {
 	ds.Vote_UserToken(id).Lazy(&c.UserToken)
 	ds.Vote_Value(id).Lazy(&c.Value)
 	ds.Vote_Weight(id).Lazy(&c.Weight)
+	return &c
 }
 
-func (c *Vote) DelegatedUser() *MaybeRelation[User, *User] {
-	if c.delegatedUser == nil {
-		var ref dsfetch.Maybe[*ValueCollection[User, *User]]
-		id, hasValue := c.DelegatedUserID.Value()
-		if hasValue {
-			value := &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.delegatedUser = &MaybeRelation[User, *User]{ref}
+func (b *voteBuilder) Preload(rel builderWrapperI) *voteBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *voteBuilder) DelegatedUser() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "DelegatedUserID",
+			relField: "DelegatedUser",
+		},
 	}
-	return c.delegatedUser
 }
 
-func (c *Vote) Meeting() *ValueCollection[Meeting, *Meeting] {
-	if c.meeting == nil {
-		c.meeting = &ValueCollection[Meeting, *Meeting]{
-			id:    c.MeetingID,
-			fetch: c.fetch,
-		}
+func (b *voteBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
 	}
-	return c.meeting
 }
 
-func (c *Vote) Option() *ValueCollection[Option, *Option] {
-	if c.option == nil {
-		c.option = &ValueCollection[Option, *Option]{
-			id:    c.OptionID,
-			fetch: c.fetch,
-		}
+func (b *voteBuilder) Option() *optionBuilder {
+	return &optionBuilder{
+		builder: builder[optionBuilder, *optionBuilder, Option]{
+			fetch:    b.fetch,
+			idField:  "OptionID",
+			relField: "Option",
+		},
 	}
-	return c.option
 }
 
-func (c *Vote) User() *MaybeRelation[User, *User] {
-	if c.user == nil {
-		var ref dsfetch.Maybe[*ValueCollection[User, *User]]
-		id, hasValue := c.UserID.Value()
-		if hasValue {
-			value := &ValueCollection[User, *User]{
-				id:    id,
-				fetch: c.fetch,
-			}
-			ref.Set(value)
-		}
-		c.user = &MaybeRelation[User, *User]{ref}
+func (b *voteBuilder) User() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			idField:  "UserID",
+			relField: "User",
+		},
 	}
-	return c.user
 }
 
-func (r *Fetch) Vote(id int) *ValueCollection[Vote, *Vote] {
-	return &ValueCollection[Vote, *Vote]{
-		id:    id,
-		fetch: r,
+func (r *Fetch) Vote(id int) *voteBuilder {
+	return &voteBuilder{
+		builder: builder[voteBuilder, *voteBuilder, Vote]{
+			ids:   []int{id},
+			fetch: r,
+		},
 	}
 }

@@ -165,6 +165,7 @@ func openModelYML() (io.ReadCloser, error) {
 // Collection represents a models Collection for the collection.go.tmpl
 type Collection struct {
 	GoName     string
+	GoNameLc   string
 	ModelsName string
 	Fields     []CollectionField
 	Relations  []CollectionRelation
@@ -182,6 +183,7 @@ type CollectionRelation struct {
 	ResultType      string
 	IsList          bool
 	Type            string
+	TypeLc          string
 	FieldName       string
 	MethodName      string
 	StructFieldName string
@@ -191,8 +193,11 @@ type CollectionRelation struct {
 func toCollections(raw map[string]models.Model) []Collection {
 	var collections []Collection
 	for collectionName, collection := range raw {
+		colGoName := goName(collectionName)
+		colGoNameLc := string(colGoName[0]+32) + string(colGoName[1:])
 		col := Collection{
-			GoName:     goName(collectionName),
+			GoName:     colGoName,
+			GoNameLc:   colGoNameLc,
 			ModelsName: collectionName,
 		}
 		for fieldName, modelField := range collection.Fields {
@@ -217,13 +222,14 @@ func toCollections(raw map[string]models.Model) []Collection {
 			}
 
 			toType := goName(relation.ToCollections()[0].Collection)
+			toTypeLc := string(toType[0]+32) + string(toType[1:])
 
-			resultType := fmt.Sprintf("*ValueCollection[%s, *%s]", toType, toType)
+			resultType := fmt.Sprintf("*%s", toType)
 			if !relation.List() && !modelField.Required {
-				resultType = fmt.Sprintf("*MaybeRelation[%s, *%s]", toType, toType)
+				resultType = fmt.Sprintf("*dsfetch.Maybe[%s]", toType)
 			}
 			if relation.List() {
-				resultType = fmt.Sprintf("*RelationList[%s, *%s]", toType, toType)
+				resultType = fmt.Sprintf("[]%s", toType)
 			}
 
 			methodName := withoutID(goName(fieldName))
@@ -238,6 +244,7 @@ func toCollections(raw map[string]models.Model) []Collection {
 					MethodName:      methodName,
 					StructFieldName: structFieldName,
 					Type:            toType,
+					TypeLc:          toTypeLc,
 					Required:        modelField.Required,
 				},
 			)
@@ -338,4 +345,3 @@ func valueType(modelsType string, required bool) string {
 		panic(fmt.Sprintf("Unknown type %q", modelsType))
 	}
 }
-

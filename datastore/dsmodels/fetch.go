@@ -22,8 +22,8 @@ type Fetch struct {
 // New initializes a Request object.
 func New(getter flow.Getter) *Fetch {
 	r := Fetch{
-	  getter: getter,
-	  Fetch: *dsfetch.New(getter),
+		getter: getter,
+		Fetch:  *dsfetch.New(getter),
 	}
 
 	return &r
