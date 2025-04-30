@@ -98,11 +98,17 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
 	for _, child := range b.children {
 		ids := []int{}
 		idField := rParent.FieldByName(child.getIdField())
+		targetField := rParent.FieldByName(child.getRelField())
 		if child.getMany() {
 			ids = idField.Interface().([]int)
 		} else if idField.Kind() == reflect.Int {
 			ids = append(ids, int(idField.Int()))
 		} else if idField.Type().Name() == "Maybe[int]" {
+			relMaybeType := targetField.Type().Elem()
+			relValue := reflect.New(relMaybeType)
+			relValue.MethodByName("SetNull").Call([]reflect.Value{})
+			targetField.Set(relValue)
+
 			id := idField.Interface().(dsfetch.Maybe[int])
 			if val, set := id.Value(); set {
 				ids = append(ids, val)
@@ -115,7 +121,6 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
 			return err
 		}
 
-		targetField := rParent.FieldByName(child.getRelField())
 		for _, item := range items {
 			if err := child.loadChildren(ctx, item); err != nil {
 				return err
@@ -123,6 +128,8 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
 
 			if child.getMany() {
 				targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
+			} else if idField.Type().Name() == "Maybe[int]" {
+				targetField.MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(item).Elem()})
 			} else {
 				targetField.Set(reflect.ValueOf(item))
 			}

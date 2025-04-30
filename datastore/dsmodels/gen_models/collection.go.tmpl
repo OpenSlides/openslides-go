@@ -41,10 +41,10 @@ func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
 }
 {{end}}
 
-func (r *Fetch){{.GoName}}(id int) *{{.GoNameLc}}Builder {
+func (r *Fetch){{.GoName}}(ids... int) *{{.GoNameLc}}Builder {
 	return &{{.GoNameLc}}Builder{
 		builder: builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}]{
-			ids: []int{id},
+			ids: ids,
 			fetch: r,
 		},
 	}

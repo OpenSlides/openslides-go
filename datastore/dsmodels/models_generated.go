@@ -38,10 +38,10 @@ func (b *actionWorkerBuilder) Preload(rel builderWrapperI) *actionWorkerBuilder 
 	return b
 }
 
-func (r *Fetch) ActionWorker(id int) *actionWorkerBuilder {
+func (r *Fetch) ActionWorker(ids ...int) *actionWorkerBuilder {
 	return &actionWorkerBuilder{
 		builder: builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -67,7 +67,7 @@ type AgendaItem struct {
 	Weight          int
 	ChildList       []AgendaItem
 	Meeting         *Meeting
-	Parent          *AgendaItem
+	Parent          *dsfetch.Maybe[AgendaItem]
 	ProjectionList  []Projection
 	TagList         []Tag
 }
@@ -160,10 +160,10 @@ func (b *agendaItemBuilder) TagList() *tagBuilder {
 	}
 }
 
-func (r *Fetch) AgendaItem(id int) *agendaItemBuilder {
+func (r *Fetch) AgendaItem(ids ...int) *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -187,7 +187,7 @@ type Assignment struct {
 	SequentialNumber               int
 	TagIDs                         []int
 	Title                          string
-	AgendaItem                     *AgendaItem
+	AgendaItem                     *dsfetch.Maybe[AgendaItem]
 	AttachmentMeetingMediafileList []MeetingMediafile
 	CandidateList                  []AssignmentCandidate
 	ListOfSpeakers                 *ListOfSpeakers
@@ -320,10 +320,10 @@ func (b *assignmentBuilder) TagList() *tagBuilder {
 	}
 }
 
-func (r *Fetch) Assignment(id int) *assignmentBuilder {
+func (r *Fetch) Assignment(ids ...int) *assignmentBuilder {
 	return &assignmentBuilder{
 		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -338,7 +338,7 @@ type AssignmentCandidate struct {
 	Weight        int
 	Assignment    *Assignment
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 }
 
 type assignmentCandidateBuilder struct {
@@ -393,10 +393,10 @@ func (b *assignmentCandidateBuilder) MeetingUser() *meetingUserBuilder {
 	}
 }
 
-func (r *Fetch) AssignmentCandidate(id int) *assignmentCandidateBuilder {
+func (r *Fetch) AssignmentCandidate(ids ...int) *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
 		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -485,10 +485,10 @@ func (b *chatGroupBuilder) WriteGroupList() *groupBuilder {
 	}
 }
 
-func (r *Fetch) ChatGroup(id int) *chatGroupBuilder {
+func (r *Fetch) ChatGroup(ids ...int) *chatGroupBuilder {
 	return &chatGroupBuilder{
 		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -504,7 +504,7 @@ type ChatMessage struct {
 	MeetingUserID dsfetch.Maybe[int]
 	ChatGroup     *ChatGroup
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 }
 
 type chatMessageBuilder struct {
@@ -560,10 +560,10 @@ func (b *chatMessageBuilder) MeetingUser() *meetingUserBuilder {
 	}
 }
 
-func (r *Fetch) ChatMessage(id int) *chatMessageBuilder {
+func (r *Fetch) ChatMessage(ids ...int) *chatMessageBuilder {
 	return &chatMessageBuilder{
 		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -583,7 +583,7 @@ type Committee struct {
 	OrganizationTagIDs                  []int
 	ReceiveForwardingsFromCommitteeIDs  []int
 	UserIDs                             []int
-	DefaultMeeting                      *Meeting
+	DefaultMeeting                      *dsfetch.Maybe[Meeting]
 	ForwardToCommitteeList              []Committee
 	ManagerList                         []User
 	MeetingList                         []Meeting
@@ -713,10 +713,10 @@ func (b *committeeBuilder) UserList() *userBuilder {
 	}
 }
 
-func (r *Fetch) Committee(id int) *committeeBuilder {
+func (r *Fetch) Committee(ids ...int) *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -773,10 +773,10 @@ func (b *genderBuilder) UserList() *userBuilder {
 	}
 }
 
-func (r *Fetch) Gender(id int) *genderBuilder {
+func (r *Fetch) Gender(ids ...int) *genderBuilder {
 	return &genderBuilder{
 		builder: builder[genderBuilder, *genderBuilder, Gender]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -805,9 +805,9 @@ type Group struct {
 	Weight                                   int
 	WriteChatGroupIDs                        []int
 	WriteCommentSectionIDs                   []int
-	AdminGroupForMeeting                     *Meeting
-	AnonymousGroupForMeeting                 *Meeting
-	DefaultGroupForMeeting                   *Meeting
+	AdminGroupForMeeting                     *dsfetch.Maybe[Meeting]
+	AnonymousGroupForMeeting                 *dsfetch.Maybe[Meeting]
+	DefaultGroupForMeeting                   *dsfetch.Maybe[Meeting]
 	Meeting                                  *Meeting
 	MeetingMediafileAccessGroupList          []MeetingMediafile
 	MeetingMediafileInheritedAccessGroupList []MeetingMediafile
@@ -815,10 +815,10 @@ type Group struct {
 	PollList                                 []Poll
 	ReadChatGroupList                        []ChatGroup
 	ReadCommentSectionList                   []MotionCommentSection
-	UsedAsAssignmentPollDefault              *Meeting
-	UsedAsMotionPollDefault                  *Meeting
-	UsedAsPollDefault                        *Meeting
-	UsedAsTopicPollDefault                   *Meeting
+	UsedAsAssignmentPollDefault              *dsfetch.Maybe[Meeting]
+	UsedAsMotionPollDefault                  *dsfetch.Maybe[Meeting]
+	UsedAsPollDefault                        *dsfetch.Maybe[Meeting]
+	UsedAsTopicPollDefault                   *dsfetch.Maybe[Meeting]
 	WriteChatGroupList                       []ChatGroup
 	WriteCommentSectionList                  []MotionCommentSection
 }
@@ -1042,10 +1042,10 @@ func (b *groupBuilder) WriteCommentSectionList() *motionCommentSectionBuilder {
 	}
 }
 
-func (r *Fetch) Group(id int) *groupBuilder {
+func (r *Fetch) Group(ids ...int) *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -1079,10 +1079,10 @@ func (b *importPreviewBuilder) Preload(rel builderWrapperI) *importPreviewBuilde
 	return b
 }
 
-func (r *Fetch) ImportPreview(id int) *importPreviewBuilder {
+func (r *Fetch) ImportPreview(ids ...int) *importPreviewBuilder {
 	return &importPreviewBuilder{
 		builder: builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -1175,10 +1175,10 @@ func (b *listOfSpeakersBuilder) StructureLevelListOfSpeakersList() *structureLev
 	}
 }
 
-func (r *Fetch) ListOfSpeakers(id int) *listOfSpeakersBuilder {
+func (r *Fetch) ListOfSpeakers(ids ...int) *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -1202,8 +1202,8 @@ type Mediafile struct {
 	Token                               string
 	ChildList                           []Mediafile
 	MeetingMediafileList                []MeetingMediafile
-	Parent                              *Mediafile
-	PublishedToMeetingsInOrganization   *Organization
+	Parent                              *dsfetch.Maybe[Mediafile]
+	PublishedToMeetingsInOrganization   *dsfetch.Maybe[Organization]
 }
 
 type mediafileBuilder struct {
@@ -1280,10 +1280,10 @@ func (b *mediafileBuilder) PublishedToMeetingsInOrganization() *organizationBuil
 	}
 }
 
-func (r *Fetch) Mediafile(id int) *mediafileBuilder {
+func (r *Fetch) Mediafile(ids ...int) *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -1530,10 +1530,10 @@ type Meeting struct {
 	VoteIDs                                      []int
 	WelcomeText                                  string
 	WelcomeTitle                                 string
-	AdminGroup                                   *Group
+	AdminGroup                                   *dsfetch.Maybe[Group]
 	AgendaItemList                               []AgendaItem
 	AllProjectionList                            []Projection
-	AnonymousGroup                               *Group
+	AnonymousGroup                               *dsfetch.Maybe[Group]
 	AssignmentCandidateList                      []AssignmentCandidate
 	AssignmentList                               []Assignment
 	AssignmentPollDefaultGroupList               []Group
@@ -1541,7 +1541,7 @@ type Meeting struct {
 	ChatMessageList                              []ChatMessage
 	Committee                                    *Committee
 	DefaultGroup                                 *Group
-	DefaultMeetingForCommittee                   *Committee
+	DefaultMeetingForCommittee                   *dsfetch.Maybe[Committee]
 	DefaultProjectorAgendaItemListList           []Projector
 	DefaultProjectorAmendmentList                []Projector
 	DefaultProjectorAssignmentList               []Projector
@@ -1556,28 +1556,28 @@ type Meeting struct {
 	DefaultProjectorMotionPollList               []Projector
 	DefaultProjectorPollList                     []Projector
 	DefaultProjectorTopicList                    []Projector
-	FontBold                                     *MeetingMediafile
-	FontBoldItalic                               *MeetingMediafile
-	FontChyronSpeakerName                        *MeetingMediafile
-	FontItalic                                   *MeetingMediafile
-	FontMonospace                                *MeetingMediafile
-	FontProjectorH1                              *MeetingMediafile
-	FontProjectorH2                              *MeetingMediafile
-	FontRegular                                  *MeetingMediafile
+	FontBold                                     *dsfetch.Maybe[MeetingMediafile]
+	FontBoldItalic                               *dsfetch.Maybe[MeetingMediafile]
+	FontChyronSpeakerName                        *dsfetch.Maybe[MeetingMediafile]
+	FontItalic                                   *dsfetch.Maybe[MeetingMediafile]
+	FontMonospace                                *dsfetch.Maybe[MeetingMediafile]
+	FontProjectorH1                              *dsfetch.Maybe[MeetingMediafile]
+	FontProjectorH2                              *dsfetch.Maybe[MeetingMediafile]
+	FontRegular                                  *dsfetch.Maybe[MeetingMediafile]
 	ForwardedMotionList                          []Motion
 	GroupList                                    []Group
-	IsActiveInOrganization                       *Organization
-	IsArchivedInOrganization                     *Organization
-	ListOfSpeakersCountdown                      *ProjectorCountdown
+	IsActiveInOrganization                       *dsfetch.Maybe[Organization]
+	IsArchivedInOrganization                     *dsfetch.Maybe[Organization]
+	ListOfSpeakersCountdown                      *dsfetch.Maybe[ProjectorCountdown]
 	ListOfSpeakersList                           []ListOfSpeakers
-	LogoPdfBallotPaper                           *MeetingMediafile
-	LogoPdfFooterL                               *MeetingMediafile
-	LogoPdfFooterR                               *MeetingMediafile
-	LogoPdfHeaderL                               *MeetingMediafile
-	LogoPdfHeaderR                               *MeetingMediafile
-	LogoProjectorHeader                          *MeetingMediafile
-	LogoProjectorMain                            *MeetingMediafile
-	LogoWebHeader                                *MeetingMediafile
+	LogoPdfBallotPaper                           *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfFooterL                               *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfFooterR                               *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfHeaderL                               *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfHeaderR                               *dsfetch.Maybe[MeetingMediafile]
+	LogoProjectorHeader                          *dsfetch.Maybe[MeetingMediafile]
+	LogoProjectorMain                            *dsfetch.Maybe[MeetingMediafile]
+	LogoWebHeader                                *dsfetch.Maybe[MeetingMediafile]
 	MediafileList                                []Mediafile
 	MeetingMediafileList                         []MeetingMediafile
 	MeetingUserList                              []MeetingUser
@@ -1601,7 +1601,7 @@ type Meeting struct {
 	PointOfOrderCategoryList                     []PointOfOrderCategory
 	PollCandidateList                            []PollCandidate
 	PollCandidateListList                        []PollCandidateList
-	PollCountdown                                *ProjectorCountdown
+	PollCountdown                                *dsfetch.Maybe[ProjectorCountdown]
 	PollDefaultGroupList                         []Group
 	PollList                                     []Poll
 	PresentUserList                              []User
@@ -1614,7 +1614,7 @@ type Meeting struct {
 	StructureLevelList                           []StructureLevel
 	StructureLevelListOfSpeakersList             []StructureLevelListOfSpeakers
 	TagList                                      []Tag
-	TemplateForOrganization                      *Organization
+	TemplateForOrganization                      *dsfetch.Maybe[Organization]
 	TopicList                                    []Topic
 	TopicPollDefaultGroupList                    []Group
 	VoteList                                     []Vote
@@ -2900,10 +2900,10 @@ func (b *meetingBuilder) VoteList() *voteBuilder {
 	}
 }
 
-func (r *Fetch) Meeting(id int) *meetingBuilder {
+func (r *Fetch) Meeting(ids ...int) *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -2938,26 +2938,26 @@ type MeetingMediafile struct {
 	UsedAsLogoWebHeaderInMeetingID         dsfetch.Maybe[int]
 	AccessGroupList                        []Group
 	InheritedAccessGroupList               []Group
-	ListOfSpeakers                         *ListOfSpeakers
+	ListOfSpeakers                         *dsfetch.Maybe[ListOfSpeakers]
 	Mediafile                              *Mediafile
 	Meeting                                *Meeting
 	ProjectionList                         []Projection
-	UsedAsFontBoldInMeeting                *Meeting
-	UsedAsFontBoldItalicInMeeting          *Meeting
-	UsedAsFontChyronSpeakerNameInMeeting   *Meeting
-	UsedAsFontItalicInMeeting              *Meeting
-	UsedAsFontMonospaceInMeeting           *Meeting
-	UsedAsFontProjectorH1InMeeting         *Meeting
-	UsedAsFontProjectorH2InMeeting         *Meeting
-	UsedAsFontRegularInMeeting             *Meeting
-	UsedAsLogoPdfBallotPaperInMeeting      *Meeting
-	UsedAsLogoPdfFooterLInMeeting          *Meeting
-	UsedAsLogoPdfFooterRInMeeting          *Meeting
-	UsedAsLogoPdfHeaderLInMeeting          *Meeting
-	UsedAsLogoPdfHeaderRInMeeting          *Meeting
-	UsedAsLogoProjectorHeaderInMeeting     *Meeting
-	UsedAsLogoProjectorMainInMeeting       *Meeting
-	UsedAsLogoWebHeaderInMeeting           *Meeting
+	UsedAsFontBoldInMeeting                *dsfetch.Maybe[Meeting]
+	UsedAsFontBoldItalicInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsFontChyronSpeakerNameInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsFontItalicInMeeting              *dsfetch.Maybe[Meeting]
+	UsedAsFontMonospaceInMeeting           *dsfetch.Maybe[Meeting]
+	UsedAsFontProjectorH1InMeeting         *dsfetch.Maybe[Meeting]
+	UsedAsFontProjectorH2InMeeting         *dsfetch.Maybe[Meeting]
+	UsedAsFontRegularInMeeting             *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfBallotPaperInMeeting      *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfFooterLInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfFooterRInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfHeaderLInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoPdfHeaderRInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsLogoProjectorHeaderInMeeting     *dsfetch.Maybe[Meeting]
+	UsedAsLogoProjectorMainInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsLogoWebHeaderInMeeting           *dsfetch.Maybe[Meeting]
 }
 
 type meetingMediafileBuilder struct {
@@ -3244,10 +3244,10 @@ func (b *meetingMediafileBuilder) UsedAsLogoWebHeaderInMeeting() *meetingBuilder
 	}
 }
 
-func (r *Fetch) MeetingMediafile(id int) *meetingMediafileBuilder {
+func (r *Fetch) MeetingMediafile(ids ...int) *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -3287,7 +3287,7 @@ type MeetingUser struct {
 	StructureLevelList            []StructureLevel
 	SupportedMotionList           []Motion
 	User                          *User
-	VoteDelegatedTo               *MeetingUser
+	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
 	VoteDelegationsFromList       []MeetingUser
 }
 
@@ -3490,10 +3490,10 @@ func (b *meetingUserBuilder) VoteDelegationsFromList() *meetingUserBuilder {
 	}
 }
 
-func (r *Fetch) MeetingUser(id int) *meetingUserBuilder {
+func (r *Fetch) MeetingUser(ids ...int) *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -3554,32 +3554,32 @@ type Motion struct {
 	Title                                         string
 	WorkflowTimestamp                             int
 	WorkingGroupSpeakerIDs                        []int
-	AgendaItem                                    *AgendaItem
+	AgendaItem                                    *dsfetch.Maybe[AgendaItem]
 	AllDerivedMotionList                          []Motion
 	AllOriginList                                 []Motion
 	AmendmentList                                 []Motion
 	AttachmentMeetingMediafileList                []MeetingMediafile
-	Block                                         *MotionBlock
-	Category                                      *MotionCategory
+	Block                                         *dsfetch.Maybe[MotionBlock]
+	Category                                      *dsfetch.Maybe[MotionCategory]
 	ChangeRecommendationList                      []MotionChangeRecommendation
 	CommentList                                   []MotionComment
 	DerivedMotionList                             []Motion
 	EditorList                                    []MotionEditor
 	IDenticalMotionList                           []Motion
-	LeadMotion                                    *Motion
+	LeadMotion                                    *dsfetch.Maybe[Motion]
 	ListOfSpeakers                                *ListOfSpeakers
 	Meeting                                       *Meeting
 	OptionList                                    []Option
-	Origin                                        *Motion
-	OriginMeeting                                 *Meeting
+	Origin                                        *dsfetch.Maybe[Motion]
+	OriginMeeting                                 *dsfetch.Maybe[Meeting]
 	PersonalNoteList                              []PersonalNote
 	PollList                                      []Poll
 	ProjectionList                                []Projection
-	Recommendation                                *MotionState
+	Recommendation                                *dsfetch.Maybe[MotionState]
 	ReferencedInMotionRecommendationExtensionList []Motion
 	ReferencedInMotionStateExtensionList          []Motion
 	SortChildList                                 []Motion
-	SortParent                                    *Motion
+	SortParent                                    *dsfetch.Maybe[Motion]
 	State                                         *MotionState
 	SubmitterList                                 []MotionSubmitter
 	SupporterMeetingUserList                      []MeetingUser
@@ -4015,10 +4015,10 @@ func (b *motionBuilder) WorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuil
 	}
 }
 
-func (r *Fetch) Motion(id int) *motionBuilder {
+func (r *Fetch) Motion(ids ...int) *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4035,7 +4035,7 @@ type MotionBlock struct {
 	ProjectionIDs    []int
 	SequentialNumber int
 	Title            string
-	AgendaItem       *AgendaItem
+	AgendaItem       *dsfetch.Maybe[AgendaItem]
 	ListOfSpeakers   *ListOfSpeakers
 	Meeting          *Meeting
 	MotionList       []Motion
@@ -4122,10 +4122,10 @@ func (b *motionBlockBuilder) ProjectionList() *projectionBuilder {
 	}
 }
 
-func (r *Fetch) MotionBlock(id int) *motionBlockBuilder {
+func (r *Fetch) MotionBlock(ids ...int) *motionBlockBuilder {
 	return &motionBlockBuilder{
 		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4146,7 +4146,7 @@ type MotionCategory struct {
 	ChildList        []MotionCategory
 	Meeting          *Meeting
 	MotionList       []Motion
-	Parent           *MotionCategory
+	Parent           *dsfetch.Maybe[MotionCategory]
 }
 
 type motionCategoryBuilder struct {
@@ -4219,10 +4219,10 @@ func (b *motionCategoryBuilder) Parent() *motionCategoryBuilder {
 	}
 }
 
-func (r *Fetch) MotionCategory(id int) *motionCategoryBuilder {
+func (r *Fetch) MotionCategory(ids ...int) *motionCategoryBuilder {
 	return &motionCategoryBuilder{
 		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4292,10 +4292,10 @@ func (b *motionChangeRecommendationBuilder) Motion() *motionBuilder {
 	}
 }
 
-func (r *Fetch) MotionChangeRecommendation(id int) *motionChangeRecommendationBuilder {
+func (r *Fetch) MotionChangeRecommendation(ids ...int) *motionChangeRecommendationBuilder {
 	return &motionChangeRecommendationBuilder{
 		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4365,10 +4365,10 @@ func (b *motionCommentBuilder) Section() *motionCommentSectionBuilder {
 	}
 }
 
-func (r *Fetch) MotionComment(id int) *motionCommentBuilder {
+func (r *Fetch) MotionComment(ids ...int) *motionCommentBuilder {
 	return &motionCommentBuilder{
 		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4461,10 +4461,10 @@ func (b *motionCommentSectionBuilder) WriteGroupList() *groupBuilder {
 	}
 }
 
-func (r *Fetch) MotionCommentSection(id int) *motionCommentSectionBuilder {
+func (r *Fetch) MotionCommentSection(ids ...int) *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
 		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4534,10 +4534,10 @@ func (b *motionEditorBuilder) Motion() *motionBuilder {
 	}
 }
 
-func (r *Fetch) MotionEditor(id int) *motionEditorBuilder {
+func (r *Fetch) MotionEditor(ids ...int) *motionEditorBuilder {
 	return &motionEditorBuilder{
 		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4570,14 +4570,14 @@ type MotionState struct {
 	SubmitterWithdrawStateID         dsfetch.Maybe[int]
 	Weight                           int
 	WorkflowID                       int
-	FirstStateOfWorkflow             *MotionWorkflow
+	FirstStateOfWorkflow             *dsfetch.Maybe[MotionWorkflow]
 	Meeting                          *Meeting
 	MotionList                       []Motion
 	MotionRecommendationList         []Motion
 	NextStateList                    []MotionState
 	PreviousStateList                []MotionState
 	SubmitterWithdrawBackList        []MotionState
-	SubmitterWithdrawState           *MotionState
+	SubmitterWithdrawState           *dsfetch.Maybe[MotionState]
 	Workflow                         *MotionWorkflow
 }
 
@@ -4724,10 +4724,10 @@ func (b *motionStateBuilder) Workflow() *motionWorkflowBuilder {
 	}
 }
 
-func (r *Fetch) MotionState(id int) *motionStateBuilder {
+func (r *Fetch) MotionState(ids ...int) *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4797,10 +4797,10 @@ func (b *motionSubmitterBuilder) Motion() *motionBuilder {
 	}
 }
 
-func (r *Fetch) MotionSubmitter(id int) *motionSubmitterBuilder {
+func (r *Fetch) MotionSubmitter(ids ...int) *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
 		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4816,8 +4816,8 @@ type MotionWorkflow struct {
 	Name                              string
 	SequentialNumber                  int
 	StateIDs                          []int
-	DefaultAmendmentWorkflowMeeting   *Meeting
-	DefaultWorkflowMeeting            *Meeting
+	DefaultAmendmentWorkflowMeeting   *dsfetch.Maybe[Meeting]
+	DefaultWorkflowMeeting            *dsfetch.Maybe[Meeting]
 	FirstState                        *MotionState
 	Meeting                           *Meeting
 	StateList                         []MotionState
@@ -4901,10 +4901,10 @@ func (b *motionWorkflowBuilder) StateList() *motionStateBuilder {
 	}
 }
 
-func (r *Fetch) MotionWorkflow(id int) *motionWorkflowBuilder {
+func (r *Fetch) MotionWorkflow(ids ...int) *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4974,10 +4974,10 @@ func (b *motionWorkingGroupSpeakerBuilder) Motion() *motionBuilder {
 	}
 }
 
-func (r *Fetch) MotionWorkingGroupSpeaker(id int) *motionWorkingGroupSpeakerBuilder {
+func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
 		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -4997,8 +4997,8 @@ type Option struct {
 	Weight                     int
 	Yes                        string
 	Meeting                    *Meeting
-	Poll                       *Poll
-	UsedAsGlobalOptionInPoll   *Poll
+	Poll                       *dsfetch.Maybe[Poll]
+	UsedAsGlobalOptionInPoll   *dsfetch.Maybe[Poll]
 	VoteList                   []Vote
 }
 
@@ -5072,10 +5072,10 @@ func (b *optionBuilder) VoteList() *voteBuilder {
 	}
 }
 
-func (r *Fetch) Option(id int) *optionBuilder {
+func (r *Fetch) Option(ids ...int) *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5315,10 +5315,10 @@ func (b *organizationBuilder) UserList() *userBuilder {
 	}
 }
 
-func (r *Fetch) Organization(id int) *organizationBuilder {
+func (r *Fetch) Organization(ids ...int) *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5364,10 +5364,10 @@ func (b *organizationTagBuilder) Organization() *organizationBuilder {
 	}
 }
 
-func (r *Fetch) OrganizationTag(id int) *organizationTagBuilder {
+func (r *Fetch) OrganizationTag(ids ...int) *organizationTagBuilder {
 	return &organizationTagBuilder{
 		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5427,10 +5427,10 @@ func (b *personalNoteBuilder) MeetingUser() *meetingUserBuilder {
 	}
 }
 
-func (r *Fetch) PersonalNote(id int) *personalNoteBuilder {
+func (r *Fetch) PersonalNote(ids ...int) *personalNoteBuilder {
 	return &personalNoteBuilder{
 		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5489,10 +5489,10 @@ func (b *pointOfOrderCategoryBuilder) SpeakerList() *speakerBuilder {
 	}
 }
 
-func (r *Fetch) PointOfOrderCategory(id int) *pointOfOrderCategoryBuilder {
+func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 	return &pointOfOrderCategoryBuilder{
 		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5533,7 +5533,7 @@ type Poll struct {
 	Votesinvalid          string
 	Votesvalid            string
 	EntitledGroupList     []Group
-	GlobalOption          *Option
+	GlobalOption          *dsfetch.Maybe[Option]
 	Meeting               *Meeting
 	OptionList            []Option
 	ProjectionList        []Projection
@@ -5656,10 +5656,10 @@ func (b *pollBuilder) VotedList() *userBuilder {
 	}
 }
 
-func (r *Fetch) Poll(id int) *pollBuilder {
+func (r *Fetch) Poll(ids ...int) *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5674,7 +5674,7 @@ type PollCandidate struct {
 	Weight              int
 	Meeting             *Meeting
 	PollCandidateList   *PollCandidateList
-	User                *User
+	User                *dsfetch.Maybe[User]
 }
 
 type pollCandidateBuilder struct {
@@ -5729,10 +5729,10 @@ func (b *pollCandidateBuilder) User() *userBuilder {
 	}
 }
 
-func (r *Fetch) PollCandidate(id int) *pollCandidateBuilder {
+func (r *Fetch) PollCandidate(ids ...int) *pollCandidateBuilder {
 	return &pollCandidateBuilder{
 		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5801,10 +5801,10 @@ func (b *pollCandidateListBuilder) PollCandidateList() *pollCandidateBuilder {
 	}
 }
 
-func (r *Fetch) PollCandidateList(id int) *pollCandidateListBuilder {
+func (r *Fetch) PollCandidateList(ids ...int) *pollCandidateListBuilder {
 	return &pollCandidateListBuilder{
 		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5823,10 +5823,10 @@ type Projection struct {
 	Stable             bool
 	Type               string
 	Weight             int
-	CurrentProjector   *Projector
-	HistoryProjector   *Projector
+	CurrentProjector   *dsfetch.Maybe[Projector]
+	HistoryProjector   *dsfetch.Maybe[Projector]
 	Meeting            *Meeting
-	PreviewProjector   *Projector
+	PreviewProjector   *dsfetch.Maybe[Projector]
 }
 
 type projectionBuilder struct {
@@ -5898,10 +5898,10 @@ func (b *projectionBuilder) PreviewProjector() *projectorBuilder {
 	}
 }
 
-func (r *Fetch) Projection(id int) *projectionBuilder {
+func (r *Fetch) Projection(ids ...int) *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -5954,21 +5954,21 @@ type Projector struct {
 	HistoryProjectionList                              []Projection
 	Meeting                                            *Meeting
 	PreviewProjectionList                              []Projection
-	UsedAsDefaultProjectorForAgendaItemListInMeeting   *Meeting
-	UsedAsDefaultProjectorForAmendmentInMeeting        *Meeting
-	UsedAsDefaultProjectorForAssignmentInMeeting       *Meeting
-	UsedAsDefaultProjectorForAssignmentPollInMeeting   *Meeting
-	UsedAsDefaultProjectorForCountdownInMeeting        *Meeting
-	UsedAsDefaultProjectorForCurrentLosInMeeting       *Meeting
-	UsedAsDefaultProjectorForListOfSpeakersInMeeting   *Meeting
-	UsedAsDefaultProjectorForMediafileInMeeting        *Meeting
-	UsedAsDefaultProjectorForMessageInMeeting          *Meeting
-	UsedAsDefaultProjectorForMotionBlockInMeeting      *Meeting
-	UsedAsDefaultProjectorForMotionInMeeting           *Meeting
-	UsedAsDefaultProjectorForMotionPollInMeeting       *Meeting
-	UsedAsDefaultProjectorForPollInMeeting             *Meeting
-	UsedAsDefaultProjectorForTopicInMeeting            *Meeting
-	UsedAsReferenceProjectorMeeting                    *Meeting
+	UsedAsDefaultProjectorForAgendaItemListInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAmendmentInMeeting        *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAssignmentInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAssignmentPollInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForCountdownInMeeting        *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForCurrentLosInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForListOfSpeakersInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMediafileInMeeting        *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMessageInMeeting          *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMotionBlockInMeeting      *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMotionInMeeting           *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForMotionPollInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForPollInMeeting             *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForTopicInMeeting            *dsfetch.Maybe[Meeting]
+	UsedAsReferenceProjectorMeeting                    *dsfetch.Maybe[Meeting]
 }
 
 type projectorBuilder struct {
@@ -6238,10 +6238,10 @@ func (b *projectorBuilder) UsedAsReferenceProjectorMeeting() *meetingBuilder {
 	}
 }
 
-func (r *Fetch) Projector(id int) *projectorBuilder {
+func (r *Fetch) Projector(ids ...int) *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6261,8 +6261,8 @@ type ProjectorCountdown struct {
 	UsedAsPollCountdownMeetingID           dsfetch.Maybe[int]
 	Meeting                                *Meeting
 	ProjectionList                         []Projection
-	UsedAsListOfSpeakersCountdownMeeting   *Meeting
-	UsedAsPollCountdownMeeting             *Meeting
+	UsedAsListOfSpeakersCountdownMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsPollCountdownMeeting             *dsfetch.Maybe[Meeting]
 }
 
 type projectorCountdownBuilder struct {
@@ -6334,10 +6334,10 @@ func (b *projectorCountdownBuilder) UsedAsPollCountdownMeeting() *meetingBuilder
 	}
 }
 
-func (r *Fetch) ProjectorCountdown(id int) *projectorCountdownBuilder {
+func (r *Fetch) ProjectorCountdown(ids ...int) *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
 		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6394,10 +6394,10 @@ func (b *projectorMessageBuilder) ProjectionList() *projectionBuilder {
 	}
 }
 
-func (r *Fetch) ProjectorMessage(id int) *projectorMessageBuilder {
+func (r *Fetch) ProjectorMessage(ids ...int) *projectorMessageBuilder {
 	return &projectorMessageBuilder{
 		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6422,9 +6422,9 @@ type Speaker struct {
 	Weight                         int
 	ListOfSpeakers                 *ListOfSpeakers
 	Meeting                        *Meeting
-	MeetingUser                    *MeetingUser
-	PointOfOrderCategory           *PointOfOrderCategory
-	StructureLevelListOfSpeakers   *StructureLevelListOfSpeakers
+	MeetingUser                    *dsfetch.Maybe[MeetingUser]
+	PointOfOrderCategory           *dsfetch.Maybe[PointOfOrderCategory]
+	StructureLevelListOfSpeakers   *dsfetch.Maybe[StructureLevelListOfSpeakers]
 }
 
 type speakerBuilder struct {
@@ -6511,10 +6511,10 @@ func (b *speakerBuilder) StructureLevelListOfSpeakers() *structureLevelListOfSpe
 	}
 }
 
-func (r *Fetch) Speaker(id int) *speakerBuilder {
+func (r *Fetch) Speaker(ids ...int) *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6590,10 +6590,10 @@ func (b *structureLevelBuilder) StructureLevelListOfSpeakersList() *structureLev
 	}
 }
 
-func (r *Fetch) StructureLevel(id int) *structureLevelBuilder {
+func (r *Fetch) StructureLevel(ids ...int) *structureLevelBuilder {
 	return &structureLevelBuilder{
 		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6684,10 +6684,10 @@ func (b *structureLevelListOfSpeakersBuilder) StructureLevel() *structureLevelBu
 	}
 }
 
-func (r *Fetch) StructureLevelListOfSpeakers(id int) *structureLevelListOfSpeakersBuilder {
+func (r *Fetch) StructureLevelListOfSpeakers(ids ...int) *structureLevelListOfSpeakersBuilder {
 	return &structureLevelListOfSpeakersBuilder{
 		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6731,10 +6731,10 @@ func (b *tagBuilder) Meeting() *meetingBuilder {
 	}
 }
 
-func (r *Fetch) Tag(id int) *tagBuilder {
+func (r *Fetch) Tag(ids ...int) *tagBuilder {
 	return &tagBuilder{
 		builder: builder[tagBuilder, *tagBuilder, Tag]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -6793,7 +6793,7 @@ type Theme struct {
 	WarnA700               string
 	Yes                    string
 	Organization           *Organization
-	ThemeForOrganization   *Organization
+	ThemeForOrganization   *dsfetch.Maybe[Organization]
 }
 
 type themeBuilder struct {
@@ -6882,10 +6882,10 @@ func (b *themeBuilder) ThemeForOrganization() *organizationBuilder {
 	}
 }
 
-func (r *Fetch) Theme(id int) *themeBuilder {
+func (r *Fetch) Theme(ids ...int) *themeBuilder {
 	return &themeBuilder{
 		builder: builder[themeBuilder, *themeBuilder, Theme]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -7004,10 +7004,10 @@ func (b *topicBuilder) ProjectionList() *projectionBuilder {
 	}
 }
 
-func (r *Fetch) Topic(id int) *topicBuilder {
+func (r *Fetch) Topic(ids ...int) *topicBuilder {
 	return &topicBuilder{
 		builder: builder[topicBuilder, *topicBuilder, Topic]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -7049,7 +7049,7 @@ type User struct {
 	CommitteeList               []Committee
 	CommitteeManagementList     []Committee
 	DelegatedVoteList           []Vote
-	Gender                      *Gender
+	Gender                      *dsfetch.Maybe[Gender]
 	IsPresentInMeetingList      []Meeting
 	MeetingUserList             []MeetingUser
 	OptionList                  []Option
@@ -7234,10 +7234,10 @@ func (b *userBuilder) VoteList() *voteBuilder {
 	}
 }
 
-func (r *Fetch) User(id int) *userBuilder {
+func (r *Fetch) User(ids ...int) *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}
@@ -7253,10 +7253,10 @@ type Vote struct {
 	UserToken       string
 	Value           string
 	Weight          string
-	DelegatedUser   *User
+	DelegatedUser   *dsfetch.Maybe[User]
 	Meeting         *Meeting
 	Option          *Option
-	User            *User
+	User            *dsfetch.Maybe[User]
 }
 
 type voteBuilder struct {
@@ -7325,10 +7325,10 @@ func (b *voteBuilder) User() *userBuilder {
 	}
 }
 
-func (r *Fetch) Vote(id int) *voteBuilder {
+func (r *Fetch) Vote(ids ...int) *voteBuilder {
 	return &voteBuilder{
 		builder: builder[voteBuilder, *voteBuilder, Vote]{
-			ids:   []int{id},
+			ids:   ids,
 			fetch: r,
 		},
 	}

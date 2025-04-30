@@ -225,6 +225,9 @@ func toCollections(raw map[string]models.Model) []Collection {
 			toTypeLc := string(toType[0]+32) + string(toType[1:])
 
 			resultType := fmt.Sprintf("*%s", toType)
+			if !relation.List() && !modelField.Required {
+				resultType = fmt.Sprintf("*dsfetch.Maybe[%s]", toType)
+			}
 			if relation.List() {
 				resultType = fmt.Sprintf("[]%s", toType)
 			}
