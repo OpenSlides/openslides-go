@@ -9,11 +9,11 @@ import (
 
 type builderWrapperI interface {
 	SetIds(ids []int)
-	SetChild(builder builderWrapperI) builderWrapperI
-	RelParent() builderWrapperI
-	RelIdField() string
-	RelField() string
-	RelMany() bool
+	setChild(builder builderWrapperI) builderWrapperI
+	getParent() builderWrapperI
+	getIdField() string
+	getRelField() string
+	getMany() bool
 	loadChildren(ctx context.Context, parent any) error
 	lazyAll(ctx context.Context) []any
 }
@@ -39,31 +39,31 @@ func (b *builder[C, T, M]) SetIds(ids []int) {
 	b.ids = ids
 }
 
-func (b *builder[C, T, M]) SetChild(builder builderWrapperI) builderWrapperI {
+func (b *builder[C, T, M]) setChild(builder builderWrapperI) builderWrapperI {
 	if b.children == nil {
 		b.children = map[string]builderWrapperI{}
 	}
 
-	if _, ok := b.children[builder.RelField()]; !ok {
-		b.children[builder.RelField()] = builder
+	if _, ok := b.children[builder.getRelField()]; !ok {
+		b.children[builder.getRelField()] = builder
 	}
 
-	return b.children[builder.RelField()]
+	return b.children[builder.getRelField()]
 }
 
-func (b *builder[C, T, M]) RelField() string {
+func (b *builder[C, T, M]) getRelField() string {
 	return b.relField
 }
 
-func (b *builder[C, T, M]) RelIdField() string {
+func (b *builder[C, T, M]) getIdField() string {
 	return b.idField
 }
 
-func (b *builder[C, T, M]) RelMany() bool {
+func (b *builder[C, T, M]) getMany() bool {
 	return b.many
 }
 
-func (b *builder[C, T, M]) RelParent() builderWrapperI {
+func (b *builder[C, T, M]) getParent() builderWrapperI {
 	return b.parent
 }
 
@@ -77,15 +77,15 @@ func (b *builder[C, T, M]) lazyAll(ctx context.Context) []any {
 
 func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 	children := []builderWrapperI{}
-	for rel != b && rel != nil && rel.RelField() != "" {
+	for rel != b && rel != nil && rel.getRelField() != "" {
 		children = append([]builderWrapperI{rel}, children...)
-		rel = rel.RelParent()
+		rel = rel.getParent()
 	}
 
 	var cParent builderWrapperI
 	cParent = b
 	for _, cRel := range children {
-		cParent = cParent.SetChild(cRel)
+		cParent = cParent.setChild(cRel)
 	}
 }
 
@@ -97,8 +97,8 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
 	rParent := reflect.ValueOf(parent).Elem()
 	for _, child := range b.children {
 		ids := []int{}
-		idField := rParent.FieldByName(child.RelIdField())
-		if child.RelMany() {
+		idField := rParent.FieldByName(child.getIdField())
+		if child.getMany() {
 			ids = idField.Interface().([]int)
 		} else if idField.Kind() == reflect.Int {
 			ids = append(ids, int(idField.Int()))
@@ -115,13 +115,13 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
 			return err
 		}
 
-		targetField := rParent.FieldByName(child.RelField())
+		targetField := rParent.FieldByName(child.getRelField())
 		for _, item := range items {
 			if err := child.loadChildren(ctx, item); err != nil {
 				return err
 			}
 
-			if child.RelMany() {
+			if child.getMany() {
 				targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
 			} else {
 				targetField.Set(reflect.ValueOf(item))
