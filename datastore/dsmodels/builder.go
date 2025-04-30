@@ -27,11 +27,10 @@ type builder[C any, T builderPtr[C, M], M any] struct {
 	ids      []int
 	value    T
 	parent   builderWrapperI
-	children   map[string]builderWrapperI
+	children map[string]builderWrapperI
 	idField  string
 	relField string
 	many     bool
-	loaded   bool
 	fetch    *Fetch
 }
 
