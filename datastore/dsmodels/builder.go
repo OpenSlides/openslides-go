@@ -11,7 +11,7 @@ type builderWrapperI interface {
 	SetIds(ids []int)
 	setChild(builder builderWrapperI) builderWrapperI
 	getParent() builderWrapperI
-	getIdField() string
+	getIDField() string
 	getRelField() string
 	getMany() bool
 	loadChildren(ctx context.Context, parent any) error
@@ -54,7 +54,7 @@ func (b *builder[C, T, M]) getRelField() string {
 	return b.relField
 }
 
-func (b *builder[C, T, M]) getIdField() string {
+func (b *builder[C, T, M]) getIDField() string {
 	return b.idField
 }
 
@@ -96,7 +96,7 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
 	rParent := reflect.ValueOf(parent).Elem()
 	for _, child := range b.children {
 		ids := []int{}
-		idField := rParent.FieldByName(child.getIdField())
+		idField := rParent.FieldByName(child.getIDField())
 		targetField := rParent.FieldByName(child.getRelField())
 		if child.getMany() {
 			ids = idField.Interface().([]int)
