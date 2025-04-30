@@ -30,6 +30,7 @@ func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
 	return &{{.TypeLc}}Builder{
 		builder: builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}]{
 			fetch: b.fetch,
+			parent: b,
 			idField: "{{.FieldName}}",
 			relField: "{{.MethodName}}",
             {{- if .IsList}}

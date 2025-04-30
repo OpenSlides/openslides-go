@@ -67,7 +67,7 @@ type AgendaItem struct {
 	Weight          int
 	ChildList       []AgendaItem
 	Meeting         *Meeting
-	Parent          *dsfetch.Maybe[AgendaItem]
+	Parent          *AgendaItem
 	ProjectionList  []Projection
 	TagList         []Tag
 }
@@ -106,6 +106,7 @@ func (b *agendaItemBuilder) ChildList() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
@@ -117,6 +118,7 @@ func (b *agendaItemBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -127,6 +129,7 @@ func (b *agendaItemBuilder) Parent() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
 		},
@@ -137,6 +140,7 @@ func (b *agendaItemBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -148,6 +152,7 @@ func (b *agendaItemBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
 		builder: builder[tagBuilder, *tagBuilder, Tag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
@@ -182,7 +187,7 @@ type Assignment struct {
 	SequentialNumber               int
 	TagIDs                         []int
 	Title                          string
-	AgendaItem                     *dsfetch.Maybe[AgendaItem]
+	AgendaItem                     *AgendaItem
 	AttachmentMeetingMediafileList []MeetingMediafile
 	CandidateList                  []AssignmentCandidate
 	ListOfSpeakers                 *ListOfSpeakers
@@ -226,6 +231,7 @@ func (b *assignmentBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
 		},
@@ -236,6 +242,7 @@ func (b *assignmentBuilder) AttachmentMeetingMediafileList() *meetingMediafileBu
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AttachmentMeetingMediafileIDs",
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
@@ -247,6 +254,7 @@ func (b *assignmentBuilder) CandidateList() *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
 		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CandidateIDs",
 			relField: "CandidateList",
 			many:     true,
@@ -258,6 +266,7 @@ func (b *assignmentBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -268,6 +277,7 @@ func (b *assignmentBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -278,6 +288,7 @@ func (b *assignmentBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
@@ -289,6 +300,7 @@ func (b *assignmentBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -300,6 +312,7 @@ func (b *assignmentBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
 		builder: builder[tagBuilder, *tagBuilder, Tag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
@@ -325,7 +338,7 @@ type AssignmentCandidate struct {
 	Weight        int
 	Assignment    *Assignment
 	Meeting       *Meeting
-	MeetingUser   *dsfetch.Maybe[MeetingUser]
+	MeetingUser   *MeetingUser
 }
 
 type assignmentCandidateBuilder struct {
@@ -351,6 +364,7 @@ func (b *assignmentCandidateBuilder) Assignment() *assignmentBuilder {
 	return &assignmentBuilder{
 		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AssignmentID",
 			relField: "Assignment",
 		},
@@ -361,6 +375,7 @@ func (b *assignmentCandidateBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -371,6 +386,7 @@ func (b *assignmentCandidateBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -426,6 +442,7 @@ func (b *chatGroupBuilder) ChatMessageList() *chatMessageBuilder {
 	return &chatMessageBuilder{
 		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChatMessageIDs",
 			relField: "ChatMessageList",
 			many:     true,
@@ -437,6 +454,7 @@ func (b *chatGroupBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -447,6 +465,7 @@ func (b *chatGroupBuilder) ReadGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReadGroupIDs",
 			relField: "ReadGroupList",
 			many:     true,
@@ -458,6 +477,7 @@ func (b *chatGroupBuilder) WriteGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "WriteGroupIDs",
 			relField: "WriteGroupList",
 			many:     true,
@@ -484,7 +504,7 @@ type ChatMessage struct {
 	MeetingUserID dsfetch.Maybe[int]
 	ChatGroup     *ChatGroup
 	Meeting       *Meeting
-	MeetingUser   *dsfetch.Maybe[MeetingUser]
+	MeetingUser   *MeetingUser
 }
 
 type chatMessageBuilder struct {
@@ -511,6 +531,7 @@ func (b *chatMessageBuilder) ChatGroup() *chatGroupBuilder {
 	return &chatGroupBuilder{
 		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChatGroupID",
 			relField: "ChatGroup",
 		},
@@ -521,6 +542,7 @@ func (b *chatMessageBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -531,6 +553,7 @@ func (b *chatMessageBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -560,7 +583,7 @@ type Committee struct {
 	OrganizationTagIDs                  []int
 	ReceiveForwardingsFromCommitteeIDs  []int
 	UserIDs                             []int
-	DefaultMeeting                      *dsfetch.Maybe[Meeting]
+	DefaultMeeting                      *Meeting
 	ForwardToCommitteeList              []Committee
 	ManagerList                         []User
 	MeetingList                         []Meeting
@@ -600,6 +623,7 @@ func (b *committeeBuilder) DefaultMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultMeetingID",
 			relField: "DefaultMeeting",
 		},
@@ -610,6 +634,7 @@ func (b *committeeBuilder) ForwardToCommitteeList() *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ForwardToCommitteeIDs",
 			relField: "ForwardToCommitteeList",
 			many:     true,
@@ -621,6 +646,7 @@ func (b *committeeBuilder) ManagerList() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ManagerIDs",
 			relField: "ManagerList",
 			many:     true,
@@ -632,6 +658,7 @@ func (b *committeeBuilder) MeetingList() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingIDs",
 			relField: "MeetingList",
 			many:     true,
@@ -643,6 +670,7 @@ func (b *committeeBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
 		},
@@ -653,6 +681,7 @@ func (b *committeeBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
 		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
@@ -664,6 +693,7 @@ func (b *committeeBuilder) ReceiveForwardingsFromCommitteeList() *committeeBuild
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReceiveForwardingsFromCommitteeIDs",
 			relField: "ReceiveForwardingsFromCommitteeList",
 			many:     true,
@@ -675,6 +705,7 @@ func (b *committeeBuilder) UserList() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
@@ -723,6 +754,7 @@ func (b *genderBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
 		},
@@ -733,6 +765,7 @@ func (b *genderBuilder) UserList() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
@@ -772,9 +805,9 @@ type Group struct {
 	Weight                                   int
 	WriteChatGroupIDs                        []int
 	WriteCommentSectionIDs                   []int
-	AdminGroupForMeeting                     *dsfetch.Maybe[Meeting]
-	AnonymousGroupForMeeting                 *dsfetch.Maybe[Meeting]
-	DefaultGroupForMeeting                   *dsfetch.Maybe[Meeting]
+	AdminGroupForMeeting                     *Meeting
+	AnonymousGroupForMeeting                 *Meeting
+	DefaultGroupForMeeting                   *Meeting
 	Meeting                                  *Meeting
 	MeetingMediafileAccessGroupList          []MeetingMediafile
 	MeetingMediafileInheritedAccessGroupList []MeetingMediafile
@@ -782,10 +815,10 @@ type Group struct {
 	PollList                                 []Poll
 	ReadChatGroupList                        []ChatGroup
 	ReadCommentSectionList                   []MotionCommentSection
-	UsedAsAssignmentPollDefault              *dsfetch.Maybe[Meeting]
-	UsedAsMotionPollDefault                  *dsfetch.Maybe[Meeting]
-	UsedAsPollDefault                        *dsfetch.Maybe[Meeting]
-	UsedAsTopicPollDefault                   *dsfetch.Maybe[Meeting]
+	UsedAsAssignmentPollDefault              *Meeting
+	UsedAsMotionPollDefault                  *Meeting
+	UsedAsPollDefault                        *Meeting
+	UsedAsTopicPollDefault                   *Meeting
 	WriteChatGroupList                       []ChatGroup
 	WriteCommentSectionList                  []MotionCommentSection
 }
@@ -829,6 +862,7 @@ func (b *groupBuilder) AdminGroupForMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AdminGroupForMeetingID",
 			relField: "AdminGroupForMeeting",
 		},
@@ -839,6 +873,7 @@ func (b *groupBuilder) AnonymousGroupForMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AnonymousGroupForMeetingID",
 			relField: "AnonymousGroupForMeeting",
 		},
@@ -849,6 +884,7 @@ func (b *groupBuilder) DefaultGroupForMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultGroupForMeetingID",
 			relField: "DefaultGroupForMeeting",
 		},
@@ -859,6 +895,7 @@ func (b *groupBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -869,6 +906,7 @@ func (b *groupBuilder) MeetingMediafileAccessGroupList() *meetingMediafileBuilde
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingMediafileAccessGroupIDs",
 			relField: "MeetingMediafileAccessGroupList",
 			many:     true,
@@ -880,6 +918,7 @@ func (b *groupBuilder) MeetingMediafileInheritedAccessGroupList() *meetingMediaf
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingMediafileInheritedAccessGroupIDs",
 			relField: "MeetingMediafileInheritedAccessGroupList",
 			many:     true,
@@ -891,6 +930,7 @@ func (b *groupBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
@@ -902,6 +942,7 @@ func (b *groupBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
@@ -913,6 +954,7 @@ func (b *groupBuilder) ReadChatGroupList() *chatGroupBuilder {
 	return &chatGroupBuilder{
 		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReadChatGroupIDs",
 			relField: "ReadChatGroupList",
 			many:     true,
@@ -924,6 +966,7 @@ func (b *groupBuilder) ReadCommentSectionList() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
 		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReadCommentSectionIDs",
 			relField: "ReadCommentSectionList",
 			many:     true,
@@ -935,6 +978,7 @@ func (b *groupBuilder) UsedAsAssignmentPollDefault() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsAssignmentPollDefaultID",
 			relField: "UsedAsAssignmentPollDefault",
 		},
@@ -945,6 +989,7 @@ func (b *groupBuilder) UsedAsMotionPollDefault() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsMotionPollDefaultID",
 			relField: "UsedAsMotionPollDefault",
 		},
@@ -955,6 +1000,7 @@ func (b *groupBuilder) UsedAsPollDefault() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsPollDefaultID",
 			relField: "UsedAsPollDefault",
 		},
@@ -965,6 +1011,7 @@ func (b *groupBuilder) UsedAsTopicPollDefault() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsTopicPollDefaultID",
 			relField: "UsedAsTopicPollDefault",
 		},
@@ -975,6 +1022,7 @@ func (b *groupBuilder) WriteChatGroupList() *chatGroupBuilder {
 	return &chatGroupBuilder{
 		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "WriteChatGroupIDs",
 			relField: "WriteChatGroupList",
 			many:     true,
@@ -986,6 +1034,7 @@ func (b *groupBuilder) WriteCommentSectionList() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
 		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "WriteCommentSectionIDs",
 			relField: "WriteCommentSectionList",
 			many:     true,
@@ -1083,6 +1132,7 @@ func (b *listOfSpeakersBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -1093,6 +1143,7 @@ func (b *listOfSpeakersBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -1104,6 +1155,7 @@ func (b *listOfSpeakersBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
@@ -1115,6 +1167,7 @@ func (b *listOfSpeakersBuilder) StructureLevelListOfSpeakersList() *structureLev
 	return &structureLevelListOfSpeakersBuilder{
 		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelListOfSpeakersIDs",
 			relField: "StructureLevelListOfSpeakersList",
 			many:     true,
@@ -1149,8 +1202,8 @@ type Mediafile struct {
 	Token                               string
 	ChildList                           []Mediafile
 	MeetingMediafileList                []MeetingMediafile
-	Parent                              *dsfetch.Maybe[Mediafile]
-	PublishedToMeetingsInOrganization   *dsfetch.Maybe[Organization]
+	Parent                              *Mediafile
+	PublishedToMeetingsInOrganization   *Organization
 }
 
 type mediafileBuilder struct {
@@ -1185,6 +1238,7 @@ func (b *mediafileBuilder) ChildList() *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
@@ -1196,6 +1250,7 @@ func (b *mediafileBuilder) MeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingMediafileIDs",
 			relField: "MeetingMediafileList",
 			many:     true,
@@ -1207,6 +1262,7 @@ func (b *mediafileBuilder) Parent() *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
 		},
@@ -1217,6 +1273,7 @@ func (b *mediafileBuilder) PublishedToMeetingsInOrganization() *organizationBuil
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PublishedToMeetingsInOrganizationID",
 			relField: "PublishedToMeetingsInOrganization",
 		},
@@ -1473,10 +1530,10 @@ type Meeting struct {
 	VoteIDs                                      []int
 	WelcomeText                                  string
 	WelcomeTitle                                 string
-	AdminGroup                                   *dsfetch.Maybe[Group]
+	AdminGroup                                   *Group
 	AgendaItemList                               []AgendaItem
 	AllProjectionList                            []Projection
-	AnonymousGroup                               *dsfetch.Maybe[Group]
+	AnonymousGroup                               *Group
 	AssignmentCandidateList                      []AssignmentCandidate
 	AssignmentList                               []Assignment
 	AssignmentPollDefaultGroupList               []Group
@@ -1484,7 +1541,7 @@ type Meeting struct {
 	ChatMessageList                              []ChatMessage
 	Committee                                    *Committee
 	DefaultGroup                                 *Group
-	DefaultMeetingForCommittee                   *dsfetch.Maybe[Committee]
+	DefaultMeetingForCommittee                   *Committee
 	DefaultProjectorAgendaItemListList           []Projector
 	DefaultProjectorAmendmentList                []Projector
 	DefaultProjectorAssignmentList               []Projector
@@ -1499,28 +1556,28 @@ type Meeting struct {
 	DefaultProjectorMotionPollList               []Projector
 	DefaultProjectorPollList                     []Projector
 	DefaultProjectorTopicList                    []Projector
-	FontBold                                     *dsfetch.Maybe[MeetingMediafile]
-	FontBoldItalic                               *dsfetch.Maybe[MeetingMediafile]
-	FontChyronSpeakerName                        *dsfetch.Maybe[MeetingMediafile]
-	FontItalic                                   *dsfetch.Maybe[MeetingMediafile]
-	FontMonospace                                *dsfetch.Maybe[MeetingMediafile]
-	FontProjectorH1                              *dsfetch.Maybe[MeetingMediafile]
-	FontProjectorH2                              *dsfetch.Maybe[MeetingMediafile]
-	FontRegular                                  *dsfetch.Maybe[MeetingMediafile]
+	FontBold                                     *MeetingMediafile
+	FontBoldItalic                               *MeetingMediafile
+	FontChyronSpeakerName                        *MeetingMediafile
+	FontItalic                                   *MeetingMediafile
+	FontMonospace                                *MeetingMediafile
+	FontProjectorH1                              *MeetingMediafile
+	FontProjectorH2                              *MeetingMediafile
+	FontRegular                                  *MeetingMediafile
 	ForwardedMotionList                          []Motion
 	GroupList                                    []Group
-	IsActiveInOrganization                       *dsfetch.Maybe[Organization]
-	IsArchivedInOrganization                     *dsfetch.Maybe[Organization]
-	ListOfSpeakersCountdown                      *dsfetch.Maybe[ProjectorCountdown]
+	IsActiveInOrganization                       *Organization
+	IsArchivedInOrganization                     *Organization
+	ListOfSpeakersCountdown                      *ProjectorCountdown
 	ListOfSpeakersList                           []ListOfSpeakers
-	LogoPdfBallotPaper                           *dsfetch.Maybe[MeetingMediafile]
-	LogoPdfFooterL                               *dsfetch.Maybe[MeetingMediafile]
-	LogoPdfFooterR                               *dsfetch.Maybe[MeetingMediafile]
-	LogoPdfHeaderL                               *dsfetch.Maybe[MeetingMediafile]
-	LogoPdfHeaderR                               *dsfetch.Maybe[MeetingMediafile]
-	LogoProjectorHeader                          *dsfetch.Maybe[MeetingMediafile]
-	LogoProjectorMain                            *dsfetch.Maybe[MeetingMediafile]
-	LogoWebHeader                                *dsfetch.Maybe[MeetingMediafile]
+	LogoPdfBallotPaper                           *MeetingMediafile
+	LogoPdfFooterL                               *MeetingMediafile
+	LogoPdfFooterR                               *MeetingMediafile
+	LogoPdfHeaderL                               *MeetingMediafile
+	LogoPdfHeaderR                               *MeetingMediafile
+	LogoProjectorHeader                          *MeetingMediafile
+	LogoProjectorMain                            *MeetingMediafile
+	LogoWebHeader                                *MeetingMediafile
 	MediafileList                                []Mediafile
 	MeetingMediafileList                         []MeetingMediafile
 	MeetingUserList                              []MeetingUser
@@ -1544,7 +1601,7 @@ type Meeting struct {
 	PointOfOrderCategoryList                     []PointOfOrderCategory
 	PollCandidateList                            []PollCandidate
 	PollCandidateListList                        []PollCandidateList
-	PollCountdown                                *dsfetch.Maybe[ProjectorCountdown]
+	PollCountdown                                *ProjectorCountdown
 	PollDefaultGroupList                         []Group
 	PollList                                     []Poll
 	PresentUserList                              []User
@@ -1557,7 +1614,7 @@ type Meeting struct {
 	StructureLevelList                           []StructureLevel
 	StructureLevelListOfSpeakersList             []StructureLevelListOfSpeakers
 	TagList                                      []Tag
-	TemplateForOrganization                      *dsfetch.Maybe[Organization]
+	TemplateForOrganization                      *Organization
 	TopicList                                    []Topic
 	TopicPollDefaultGroupList                    []Group
 	VoteList                                     []Vote
@@ -1820,6 +1877,7 @@ func (b *meetingBuilder) AdminGroup() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AdminGroupID",
 			relField: "AdminGroup",
 		},
@@ -1830,6 +1888,7 @@ func (b *meetingBuilder) AgendaItemList() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AgendaItemIDs",
 			relField: "AgendaItemList",
 			many:     true,
@@ -1841,6 +1900,7 @@ func (b *meetingBuilder) AllProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AllProjectionIDs",
 			relField: "AllProjectionList",
 			many:     true,
@@ -1852,6 +1912,7 @@ func (b *meetingBuilder) AnonymousGroup() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AnonymousGroupID",
 			relField: "AnonymousGroup",
 		},
@@ -1862,6 +1923,7 @@ func (b *meetingBuilder) AssignmentCandidateList() *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
 		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AssignmentCandidateIDs",
 			relField: "AssignmentCandidateList",
 			many:     true,
@@ -1873,6 +1935,7 @@ func (b *meetingBuilder) AssignmentList() *assignmentBuilder {
 	return &assignmentBuilder{
 		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AssignmentIDs",
 			relField: "AssignmentList",
 			many:     true,
@@ -1884,6 +1947,7 @@ func (b *meetingBuilder) AssignmentPollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AssignmentPollDefaultGroupIDs",
 			relField: "AssignmentPollDefaultGroupList",
 			many:     true,
@@ -1895,6 +1959,7 @@ func (b *meetingBuilder) ChatGroupList() *chatGroupBuilder {
 	return &chatGroupBuilder{
 		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChatGroupIDs",
 			relField: "ChatGroupList",
 			many:     true,
@@ -1906,6 +1971,7 @@ func (b *meetingBuilder) ChatMessageList() *chatMessageBuilder {
 	return &chatMessageBuilder{
 		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChatMessageIDs",
 			relField: "ChatMessageList",
 			many:     true,
@@ -1917,6 +1983,7 @@ func (b *meetingBuilder) Committee() *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CommitteeID",
 			relField: "Committee",
 		},
@@ -1927,6 +1994,7 @@ func (b *meetingBuilder) DefaultGroup() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultGroupID",
 			relField: "DefaultGroup",
 		},
@@ -1937,6 +2005,7 @@ func (b *meetingBuilder) DefaultMeetingForCommittee() *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultMeetingForCommitteeID",
 			relField: "DefaultMeetingForCommittee",
 		},
@@ -1947,6 +2016,7 @@ func (b *meetingBuilder) DefaultProjectorAgendaItemListList() *projectorBuilder 
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorAgendaItemListIDs",
 			relField: "DefaultProjectorAgendaItemListList",
 			many:     true,
@@ -1958,6 +2028,7 @@ func (b *meetingBuilder) DefaultProjectorAmendmentList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorAmendmentIDs",
 			relField: "DefaultProjectorAmendmentList",
 			many:     true,
@@ -1969,6 +2040,7 @@ func (b *meetingBuilder) DefaultProjectorAssignmentList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorAssignmentIDs",
 			relField: "DefaultProjectorAssignmentList",
 			many:     true,
@@ -1980,6 +2052,7 @@ func (b *meetingBuilder) DefaultProjectorAssignmentPollList() *projectorBuilder 
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorAssignmentPollIDs",
 			relField: "DefaultProjectorAssignmentPollList",
 			many:     true,
@@ -1991,6 +2064,7 @@ func (b *meetingBuilder) DefaultProjectorCountdownList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorCountdownIDs",
 			relField: "DefaultProjectorCountdownList",
 			many:     true,
@@ -2002,6 +2076,7 @@ func (b *meetingBuilder) DefaultProjectorCurrentLosList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorCurrentLosIDs",
 			relField: "DefaultProjectorCurrentLosList",
 			many:     true,
@@ -2013,6 +2088,7 @@ func (b *meetingBuilder) DefaultProjectorListOfSpeakersList() *projectorBuilder 
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorListOfSpeakersIDs",
 			relField: "DefaultProjectorListOfSpeakersList",
 			many:     true,
@@ -2024,6 +2100,7 @@ func (b *meetingBuilder) DefaultProjectorMediafileList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorMediafileIDs",
 			relField: "DefaultProjectorMediafileList",
 			many:     true,
@@ -2035,6 +2112,7 @@ func (b *meetingBuilder) DefaultProjectorMessageList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorMessageIDs",
 			relField: "DefaultProjectorMessageList",
 			many:     true,
@@ -2046,6 +2124,7 @@ func (b *meetingBuilder) DefaultProjectorMotionBlockList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorMotionBlockIDs",
 			relField: "DefaultProjectorMotionBlockList",
 			many:     true,
@@ -2057,6 +2136,7 @@ func (b *meetingBuilder) DefaultProjectorMotionList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorMotionIDs",
 			relField: "DefaultProjectorMotionList",
 			many:     true,
@@ -2068,6 +2148,7 @@ func (b *meetingBuilder) DefaultProjectorMotionPollList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorMotionPollIDs",
 			relField: "DefaultProjectorMotionPollList",
 			many:     true,
@@ -2079,6 +2160,7 @@ func (b *meetingBuilder) DefaultProjectorPollList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorPollIDs",
 			relField: "DefaultProjectorPollList",
 			many:     true,
@@ -2090,6 +2172,7 @@ func (b *meetingBuilder) DefaultProjectorTopicList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultProjectorTopicIDs",
 			relField: "DefaultProjectorTopicList",
 			many:     true,
@@ -2101,6 +2184,7 @@ func (b *meetingBuilder) FontBold() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontBoldID",
 			relField: "FontBold",
 		},
@@ -2111,6 +2195,7 @@ func (b *meetingBuilder) FontBoldItalic() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontBoldItalicID",
 			relField: "FontBoldItalic",
 		},
@@ -2121,6 +2206,7 @@ func (b *meetingBuilder) FontChyronSpeakerName() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontChyronSpeakerNameID",
 			relField: "FontChyronSpeakerName",
 		},
@@ -2131,6 +2217,7 @@ func (b *meetingBuilder) FontItalic() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontItalicID",
 			relField: "FontItalic",
 		},
@@ -2141,6 +2228,7 @@ func (b *meetingBuilder) FontMonospace() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontMonospaceID",
 			relField: "FontMonospace",
 		},
@@ -2151,6 +2239,7 @@ func (b *meetingBuilder) FontProjectorH1() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontProjectorH1ID",
 			relField: "FontProjectorH1",
 		},
@@ -2161,6 +2250,7 @@ func (b *meetingBuilder) FontProjectorH2() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontProjectorH2ID",
 			relField: "FontProjectorH2",
 		},
@@ -2171,6 +2261,7 @@ func (b *meetingBuilder) FontRegular() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FontRegularID",
 			relField: "FontRegular",
 		},
@@ -2181,6 +2272,7 @@ func (b *meetingBuilder) ForwardedMotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ForwardedMotionIDs",
 			relField: "ForwardedMotionList",
 			many:     true,
@@ -2192,6 +2284,7 @@ func (b *meetingBuilder) GroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "GroupIDs",
 			relField: "GroupList",
 			many:     true,
@@ -2203,6 +2296,7 @@ func (b *meetingBuilder) IsActiveInOrganization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "IsActiveInOrganizationID",
 			relField: "IsActiveInOrganization",
 		},
@@ -2213,6 +2307,7 @@ func (b *meetingBuilder) IsArchivedInOrganization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "IsArchivedInOrganizationID",
 			relField: "IsArchivedInOrganization",
 		},
@@ -2223,6 +2318,7 @@ func (b *meetingBuilder) ListOfSpeakersCountdown() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
 		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersCountdownID",
 			relField: "ListOfSpeakersCountdown",
 		},
@@ -2233,6 +2329,7 @@ func (b *meetingBuilder) ListOfSpeakersList() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersIDs",
 			relField: "ListOfSpeakersList",
 			many:     true,
@@ -2244,6 +2341,7 @@ func (b *meetingBuilder) LogoPdfBallotPaper() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoPdfBallotPaperID",
 			relField: "LogoPdfBallotPaper",
 		},
@@ -2254,6 +2352,7 @@ func (b *meetingBuilder) LogoPdfFooterL() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoPdfFooterLID",
 			relField: "LogoPdfFooterL",
 		},
@@ -2264,6 +2363,7 @@ func (b *meetingBuilder) LogoPdfFooterR() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoPdfFooterRID",
 			relField: "LogoPdfFooterR",
 		},
@@ -2274,6 +2374,7 @@ func (b *meetingBuilder) LogoPdfHeaderL() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoPdfHeaderLID",
 			relField: "LogoPdfHeaderL",
 		},
@@ -2284,6 +2385,7 @@ func (b *meetingBuilder) LogoPdfHeaderR() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoPdfHeaderRID",
 			relField: "LogoPdfHeaderR",
 		},
@@ -2294,6 +2396,7 @@ func (b *meetingBuilder) LogoProjectorHeader() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoProjectorHeaderID",
 			relField: "LogoProjectorHeader",
 		},
@@ -2304,6 +2407,7 @@ func (b *meetingBuilder) LogoProjectorMain() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoProjectorMainID",
 			relField: "LogoProjectorMain",
 		},
@@ -2314,6 +2418,7 @@ func (b *meetingBuilder) LogoWebHeader() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LogoWebHeaderID",
 			relField: "LogoWebHeader",
 		},
@@ -2324,6 +2429,7 @@ func (b *meetingBuilder) MediafileList() *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MediafileIDs",
 			relField: "MediafileList",
 			many:     true,
@@ -2335,6 +2441,7 @@ func (b *meetingBuilder) MeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingMediafileIDs",
 			relField: "MeetingMediafileList",
 			many:     true,
@@ -2346,6 +2453,7 @@ func (b *meetingBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
@@ -2357,6 +2465,7 @@ func (b *meetingBuilder) MotionBlockList() *motionBlockBuilder {
 	return &motionBlockBuilder{
 		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionBlockIDs",
 			relField: "MotionBlockList",
 			many:     true,
@@ -2368,6 +2477,7 @@ func (b *meetingBuilder) MotionCategoryList() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
 		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionCategoryIDs",
 			relField: "MotionCategoryList",
 			many:     true,
@@ -2379,6 +2489,7 @@ func (b *meetingBuilder) MotionChangeRecommendationList() *motionChangeRecommend
 	return &motionChangeRecommendationBuilder{
 		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionChangeRecommendationIDs",
 			relField: "MotionChangeRecommendationList",
 			many:     true,
@@ -2390,6 +2501,7 @@ func (b *meetingBuilder) MotionCommentList() *motionCommentBuilder {
 	return &motionCommentBuilder{
 		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionCommentIDs",
 			relField: "MotionCommentList",
 			many:     true,
@@ -2401,6 +2513,7 @@ func (b *meetingBuilder) MotionCommentSectionList() *motionCommentSectionBuilder
 	return &motionCommentSectionBuilder{
 		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionCommentSectionIDs",
 			relField: "MotionCommentSectionList",
 			many:     true,
@@ -2412,6 +2525,7 @@ func (b *meetingBuilder) MotionEditorList() *motionEditorBuilder {
 	return &motionEditorBuilder{
 		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionEditorIDs",
 			relField: "MotionEditorList",
 			many:     true,
@@ -2423,6 +2537,7 @@ func (b *meetingBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
@@ -2434,6 +2549,7 @@ func (b *meetingBuilder) MotionPollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionPollDefaultGroupIDs",
 			relField: "MotionPollDefaultGroupList",
 			many:     true,
@@ -2445,6 +2561,7 @@ func (b *meetingBuilder) MotionStateList() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionStateIDs",
 			relField: "MotionStateList",
 			many:     true,
@@ -2456,6 +2573,7 @@ func (b *meetingBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
 		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionSubmitterIDs",
 			relField: "MotionSubmitterList",
 			many:     true,
@@ -2467,6 +2585,7 @@ func (b *meetingBuilder) MotionWorkflowList() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionWorkflowIDs",
 			relField: "MotionWorkflowList",
 			many:     true,
@@ -2478,6 +2597,7 @@ func (b *meetingBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpea
 	return &motionWorkingGroupSpeakerBuilder{
 		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionWorkingGroupSpeakerIDs",
 			relField: "MotionWorkingGroupSpeakerList",
 			many:     true,
@@ -2489,6 +2609,7 @@ func (b *meetingBuilder) MotionsDefaultAmendmentWorkflow() *motionWorkflowBuilde
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionsDefaultAmendmentWorkflowID",
 			relField: "MotionsDefaultAmendmentWorkflow",
 		},
@@ -2499,6 +2620,7 @@ func (b *meetingBuilder) MotionsDefaultWorkflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionsDefaultWorkflowID",
 			relField: "MotionsDefaultWorkflow",
 		},
@@ -2509,6 +2631,7 @@ func (b *meetingBuilder) OptionList() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OptionIDs",
 			relField: "OptionList",
 			many:     true,
@@ -2520,6 +2643,7 @@ func (b *meetingBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
 		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
@@ -2531,6 +2655,7 @@ func (b *meetingBuilder) PersonalNoteList() *personalNoteBuilder {
 	return &personalNoteBuilder{
 		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PersonalNoteIDs",
 			relField: "PersonalNoteList",
 			many:     true,
@@ -2542,6 +2667,7 @@ func (b *meetingBuilder) PointOfOrderCategoryList() *pointOfOrderCategoryBuilder
 	return &pointOfOrderCategoryBuilder{
 		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PointOfOrderCategoryIDs",
 			relField: "PointOfOrderCategoryList",
 			many:     true,
@@ -2553,6 +2679,7 @@ func (b *meetingBuilder) PollCandidateList() *pollCandidateBuilder {
 	return &pollCandidateBuilder{
 		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollCandidateIDs",
 			relField: "PollCandidateList",
 			many:     true,
@@ -2564,6 +2691,7 @@ func (b *meetingBuilder) PollCandidateListList() *pollCandidateListBuilder {
 	return &pollCandidateListBuilder{
 		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollCandidateListIDs",
 			relField: "PollCandidateListList",
 			many:     true,
@@ -2575,6 +2703,7 @@ func (b *meetingBuilder) PollCountdown() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
 		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollCountdownID",
 			relField: "PollCountdown",
 		},
@@ -2585,6 +2714,7 @@ func (b *meetingBuilder) PollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollDefaultGroupIDs",
 			relField: "PollDefaultGroupList",
 			many:     true,
@@ -2596,6 +2726,7 @@ func (b *meetingBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
@@ -2607,6 +2738,7 @@ func (b *meetingBuilder) PresentUserList() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PresentUserIDs",
 			relField: "PresentUserList",
 			many:     true,
@@ -2618,6 +2750,7 @@ func (b *meetingBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -2629,6 +2762,7 @@ func (b *meetingBuilder) ProjectorCountdownList() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
 		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectorCountdownIDs",
 			relField: "ProjectorCountdownList",
 			many:     true,
@@ -2640,6 +2774,7 @@ func (b *meetingBuilder) ProjectorList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectorIDs",
 			relField: "ProjectorList",
 			many:     true,
@@ -2651,6 +2786,7 @@ func (b *meetingBuilder) ProjectorMessageList() *projectorMessageBuilder {
 	return &projectorMessageBuilder{
 		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectorMessageIDs",
 			relField: "ProjectorMessageList",
 			many:     true,
@@ -2662,6 +2798,7 @@ func (b *meetingBuilder) ReferenceProjector() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReferenceProjectorID",
 			relField: "ReferenceProjector",
 		},
@@ -2672,6 +2809,7 @@ func (b *meetingBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
@@ -2683,6 +2821,7 @@ func (b *meetingBuilder) StructureLevelList() *structureLevelBuilder {
 	return &structureLevelBuilder{
 		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelIDs",
 			relField: "StructureLevelList",
 			many:     true,
@@ -2694,6 +2833,7 @@ func (b *meetingBuilder) StructureLevelListOfSpeakersList() *structureLevelListO
 	return &structureLevelListOfSpeakersBuilder{
 		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelListOfSpeakersIDs",
 			relField: "StructureLevelListOfSpeakersList",
 			many:     true,
@@ -2705,6 +2845,7 @@ func (b *meetingBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
 		builder: builder[tagBuilder, *tagBuilder, Tag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
@@ -2716,6 +2857,7 @@ func (b *meetingBuilder) TemplateForOrganization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TemplateForOrganizationID",
 			relField: "TemplateForOrganization",
 		},
@@ -2726,6 +2868,7 @@ func (b *meetingBuilder) TopicList() *topicBuilder {
 	return &topicBuilder{
 		builder: builder[topicBuilder, *topicBuilder, Topic]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TopicIDs",
 			relField: "TopicList",
 			many:     true,
@@ -2737,6 +2880,7 @@ func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TopicPollDefaultGroupIDs",
 			relField: "TopicPollDefaultGroupList",
 			many:     true,
@@ -2748,6 +2892,7 @@ func (b *meetingBuilder) VoteList() *voteBuilder {
 	return &voteBuilder{
 		builder: builder[voteBuilder, *voteBuilder, Vote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "VoteIDs",
 			relField: "VoteList",
 			many:     true,
@@ -2793,26 +2938,26 @@ type MeetingMediafile struct {
 	UsedAsLogoWebHeaderInMeetingID         dsfetch.Maybe[int]
 	AccessGroupList                        []Group
 	InheritedAccessGroupList               []Group
-	ListOfSpeakers                         *dsfetch.Maybe[ListOfSpeakers]
+	ListOfSpeakers                         *ListOfSpeakers
 	Mediafile                              *Mediafile
 	Meeting                                *Meeting
 	ProjectionList                         []Projection
-	UsedAsFontBoldInMeeting                *dsfetch.Maybe[Meeting]
-	UsedAsFontBoldItalicInMeeting          *dsfetch.Maybe[Meeting]
-	UsedAsFontChyronSpeakerNameInMeeting   *dsfetch.Maybe[Meeting]
-	UsedAsFontItalicInMeeting              *dsfetch.Maybe[Meeting]
-	UsedAsFontMonospaceInMeeting           *dsfetch.Maybe[Meeting]
-	UsedAsFontProjectorH1InMeeting         *dsfetch.Maybe[Meeting]
-	UsedAsFontProjectorH2InMeeting         *dsfetch.Maybe[Meeting]
-	UsedAsFontRegularInMeeting             *dsfetch.Maybe[Meeting]
-	UsedAsLogoPdfBallotPaperInMeeting      *dsfetch.Maybe[Meeting]
-	UsedAsLogoPdfFooterLInMeeting          *dsfetch.Maybe[Meeting]
-	UsedAsLogoPdfFooterRInMeeting          *dsfetch.Maybe[Meeting]
-	UsedAsLogoPdfHeaderLInMeeting          *dsfetch.Maybe[Meeting]
-	UsedAsLogoPdfHeaderRInMeeting          *dsfetch.Maybe[Meeting]
-	UsedAsLogoProjectorHeaderInMeeting     *dsfetch.Maybe[Meeting]
-	UsedAsLogoProjectorMainInMeeting       *dsfetch.Maybe[Meeting]
-	UsedAsLogoWebHeaderInMeeting           *dsfetch.Maybe[Meeting]
+	UsedAsFontBoldInMeeting                *Meeting
+	UsedAsFontBoldItalicInMeeting          *Meeting
+	UsedAsFontChyronSpeakerNameInMeeting   *Meeting
+	UsedAsFontItalicInMeeting              *Meeting
+	UsedAsFontMonospaceInMeeting           *Meeting
+	UsedAsFontProjectorH1InMeeting         *Meeting
+	UsedAsFontProjectorH2InMeeting         *Meeting
+	UsedAsFontRegularInMeeting             *Meeting
+	UsedAsLogoPdfBallotPaperInMeeting      *Meeting
+	UsedAsLogoPdfFooterLInMeeting          *Meeting
+	UsedAsLogoPdfFooterRInMeeting          *Meeting
+	UsedAsLogoPdfHeaderLInMeeting          *Meeting
+	UsedAsLogoPdfHeaderRInMeeting          *Meeting
+	UsedAsLogoProjectorHeaderInMeeting     *Meeting
+	UsedAsLogoProjectorMainInMeeting       *Meeting
+	UsedAsLogoWebHeaderInMeeting           *Meeting
 }
 
 type meetingMediafileBuilder struct {
@@ -2858,6 +3003,7 @@ func (b *meetingMediafileBuilder) AccessGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AccessGroupIDs",
 			relField: "AccessGroupList",
 			many:     true,
@@ -2869,6 +3015,7 @@ func (b *meetingMediafileBuilder) InheritedAccessGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "InheritedAccessGroupIDs",
 			relField: "InheritedAccessGroupList",
 			many:     true,
@@ -2880,6 +3027,7 @@ func (b *meetingMediafileBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -2890,6 +3038,7 @@ func (b *meetingMediafileBuilder) Mediafile() *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MediafileID",
 			relField: "Mediafile",
 		},
@@ -2900,6 +3049,7 @@ func (b *meetingMediafileBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -2910,6 +3060,7 @@ func (b *meetingMediafileBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -2921,6 +3072,7 @@ func (b *meetingMediafileBuilder) UsedAsFontBoldInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontBoldInMeetingID",
 			relField: "UsedAsFontBoldInMeeting",
 		},
@@ -2931,6 +3083,7 @@ func (b *meetingMediafileBuilder) UsedAsFontBoldItalicInMeeting() *meetingBuilde
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontBoldItalicInMeetingID",
 			relField: "UsedAsFontBoldItalicInMeeting",
 		},
@@ -2941,6 +3094,7 @@ func (b *meetingMediafileBuilder) UsedAsFontChyronSpeakerNameInMeeting() *meetin
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontChyronSpeakerNameInMeetingID",
 			relField: "UsedAsFontChyronSpeakerNameInMeeting",
 		},
@@ -2951,6 +3105,7 @@ func (b *meetingMediafileBuilder) UsedAsFontItalicInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontItalicInMeetingID",
 			relField: "UsedAsFontItalicInMeeting",
 		},
@@ -2961,6 +3116,7 @@ func (b *meetingMediafileBuilder) UsedAsFontMonospaceInMeeting() *meetingBuilder
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontMonospaceInMeetingID",
 			relField: "UsedAsFontMonospaceInMeeting",
 		},
@@ -2971,6 +3127,7 @@ func (b *meetingMediafileBuilder) UsedAsFontProjectorH1InMeeting() *meetingBuild
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontProjectorH1InMeetingID",
 			relField: "UsedAsFontProjectorH1InMeeting",
 		},
@@ -2981,6 +3138,7 @@ func (b *meetingMediafileBuilder) UsedAsFontProjectorH2InMeeting() *meetingBuild
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontProjectorH2InMeetingID",
 			relField: "UsedAsFontProjectorH2InMeeting",
 		},
@@ -2991,6 +3149,7 @@ func (b *meetingMediafileBuilder) UsedAsFontRegularInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsFontRegularInMeetingID",
 			relField: "UsedAsFontRegularInMeeting",
 		},
@@ -3001,6 +3160,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoPdfBallotPaperInMeeting() *meetingBu
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoPdfBallotPaperInMeetingID",
 			relField: "UsedAsLogoPdfBallotPaperInMeeting",
 		},
@@ -3011,6 +3171,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoPdfFooterLInMeeting() *meetingBuilde
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoPdfFooterLInMeetingID",
 			relField: "UsedAsLogoPdfFooterLInMeeting",
 		},
@@ -3021,6 +3182,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoPdfFooterRInMeeting() *meetingBuilde
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoPdfFooterRInMeetingID",
 			relField: "UsedAsLogoPdfFooterRInMeeting",
 		},
@@ -3031,6 +3193,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoPdfHeaderLInMeeting() *meetingBuilde
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoPdfHeaderLInMeetingID",
 			relField: "UsedAsLogoPdfHeaderLInMeeting",
 		},
@@ -3041,6 +3204,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoPdfHeaderRInMeeting() *meetingBuilde
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoPdfHeaderRInMeetingID",
 			relField: "UsedAsLogoPdfHeaderRInMeeting",
 		},
@@ -3051,6 +3215,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoProjectorHeaderInMeeting() *meetingB
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoProjectorHeaderInMeetingID",
 			relField: "UsedAsLogoProjectorHeaderInMeeting",
 		},
@@ -3061,6 +3226,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoProjectorMainInMeeting() *meetingBui
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoProjectorMainInMeetingID",
 			relField: "UsedAsLogoProjectorMainInMeeting",
 		},
@@ -3071,6 +3237,7 @@ func (b *meetingMediafileBuilder) UsedAsLogoWebHeaderInMeeting() *meetingBuilder
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsLogoWebHeaderInMeetingID",
 			relField: "UsedAsLogoWebHeaderInMeeting",
 		},
@@ -3120,7 +3287,7 @@ type MeetingUser struct {
 	StructureLevelList            []StructureLevel
 	SupportedMotionList           []Motion
 	User                          *User
-	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
+	VoteDelegatedTo               *MeetingUser
 	VoteDelegationsFromList       []MeetingUser
 }
 
@@ -3162,6 +3329,7 @@ func (b *meetingUserBuilder) AssignmentCandidateList() *assignmentCandidateBuild
 	return &assignmentCandidateBuilder{
 		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AssignmentCandidateIDs",
 			relField: "AssignmentCandidateList",
 			many:     true,
@@ -3173,6 +3341,7 @@ func (b *meetingUserBuilder) ChatMessageList() *chatMessageBuilder {
 	return &chatMessageBuilder{
 		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChatMessageIDs",
 			relField: "ChatMessageList",
 			many:     true,
@@ -3184,6 +3353,7 @@ func (b *meetingUserBuilder) GroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "GroupIDs",
 			relField: "GroupList",
 			many:     true,
@@ -3195,6 +3365,7 @@ func (b *meetingUserBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -3205,6 +3376,7 @@ func (b *meetingUserBuilder) MotionEditorList() *motionEditorBuilder {
 	return &motionEditorBuilder{
 		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionEditorIDs",
 			relField: "MotionEditorList",
 			many:     true,
@@ -3216,6 +3388,7 @@ func (b *meetingUserBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
 		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionSubmitterIDs",
 			relField: "MotionSubmitterList",
 			many:     true,
@@ -3227,6 +3400,7 @@ func (b *meetingUserBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroup
 	return &motionWorkingGroupSpeakerBuilder{
 		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionWorkingGroupSpeakerIDs",
 			relField: "MotionWorkingGroupSpeakerList",
 			many:     true,
@@ -3238,6 +3412,7 @@ func (b *meetingUserBuilder) PersonalNoteList() *personalNoteBuilder {
 	return &personalNoteBuilder{
 		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PersonalNoteIDs",
 			relField: "PersonalNoteList",
 			many:     true,
@@ -3249,6 +3424,7 @@ func (b *meetingUserBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
@@ -3260,6 +3436,7 @@ func (b *meetingUserBuilder) StructureLevelList() *structureLevelBuilder {
 	return &structureLevelBuilder{
 		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelIDs",
 			relField: "StructureLevelList",
 			many:     true,
@@ -3271,6 +3448,7 @@ func (b *meetingUserBuilder) SupportedMotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SupportedMotionIDs",
 			relField: "SupportedMotionList",
 			many:     true,
@@ -3282,6 +3460,7 @@ func (b *meetingUserBuilder) User() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UserID",
 			relField: "User",
 		},
@@ -3292,6 +3471,7 @@ func (b *meetingUserBuilder) VoteDelegatedTo() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "VoteDelegatedToID",
 			relField: "VoteDelegatedTo",
 		},
@@ -3302,6 +3482,7 @@ func (b *meetingUserBuilder) VoteDelegationsFromList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "VoteDelegationsFromIDs",
 			relField: "VoteDelegationsFromList",
 			many:     true,
@@ -3373,32 +3554,32 @@ type Motion struct {
 	Title                                         string
 	WorkflowTimestamp                             int
 	WorkingGroupSpeakerIDs                        []int
-	AgendaItem                                    *dsfetch.Maybe[AgendaItem]
+	AgendaItem                                    *AgendaItem
 	AllDerivedMotionList                          []Motion
 	AllOriginList                                 []Motion
 	AmendmentList                                 []Motion
 	AttachmentMeetingMediafileList                []MeetingMediafile
-	Block                                         *dsfetch.Maybe[MotionBlock]
-	Category                                      *dsfetch.Maybe[MotionCategory]
+	Block                                         *MotionBlock
+	Category                                      *MotionCategory
 	ChangeRecommendationList                      []MotionChangeRecommendation
 	CommentList                                   []MotionComment
 	DerivedMotionList                             []Motion
 	EditorList                                    []MotionEditor
 	IDenticalMotionList                           []Motion
-	LeadMotion                                    *dsfetch.Maybe[Motion]
+	LeadMotion                                    *Motion
 	ListOfSpeakers                                *ListOfSpeakers
 	Meeting                                       *Meeting
 	OptionList                                    []Option
-	Origin                                        *dsfetch.Maybe[Motion]
-	OriginMeeting                                 *dsfetch.Maybe[Meeting]
+	Origin                                        *Motion
+	OriginMeeting                                 *Meeting
 	PersonalNoteList                              []PersonalNote
 	PollList                                      []Poll
 	ProjectionList                                []Projection
-	Recommendation                                *dsfetch.Maybe[MotionState]
+	Recommendation                                *MotionState
 	ReferencedInMotionRecommendationExtensionList []Motion
 	ReferencedInMotionStateExtensionList          []Motion
 	SortChildList                                 []Motion
-	SortParent                                    *dsfetch.Maybe[Motion]
+	SortParent                                    *Motion
 	State                                         *MotionState
 	SubmitterList                                 []MotionSubmitter
 	SupporterMeetingUserList                      []MeetingUser
@@ -3477,6 +3658,7 @@ func (b *motionBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
 		},
@@ -3487,6 +3669,7 @@ func (b *motionBuilder) AllDerivedMotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AllDerivedMotionIDs",
 			relField: "AllDerivedMotionList",
 			many:     true,
@@ -3498,6 +3681,7 @@ func (b *motionBuilder) AllOriginList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AllOriginIDs",
 			relField: "AllOriginList",
 			many:     true,
@@ -3509,6 +3693,7 @@ func (b *motionBuilder) AmendmentList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AmendmentIDs",
 			relField: "AmendmentList",
 			many:     true,
@@ -3520,6 +3705,7 @@ func (b *motionBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilde
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AttachmentMeetingMediafileIDs",
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
@@ -3531,6 +3717,7 @@ func (b *motionBuilder) Block() *motionBlockBuilder {
 	return &motionBlockBuilder{
 		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "BlockID",
 			relField: "Block",
 		},
@@ -3541,6 +3728,7 @@ func (b *motionBuilder) Category() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
 		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CategoryID",
 			relField: "Category",
 		},
@@ -3551,6 +3739,7 @@ func (b *motionBuilder) ChangeRecommendationList() *motionChangeRecommendationBu
 	return &motionChangeRecommendationBuilder{
 		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChangeRecommendationIDs",
 			relField: "ChangeRecommendationList",
 			many:     true,
@@ -3562,6 +3751,7 @@ func (b *motionBuilder) CommentList() *motionCommentBuilder {
 	return &motionCommentBuilder{
 		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CommentIDs",
 			relField: "CommentList",
 			many:     true,
@@ -3573,6 +3763,7 @@ func (b *motionBuilder) DerivedMotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DerivedMotionIDs",
 			relField: "DerivedMotionList",
 			many:     true,
@@ -3584,6 +3775,7 @@ func (b *motionBuilder) EditorList() *motionEditorBuilder {
 	return &motionEditorBuilder{
 		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "EditorIDs",
 			relField: "EditorList",
 			many:     true,
@@ -3595,6 +3787,7 @@ func (b *motionBuilder) IDenticalMotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "IDenticalMotionIDs",
 			relField: "IDenticalMotionList",
 			many:     true,
@@ -3606,6 +3799,7 @@ func (b *motionBuilder) LeadMotion() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "LeadMotionID",
 			relField: "LeadMotion",
 		},
@@ -3616,6 +3810,7 @@ func (b *motionBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -3626,6 +3821,7 @@ func (b *motionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -3636,6 +3832,7 @@ func (b *motionBuilder) OptionList() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OptionIDs",
 			relField: "OptionList",
 			many:     true,
@@ -3647,6 +3844,7 @@ func (b *motionBuilder) Origin() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OriginID",
 			relField: "Origin",
 		},
@@ -3657,6 +3855,7 @@ func (b *motionBuilder) OriginMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OriginMeetingID",
 			relField: "OriginMeeting",
 		},
@@ -3667,6 +3866,7 @@ func (b *motionBuilder) PersonalNoteList() *personalNoteBuilder {
 	return &personalNoteBuilder{
 		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PersonalNoteIDs",
 			relField: "PersonalNoteList",
 			many:     true,
@@ -3678,6 +3878,7 @@ func (b *motionBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
@@ -3689,6 +3890,7 @@ func (b *motionBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -3700,6 +3902,7 @@ func (b *motionBuilder) Recommendation() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "RecommendationID",
 			relField: "Recommendation",
 		},
@@ -3710,6 +3913,7 @@ func (b *motionBuilder) ReferencedInMotionRecommendationExtensionList() *motionB
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReferencedInMotionRecommendationExtensionIDs",
 			relField: "ReferencedInMotionRecommendationExtensionList",
 			many:     true,
@@ -3721,6 +3925,7 @@ func (b *motionBuilder) ReferencedInMotionStateExtensionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReferencedInMotionStateExtensionIDs",
 			relField: "ReferencedInMotionStateExtensionList",
 			many:     true,
@@ -3732,6 +3937,7 @@ func (b *motionBuilder) SortChildList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SortChildIDs",
 			relField: "SortChildList",
 			many:     true,
@@ -3743,6 +3949,7 @@ func (b *motionBuilder) SortParent() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SortParentID",
 			relField: "SortParent",
 		},
@@ -3753,6 +3960,7 @@ func (b *motionBuilder) State() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StateID",
 			relField: "State",
 		},
@@ -3763,6 +3971,7 @@ func (b *motionBuilder) SubmitterList() *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
 		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SubmitterIDs",
 			relField: "SubmitterList",
 			many:     true,
@@ -3774,6 +3983,7 @@ func (b *motionBuilder) SupporterMeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SupporterMeetingUserIDs",
 			relField: "SupporterMeetingUserList",
 			many:     true,
@@ -3785,6 +3995,7 @@ func (b *motionBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
 		builder: builder[tagBuilder, *tagBuilder, Tag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
@@ -3796,6 +4007,7 @@ func (b *motionBuilder) WorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuil
 	return &motionWorkingGroupSpeakerBuilder{
 		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "WorkingGroupSpeakerIDs",
 			relField: "WorkingGroupSpeakerList",
 			many:     true,
@@ -3823,7 +4035,7 @@ type MotionBlock struct {
 	ProjectionIDs    []int
 	SequentialNumber int
 	Title            string
-	AgendaItem       *dsfetch.Maybe[AgendaItem]
+	AgendaItem       *AgendaItem
 	ListOfSpeakers   *ListOfSpeakers
 	Meeting          *Meeting
 	MotionList       []Motion
@@ -3857,6 +4069,7 @@ func (b *motionBlockBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
 		},
@@ -3867,6 +4080,7 @@ func (b *motionBlockBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -3877,6 +4091,7 @@ func (b *motionBlockBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -3887,6 +4102,7 @@ func (b *motionBlockBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
@@ -3898,6 +4114,7 @@ func (b *motionBlockBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -3929,7 +4146,7 @@ type MotionCategory struct {
 	ChildList        []MotionCategory
 	Meeting          *Meeting
 	MotionList       []Motion
-	Parent           *dsfetch.Maybe[MotionCategory]
+	Parent           *MotionCategory
 }
 
 type motionCategoryBuilder struct {
@@ -3960,6 +4177,7 @@ func (b *motionCategoryBuilder) ChildList() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
 		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
@@ -3971,6 +4189,7 @@ func (b *motionCategoryBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -3981,6 +4200,7 @@ func (b *motionCategoryBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
@@ -3992,6 +4212,7 @@ func (b *motionCategoryBuilder) Parent() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
 		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
 		},
@@ -4053,6 +4274,7 @@ func (b *motionChangeRecommendationBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4063,6 +4285,7 @@ func (b *motionChangeRecommendationBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
 		},
@@ -4113,6 +4336,7 @@ func (b *motionCommentBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4123,6 +4347,7 @@ func (b *motionCommentBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
 		},
@@ -4133,6 +4358,7 @@ func (b *motionCommentBuilder) Section() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
 		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SectionID",
 			relField: "Section",
 		},
@@ -4192,6 +4418,7 @@ func (b *motionCommentSectionBuilder) CommentList() *motionCommentBuilder {
 	return &motionCommentBuilder{
 		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CommentIDs",
 			relField: "CommentList",
 			many:     true,
@@ -4203,6 +4430,7 @@ func (b *motionCommentSectionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4213,6 +4441,7 @@ func (b *motionCommentSectionBuilder) ReadGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ReadGroupIDs",
 			relField: "ReadGroupList",
 			many:     true,
@@ -4224,6 +4453,7 @@ func (b *motionCommentSectionBuilder) WriteGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "WriteGroupIDs",
 			relField: "WriteGroupList",
 			many:     true,
@@ -4275,6 +4505,7 @@ func (b *motionEditorBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4285,6 +4516,7 @@ func (b *motionEditorBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -4295,6 +4527,7 @@ func (b *motionEditorBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
 		},
@@ -4337,14 +4570,14 @@ type MotionState struct {
 	SubmitterWithdrawStateID         dsfetch.Maybe[int]
 	Weight                           int
 	WorkflowID                       int
-	FirstStateOfWorkflow             *dsfetch.Maybe[MotionWorkflow]
+	FirstStateOfWorkflow             *MotionWorkflow
 	Meeting                          *Meeting
 	MotionList                       []Motion
 	MotionRecommendationList         []Motion
 	NextStateList                    []MotionState
 	PreviousStateList                []MotionState
 	SubmitterWithdrawBackList        []MotionState
-	SubmitterWithdrawState           *dsfetch.Maybe[MotionState]
+	SubmitterWithdrawState           *MotionState
 	Workflow                         *MotionWorkflow
 }
 
@@ -4391,6 +4624,7 @@ func (b *motionStateBuilder) FirstStateOfWorkflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FirstStateOfWorkflowID",
 			relField: "FirstStateOfWorkflow",
 		},
@@ -4401,6 +4635,7 @@ func (b *motionStateBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4411,6 +4646,7 @@ func (b *motionStateBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
@@ -4422,6 +4658,7 @@ func (b *motionStateBuilder) MotionRecommendationList() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionRecommendationIDs",
 			relField: "MotionRecommendationList",
 			many:     true,
@@ -4433,6 +4670,7 @@ func (b *motionStateBuilder) NextStateList() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "NextStateIDs",
 			relField: "NextStateList",
 			many:     true,
@@ -4444,6 +4682,7 @@ func (b *motionStateBuilder) PreviousStateList() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PreviousStateIDs",
 			relField: "PreviousStateList",
 			many:     true,
@@ -4455,6 +4694,7 @@ func (b *motionStateBuilder) SubmitterWithdrawBackList() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SubmitterWithdrawBackIDs",
 			relField: "SubmitterWithdrawBackList",
 			many:     true,
@@ -4466,6 +4706,7 @@ func (b *motionStateBuilder) SubmitterWithdrawState() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SubmitterWithdrawStateID",
 			relField: "SubmitterWithdrawState",
 		},
@@ -4476,6 +4717,7 @@ func (b *motionStateBuilder) Workflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "WorkflowID",
 			relField: "Workflow",
 		},
@@ -4526,6 +4768,7 @@ func (b *motionSubmitterBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4536,6 +4779,7 @@ func (b *motionSubmitterBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -4546,6 +4790,7 @@ func (b *motionSubmitterBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
 		},
@@ -4571,8 +4816,8 @@ type MotionWorkflow struct {
 	Name                              string
 	SequentialNumber                  int
 	StateIDs                          []int
-	DefaultAmendmentWorkflowMeeting   *dsfetch.Maybe[Meeting]
-	DefaultWorkflowMeeting            *dsfetch.Maybe[Meeting]
+	DefaultAmendmentWorkflowMeeting   *Meeting
+	DefaultWorkflowMeeting            *Meeting
 	FirstState                        *MotionState
 	Meeting                           *Meeting
 	StateList                         []MotionState
@@ -4604,6 +4849,7 @@ func (b *motionWorkflowBuilder) DefaultAmendmentWorkflowMeeting() *meetingBuilde
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultAmendmentWorkflowMeetingID",
 			relField: "DefaultAmendmentWorkflowMeeting",
 		},
@@ -4614,6 +4860,7 @@ func (b *motionWorkflowBuilder) DefaultWorkflowMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DefaultWorkflowMeetingID",
 			relField: "DefaultWorkflowMeeting",
 		},
@@ -4624,6 +4871,7 @@ func (b *motionWorkflowBuilder) FirstState() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "FirstStateID",
 			relField: "FirstState",
 		},
@@ -4634,6 +4882,7 @@ func (b *motionWorkflowBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4644,6 +4893,7 @@ func (b *motionWorkflowBuilder) StateList() *motionStateBuilder {
 	return &motionStateBuilder{
 		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StateIDs",
 			relField: "StateList",
 			many:     true,
@@ -4695,6 +4945,7 @@ func (b *motionWorkingGroupSpeakerBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4705,6 +4956,7 @@ func (b *motionWorkingGroupSpeakerBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -4715,6 +4967,7 @@ func (b *motionWorkingGroupSpeakerBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
 		builder: builder[motionBuilder, *motionBuilder, Motion]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
 		},
@@ -4744,8 +4997,8 @@ type Option struct {
 	Weight                     int
 	Yes                        string
 	Meeting                    *Meeting
-	Poll                       *dsfetch.Maybe[Poll]
-	UsedAsGlobalOptionInPoll   *dsfetch.Maybe[Poll]
+	Poll                       *Poll
+	UsedAsGlobalOptionInPoll   *Poll
 	VoteList                   []Vote
 }
 
@@ -4778,6 +5031,7 @@ func (b *optionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -4788,6 +5042,7 @@ func (b *optionBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
 		},
@@ -4798,6 +5053,7 @@ func (b *optionBuilder) UsedAsGlobalOptionInPoll() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsGlobalOptionInPollID",
 			relField: "UsedAsGlobalOptionInPoll",
 		},
@@ -4808,6 +5064,7 @@ func (b *optionBuilder) VoteList() *voteBuilder {
 	return &voteBuilder{
 		builder: builder[voteBuilder, *voteBuilder, Vote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "VoteIDs",
 			relField: "VoteList",
 			many:     true,
@@ -4931,6 +5188,7 @@ func (b *organizationBuilder) ActiveMeetingList() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ActiveMeetingIDs",
 			relField: "ActiveMeetingList",
 			many:     true,
@@ -4942,6 +5200,7 @@ func (b *organizationBuilder) ArchivedMeetingList() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ArchivedMeetingIDs",
 			relField: "ArchivedMeetingList",
 			many:     true,
@@ -4953,6 +5212,7 @@ func (b *organizationBuilder) CommitteeList() *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CommitteeIDs",
 			relField: "CommitteeList",
 			many:     true,
@@ -4964,6 +5224,7 @@ func (b *organizationBuilder) GenderList() *genderBuilder {
 	return &genderBuilder{
 		builder: builder[genderBuilder, *genderBuilder, Gender]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "GenderIDs",
 			relField: "GenderList",
 			many:     true,
@@ -4975,6 +5236,7 @@ func (b *organizationBuilder) MediafileList() *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MediafileIDs",
 			relField: "MediafileList",
 			many:     true,
@@ -4986,6 +5248,7 @@ func (b *organizationBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
 		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
@@ -4997,6 +5260,7 @@ func (b *organizationBuilder) PublishedMediafileList() *mediafileBuilder {
 	return &mediafileBuilder{
 		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PublishedMediafileIDs",
 			relField: "PublishedMediafileList",
 			many:     true,
@@ -5008,6 +5272,7 @@ func (b *organizationBuilder) TemplateMeetingList() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "TemplateMeetingIDs",
 			relField: "TemplateMeetingList",
 			many:     true,
@@ -5019,6 +5284,7 @@ func (b *organizationBuilder) Theme() *themeBuilder {
 	return &themeBuilder{
 		builder: builder[themeBuilder, *themeBuilder, Theme]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ThemeID",
 			relField: "Theme",
 		},
@@ -5029,6 +5295,7 @@ func (b *organizationBuilder) ThemeList() *themeBuilder {
 	return &themeBuilder{
 		builder: builder[themeBuilder, *themeBuilder, Theme]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ThemeIDs",
 			relField: "ThemeList",
 			many:     true,
@@ -5040,6 +5307,7 @@ func (b *organizationBuilder) UserList() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
@@ -5089,6 +5357,7 @@ func (b *organizationTagBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
 		},
@@ -5140,6 +5409,7 @@ func (b *personalNoteBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5150,6 +5420,7 @@ func (b *personalNoteBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -5199,6 +5470,7 @@ func (b *pointOfOrderCategoryBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5209,6 +5481,7 @@ func (b *pointOfOrderCategoryBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
@@ -5260,7 +5533,7 @@ type Poll struct {
 	Votesinvalid          string
 	Votesvalid            string
 	EntitledGroupList     []Group
-	GlobalOption          *dsfetch.Maybe[Option]
+	GlobalOption          *Option
 	Meeting               *Meeting
 	OptionList            []Option
 	ProjectionList        []Projection
@@ -5317,6 +5590,7 @@ func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "EntitledGroupIDs",
 			relField: "EntitledGroupList",
 			many:     true,
@@ -5328,6 +5602,7 @@ func (b *pollBuilder) GlobalOption() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "GlobalOptionID",
 			relField: "GlobalOption",
 		},
@@ -5338,6 +5613,7 @@ func (b *pollBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5348,6 +5624,7 @@ func (b *pollBuilder) OptionList() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OptionIDs",
 			relField: "OptionList",
 			many:     true,
@@ -5359,6 +5636,7 @@ func (b *pollBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -5370,6 +5648,7 @@ func (b *pollBuilder) VotedList() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "VotedIDs",
 			relField: "VotedList",
 			many:     true,
@@ -5395,7 +5674,7 @@ type PollCandidate struct {
 	Weight              int
 	Meeting             *Meeting
 	PollCandidateList   *PollCandidateList
-	User                *dsfetch.Maybe[User]
+	User                *User
 }
 
 type pollCandidateBuilder struct {
@@ -5421,6 +5700,7 @@ func (b *pollCandidateBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5431,6 +5711,7 @@ func (b *pollCandidateBuilder) PollCandidateList() *pollCandidateListBuilder {
 	return &pollCandidateListBuilder{
 		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollCandidateListID",
 			relField: "PollCandidateList",
 		},
@@ -5441,6 +5722,7 @@ func (b *pollCandidateBuilder) User() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UserID",
 			relField: "User",
 		},
@@ -5489,6 +5771,7 @@ func (b *pollCandidateListBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5499,6 +5782,7 @@ func (b *pollCandidateListBuilder) Option() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OptionID",
 			relField: "Option",
 		},
@@ -5509,6 +5793,7 @@ func (b *pollCandidateListBuilder) PollCandidateList() *pollCandidateBuilder {
 	return &pollCandidateBuilder{
 		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollCandidateIDs",
 			relField: "PollCandidateList",
 			many:     true,
@@ -5538,10 +5823,10 @@ type Projection struct {
 	Stable             bool
 	Type               string
 	Weight             int
-	CurrentProjector   *dsfetch.Maybe[Projector]
-	HistoryProjector   *dsfetch.Maybe[Projector]
+	CurrentProjector   *Projector
+	HistoryProjector   *Projector
 	Meeting            *Meeting
-	PreviewProjector   *dsfetch.Maybe[Projector]
+	PreviewProjector   *Projector
 }
 
 type projectionBuilder struct {
@@ -5573,6 +5858,7 @@ func (b *projectionBuilder) CurrentProjector() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CurrentProjectorID",
 			relField: "CurrentProjector",
 		},
@@ -5583,6 +5869,7 @@ func (b *projectionBuilder) HistoryProjector() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "HistoryProjectorID",
 			relField: "HistoryProjector",
 		},
@@ -5593,6 +5880,7 @@ func (b *projectionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5603,6 +5891,7 @@ func (b *projectionBuilder) PreviewProjector() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PreviewProjectorID",
 			relField: "PreviewProjector",
 		},
@@ -5665,21 +5954,21 @@ type Projector struct {
 	HistoryProjectionList                              []Projection
 	Meeting                                            *Meeting
 	PreviewProjectionList                              []Projection
-	UsedAsDefaultProjectorForAgendaItemListInMeeting   *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForAmendmentInMeeting        *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForAssignmentInMeeting       *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForAssignmentPollInMeeting   *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForCountdownInMeeting        *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForCurrentLosInMeeting       *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForListOfSpeakersInMeeting   *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForMediafileInMeeting        *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForMessageInMeeting          *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForMotionBlockInMeeting      *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForMotionInMeeting           *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForMotionPollInMeeting       *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForPollInMeeting             *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForTopicInMeeting            *dsfetch.Maybe[Meeting]
-	UsedAsReferenceProjectorMeeting                    *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForAgendaItemListInMeeting   *Meeting
+	UsedAsDefaultProjectorForAmendmentInMeeting        *Meeting
+	UsedAsDefaultProjectorForAssignmentInMeeting       *Meeting
+	UsedAsDefaultProjectorForAssignmentPollInMeeting   *Meeting
+	UsedAsDefaultProjectorForCountdownInMeeting        *Meeting
+	UsedAsDefaultProjectorForCurrentLosInMeeting       *Meeting
+	UsedAsDefaultProjectorForListOfSpeakersInMeeting   *Meeting
+	UsedAsDefaultProjectorForMediafileInMeeting        *Meeting
+	UsedAsDefaultProjectorForMessageInMeeting          *Meeting
+	UsedAsDefaultProjectorForMotionBlockInMeeting      *Meeting
+	UsedAsDefaultProjectorForMotionInMeeting           *Meeting
+	UsedAsDefaultProjectorForMotionPollInMeeting       *Meeting
+	UsedAsDefaultProjectorForPollInMeeting             *Meeting
+	UsedAsDefaultProjectorForTopicInMeeting            *Meeting
+	UsedAsReferenceProjectorMeeting                    *Meeting
 }
 
 type projectorBuilder struct {
@@ -5741,6 +6030,7 @@ func (b *projectorBuilder) CurrentProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CurrentProjectionIDs",
 			relField: "CurrentProjectionList",
 			many:     true,
@@ -5752,6 +6042,7 @@ func (b *projectorBuilder) HistoryProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "HistoryProjectionIDs",
 			relField: "HistoryProjectionList",
 			many:     true,
@@ -5763,6 +6054,7 @@ func (b *projectorBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5773,6 +6065,7 @@ func (b *projectorBuilder) PreviewProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PreviewProjectionIDs",
 			relField: "PreviewProjectionList",
 			many:     true,
@@ -5784,6 +6077,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForAgendaItemListInMeeting() *m
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAgendaItemListInMeetingID",
 			relField: "UsedAsDefaultProjectorForAgendaItemListInMeeting",
 		},
@@ -5794,6 +6088,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForAmendmentInMeeting() *meetin
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAmendmentInMeetingID",
 			relField: "UsedAsDefaultProjectorForAmendmentInMeeting",
 		},
@@ -5804,6 +6099,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForAssignmentInMeeting() *meeti
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAssignmentInMeetingID",
 			relField: "UsedAsDefaultProjectorForAssignmentInMeeting",
 		},
@@ -5814,6 +6110,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForAssignmentPollInMeeting() *m
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAssignmentPollInMeetingID",
 			relField: "UsedAsDefaultProjectorForAssignmentPollInMeeting",
 		},
@@ -5824,6 +6121,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForCountdownInMeeting() *meetin
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForCountdownInMeetingID",
 			relField: "UsedAsDefaultProjectorForCountdownInMeeting",
 		},
@@ -5834,6 +6132,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForCurrentLosInMeeting() *meeti
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForCurrentLosInMeetingID",
 			relField: "UsedAsDefaultProjectorForCurrentLosInMeeting",
 		},
@@ -5844,6 +6143,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForListOfSpeakersInMeeting() *m
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForListOfSpeakersInMeetingID",
 			relField: "UsedAsDefaultProjectorForListOfSpeakersInMeeting",
 		},
@@ -5854,6 +6154,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForMediafileInMeeting() *meetin
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMediafileInMeetingID",
 			relField: "UsedAsDefaultProjectorForMediafileInMeeting",
 		},
@@ -5864,6 +6165,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForMessageInMeeting() *meetingB
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMessageInMeetingID",
 			relField: "UsedAsDefaultProjectorForMessageInMeeting",
 		},
@@ -5874,6 +6176,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForMotionBlockInMeeting() *meet
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMotionBlockInMeetingID",
 			relField: "UsedAsDefaultProjectorForMotionBlockInMeeting",
 		},
@@ -5884,6 +6187,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForMotionInMeeting() *meetingBu
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMotionInMeetingID",
 			relField: "UsedAsDefaultProjectorForMotionInMeeting",
 		},
@@ -5894,6 +6198,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForMotionPollInMeeting() *meeti
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMotionPollInMeetingID",
 			relField: "UsedAsDefaultProjectorForMotionPollInMeeting",
 		},
@@ -5904,6 +6209,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForPollInMeeting() *meetingBuil
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForPollInMeetingID",
 			relField: "UsedAsDefaultProjectorForPollInMeeting",
 		},
@@ -5914,6 +6220,7 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForTopicInMeeting() *meetingBui
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsDefaultProjectorForTopicInMeetingID",
 			relField: "UsedAsDefaultProjectorForTopicInMeeting",
 		},
@@ -5924,6 +6231,7 @@ func (b *projectorBuilder) UsedAsReferenceProjectorMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsReferenceProjectorMeetingID",
 			relField: "UsedAsReferenceProjectorMeeting",
 		},
@@ -5953,8 +6261,8 @@ type ProjectorCountdown struct {
 	UsedAsPollCountdownMeetingID           dsfetch.Maybe[int]
 	Meeting                                *Meeting
 	ProjectionList                         []Projection
-	UsedAsListOfSpeakersCountdownMeeting   *dsfetch.Maybe[Meeting]
-	UsedAsPollCountdownMeeting             *dsfetch.Maybe[Meeting]
+	UsedAsListOfSpeakersCountdownMeeting   *Meeting
+	UsedAsPollCountdownMeeting             *Meeting
 }
 
 type projectorCountdownBuilder struct {
@@ -5985,6 +6293,7 @@ func (b *projectorCountdownBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -5995,6 +6304,7 @@ func (b *projectorCountdownBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -6006,6 +6316,7 @@ func (b *projectorCountdownBuilder) UsedAsListOfSpeakersCountdownMeeting() *meet
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsListOfSpeakersCountdownMeetingID",
 			relField: "UsedAsListOfSpeakersCountdownMeeting",
 		},
@@ -6016,6 +6327,7 @@ func (b *projectorCountdownBuilder) UsedAsPollCountdownMeeting() *meetingBuilder
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UsedAsPollCountdownMeetingID",
 			relField: "UsedAsPollCountdownMeeting",
 		},
@@ -6063,6 +6375,7 @@ func (b *projectorMessageBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6073,6 +6386,7 @@ func (b *projectorMessageBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -6108,9 +6422,9 @@ type Speaker struct {
 	Weight                         int
 	ListOfSpeakers                 *ListOfSpeakers
 	Meeting                        *Meeting
-	MeetingUser                    *dsfetch.Maybe[MeetingUser]
-	PointOfOrderCategory           *dsfetch.Maybe[PointOfOrderCategory]
-	StructureLevelListOfSpeakers   *dsfetch.Maybe[StructureLevelListOfSpeakers]
+	MeetingUser                    *MeetingUser
+	PointOfOrderCategory           *PointOfOrderCategory
+	StructureLevelListOfSpeakers   *StructureLevelListOfSpeakers
 }
 
 type speakerBuilder struct {
@@ -6146,6 +6460,7 @@ func (b *speakerBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -6156,6 +6471,7 @@ func (b *speakerBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6166,6 +6482,7 @@ func (b *speakerBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
 		},
@@ -6176,6 +6493,7 @@ func (b *speakerBuilder) PointOfOrderCategory() *pointOfOrderCategoryBuilder {
 	return &pointOfOrderCategoryBuilder{
 		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PointOfOrderCategoryID",
 			relField: "PointOfOrderCategory",
 		},
@@ -6186,6 +6504,7 @@ func (b *speakerBuilder) StructureLevelListOfSpeakers() *structureLevelListOfSpe
 	return &structureLevelListOfSpeakersBuilder{
 		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelListOfSpeakersID",
 			relField: "StructureLevelListOfSpeakers",
 		},
@@ -6240,6 +6559,7 @@ func (b *structureLevelBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6250,6 +6570,7 @@ func (b *structureLevelBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
@@ -6261,6 +6582,7 @@ func (b *structureLevelBuilder) StructureLevelListOfSpeakersList() *structureLev
 	return &structureLevelListOfSpeakersBuilder{
 		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelListOfSpeakersIDs",
 			relField: "StructureLevelListOfSpeakersList",
 			many:     true,
@@ -6321,6 +6643,7 @@ func (b *structureLevelListOfSpeakersBuilder) ListOfSpeakers() *listOfSpeakersBu
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -6331,6 +6654,7 @@ func (b *structureLevelListOfSpeakersBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6341,6 +6665,7 @@ func (b *structureLevelListOfSpeakersBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
@@ -6352,6 +6677,7 @@ func (b *structureLevelListOfSpeakersBuilder) StructureLevel() *structureLevelBu
 	return &structureLevelBuilder{
 		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "StructureLevelID",
 			relField: "StructureLevel",
 		},
@@ -6398,6 +6724,7 @@ func (b *tagBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6466,7 +6793,7 @@ type Theme struct {
 	WarnA700               string
 	Yes                    string
 	Organization           *Organization
-	ThemeForOrganization   *dsfetch.Maybe[Organization]
+	ThemeForOrganization   *Organization
 }
 
 type themeBuilder struct {
@@ -6537,6 +6864,7 @@ func (b *themeBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
 		},
@@ -6547,6 +6875,7 @@ func (b *themeBuilder) ThemeForOrganization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ThemeForOrganizationID",
 			relField: "ThemeForOrganization",
 		},
@@ -6610,6 +6939,7 @@ func (b *topicBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
 		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
 		},
@@ -6620,6 +6950,7 @@ func (b *topicBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder
 	return &meetingMediafileBuilder{
 		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "AttachmentMeetingMediafileIDs",
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
@@ -6631,6 +6962,7 @@ func (b *topicBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
 		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
 		},
@@ -6641,6 +6973,7 @@ func (b *topicBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6651,6 +6984,7 @@ func (b *topicBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
@@ -6662,6 +6996,7 @@ func (b *topicBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
 		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
@@ -6714,7 +7049,7 @@ type User struct {
 	CommitteeList               []Committee
 	CommitteeManagementList     []Committee
 	DelegatedVoteList           []Vote
-	Gender                      *dsfetch.Maybe[Gender]
+	Gender                      *Gender
 	IsPresentInMeetingList      []Meeting
 	MeetingUserList             []MeetingUser
 	OptionList                  []Option
@@ -6773,6 +7108,7 @@ func (b *userBuilder) CommitteeList() *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CommitteeIDs",
 			relField: "CommitteeList",
 			many:     true,
@@ -6784,6 +7120,7 @@ func (b *userBuilder) CommitteeManagementList() *committeeBuilder {
 	return &committeeBuilder{
 		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "CommitteeManagementIDs",
 			relField: "CommitteeManagementList",
 			many:     true,
@@ -6795,6 +7132,7 @@ func (b *userBuilder) DelegatedVoteList() *voteBuilder {
 	return &voteBuilder{
 		builder: builder[voteBuilder, *voteBuilder, Vote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DelegatedVoteIDs",
 			relField: "DelegatedVoteList",
 			many:     true,
@@ -6806,6 +7144,7 @@ func (b *userBuilder) Gender() *genderBuilder {
 	return &genderBuilder{
 		builder: builder[genderBuilder, *genderBuilder, Gender]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "GenderID",
 			relField: "Gender",
 		},
@@ -6816,6 +7155,7 @@ func (b *userBuilder) IsPresentInMeetingList() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "IsPresentInMeetingIDs",
 			relField: "IsPresentInMeetingList",
 			many:     true,
@@ -6827,6 +7167,7 @@ func (b *userBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
@@ -6838,6 +7179,7 @@ func (b *userBuilder) OptionList() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OptionIDs",
 			relField: "OptionList",
 			many:     true,
@@ -6849,6 +7191,7 @@ func (b *userBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
 		},
@@ -6859,6 +7202,7 @@ func (b *userBuilder) PollCandidateList() *pollCandidateBuilder {
 	return &pollCandidateBuilder{
 		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollCandidateIDs",
 			relField: "PollCandidateList",
 			many:     true,
@@ -6870,6 +7214,7 @@ func (b *userBuilder) PollVotedList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "PollVotedIDs",
 			relField: "PollVotedList",
 			many:     true,
@@ -6881,6 +7226,7 @@ func (b *userBuilder) VoteList() *voteBuilder {
 	return &voteBuilder{
 		builder: builder[voteBuilder, *voteBuilder, Vote]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "VoteIDs",
 			relField: "VoteList",
 			many:     true,
@@ -6907,10 +7253,10 @@ type Vote struct {
 	UserToken       string
 	Value           string
 	Weight          string
-	DelegatedUser   *dsfetch.Maybe[User]
+	DelegatedUser   *User
 	Meeting         *Meeting
 	Option          *Option
-	User            *dsfetch.Maybe[User]
+	User            *User
 }
 
 type voteBuilder struct {
@@ -6939,6 +7285,7 @@ func (b *voteBuilder) DelegatedUser() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "DelegatedUserID",
 			relField: "DelegatedUser",
 		},
@@ -6949,6 +7296,7 @@ func (b *voteBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
 		},
@@ -6959,6 +7307,7 @@ func (b *voteBuilder) Option() *optionBuilder {
 	return &optionBuilder{
 		builder: builder[optionBuilder, *optionBuilder, Option]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "OptionID",
 			relField: "Option",
 		},
@@ -6969,6 +7318,7 @@ func (b *voteBuilder) User() *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
 			fetch:    b.fetch,
+			parent:   b,
 			idField:  "UserID",
 			relField: "User",
 		},
