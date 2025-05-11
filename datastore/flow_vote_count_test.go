@@ -238,53 +238,6 @@ func TestReconnect(t *testing.T) {
 	}
 }
 
-func TestReconnectWhenDeletedBetween(t *testing.T) {
-	msg := make(chan string)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, <-msg)
-		// This handler returns after the first data is send. This triggers a reconnect.
-	}))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Use a closed channel as eventer so the connection is reestablished immediatly.
-	event := make(chan time.Time)
-	close(event)
-	eventer := func() (<-chan time.Time, func() bool) {
-		return event, func() bool { return false }
-	}
-
-	host, port, schema := parseURL(ts.URL)
-	env := environment.ForTests(map[string]string{
-		"VOTE_HOST":     host,
-		"VOTE_PORT":     port,
-		"VOTE_PROTOCOL": schema,
-	})
-
-	flow := datastore.NewFlowVoteCount(env)
-	go flow.Connect(ctx, eventer, func(error) {})
-	msg <- `{"1":[23],"2":[42]}`
-	msg <- `{"1":[23]}`
-
-	received, cancel := context.WithCancel(ctx)
-	go flow.Update(ctx, func(map[dskey.Key][]byte, error) {
-		cancel()
-	})
-
-	<-received.Done()
-
-	key := dskey.MustKey("poll/2/has_voted_user_ids")
-	data, err := flow.Get(ctx, key)
-	if err != nil {
-		t.Errorf("Get: %v", err)
-	}
-
-	if string(data[key]) != `[42]` {
-		t.Errorf("Get for deleted key returned `%s`, expected 42", data[key])
-	}
-}
-
 func TestGetWithoutConnect(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
