@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -14,9 +15,10 @@ import (
 )
 
 var (
-	envVoteHost     = environment.NewVariable("VOTE_HOST", "localhost", "Host of the vote-service.")
-	envVotePort     = environment.NewVariable("VOTE_PORT", "9013", "Port of the vote-service.")
-	envVoteProtocol = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
+	envVoteHost             = environment.NewVariable("VOTE_HOST", "localhost", "Host of the vote-service.")
+	envVotePort             = environment.NewVariable("VOTE_PORT", "9013", "Port of the vote-service.")
+	envVoteProtocol         = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
+	envDebugHasVotedUserIDs = environment.NewVariable("DEBUG_HAS_VOTED_USER_IDS", "false", "Enable Debug message for an error from May 2025.")
 )
 
 const allVotedIdsPath = "/internal/vote/all_voted_ids"
@@ -31,6 +33,8 @@ type FlowVoteCount struct {
 	pollToUserIDs map[int][]int
 	update        chan map[int][]int
 	ready         chan struct{}
+
+	debugHasVotedUserIDs bool
 }
 
 // NewFlowVoteCount initializes the object.
@@ -42,15 +46,26 @@ func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 		envVotePort.Value(lookup),
 	)
 
+	debug2025, _ := strconv.ParseBool(envDebugHasVotedUserIDs.Value(lookup))
+
 	flow := FlowVoteCount{
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int][]int, 1),
 		pollToUserIDs:  make(map[int][]int),
 		ready:          make(chan struct{}),
+
+		debugHasVotedUserIDs: debug2025,
 	}
 
 	return &flow
+}
+
+func (s *FlowVoteCount) printDebugHasVotedUserIDs(format string, a ...any) {
+	if !s.debugHasVotedUserIDs {
+		return
+	}
+	fmt.Printf("DEBUG: HAS VOTED USER IDs: %s\n", fmt.Sprintf(format, a...))
 }
 
 // Connect creates a connection to the vote service and makes sure, it stays
@@ -61,12 +76,20 @@ func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 // to open a new connection.
 func (s *FlowVoteCount) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
+		s.printDebugHasVotedUserIDs("Create connection to vote service")
 		if err := s.connect(ctx); err != nil {
+			s.printDebugHasVotedUserIDs("Error with vote service connection: %v", err)
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
 		}
 
+		// TODO: When the connection is closed, s.ready has to be resetted. But
+		// this would be a race condition.
+
+		s.printDebugHasVotedUserIDs("Waiting for reconnect")
 		s.wait(ctx, eventProvider)
 	}
+
+	s.printDebugHasVotedUserIDs("Stop trying to connect to vote service: %v", ctx.Err())
 }
 
 // wait waits for an event in s.eventProvider.
@@ -81,6 +104,10 @@ func (s *FlowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan t
 }
 
 func (s *FlowVoteCount) connect(ctx context.Context) error {
+	s.mu.Lock()
+	s.pollToUserIDs = make(map[int][]int)
+	s.mu.Unlock()
+
 	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+allVotedIdsPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
@@ -122,6 +149,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 		select {
 		case s.update <- fromVoteService:
 		default:
+			s.printDebugHasVotedUserIDs("Skripping message from vote service: %v", fromVoteService)
 		}
 	}
 }
@@ -171,6 +199,7 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 		var fromVoteService map[int][]int
 		select {
 		case <-ctx.Done():
+			s.printDebugHasVotedUserIDs("Update exists after context is done: %v", ctx.Err())
 			return // TODO: Should the error be returned?
 
 		case fromVoteService = <-s.update:
@@ -181,6 +210,7 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 			pollKey, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
 			if err != nil {
 				updateFn(nil, err)
+				s.printDebugHasVotedUserIDs("Update exists on error: %v", err)
 				return
 			}
 			keys = append(keys, pollKey)
