@@ -3058,7 +3058,7 @@ func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersAllowMultipleSpeakers(meetingID int) *ValueBool {
@@ -4807,6 +4807,15 @@ func (r *Fetch) MotionEditor_Weight(motionEditorID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) MotionState_AllowAmendmentForwarding(motionStateID int) *ValueBool {
+	key, err := dskey.FromParts("motion_state", motionStateID, "allow_amendment_forwarding")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) MotionState_AllowCreatePoll(motionStateID int) *ValueBool {
 	key, err := dskey.FromParts("motion_state", motionStateID, "allow_create_poll")
 	if err != nil {
@@ -5848,7 +5857,7 @@ func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_Description(organizationID int) *ValueString {
@@ -7585,7 +7594,7 @@ func (r *Fetch) Theme_Accent500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Accent600(themeID int) *ValueString {
@@ -7756,7 +7765,7 @@ func (r *Fetch) Theme_Primary500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Primary600(themeID int) *ValueString {
@@ -7891,7 +7900,7 @@ func (r *Fetch) Theme_Warn500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Warn600(themeID int) *ValueString {
@@ -12489,6 +12498,7 @@ func (r *Fetch) MotionEditor(id int) *ValueCollection[MotionEditor, *MotionEdito
 
 // MotionState has all fields from motion_state.
 type MotionState struct {
+	AllowAmendmentForwarding         bool
 	AllowCreatePoll                  bool
 	AllowMotionForwarding            bool
 	AllowSubmitterEdit               bool
@@ -12519,6 +12529,7 @@ type MotionState struct {
 
 func (c *MotionState) lazy(ds *Fetch, id int) {
 	c.fetch = ds
+	ds.MotionState_AllowAmendmentForwarding(id).Lazy(&c.AllowAmendmentForwarding)
 	ds.MotionState_AllowCreatePoll(id).Lazy(&c.AllowCreatePoll)
 	ds.MotionState_AllowMotionForwarding(id).Lazy(&c.AllowMotionForwarding)
 	ds.MotionState_AllowSubmitterEdit(id).Lazy(&c.AllowSubmitterEdit)
