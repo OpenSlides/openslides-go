@@ -5347,6 +5347,15 @@ func (r *Fetch) Motion_ListOfSpeakersID(motionID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Motion_MarkedForwarded(motionID int) *ValueBool {
+	key, err := dskey.FromParts("motion", motionID, "marked_forwarded")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_MeetingID(motionID int) *ValueInt {
 	key, err := dskey.FromParts("motion", motionID, "meeting_id")
 	if err != nil {
@@ -11530,6 +11539,7 @@ type Motion struct {
 	LastModified                                 int
 	LeadMotionID                                 Maybe[int]
 	ListOfSpeakersID                             int
+	MarkedForwarded                              bool
 	MeetingID                                    int
 	ModifiedFinalVersion                         string
 	Number                                       string
@@ -11588,6 +11598,7 @@ func (c *Motion) lazy(ds *Fetch, id int) {
 	ds.Motion_LastModified(id).Lazy(&c.LastModified)
 	ds.Motion_LeadMotionID(id).Lazy(&c.LeadMotionID)
 	ds.Motion_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.Motion_MarkedForwarded(id).Lazy(&c.MarkedForwarded)
 	ds.Motion_MeetingID(id).Lazy(&c.MeetingID)
 	ds.Motion_ModifiedFinalVersion(id).Lazy(&c.ModifiedFinalVersion)
 	ds.Motion_Number(id).Lazy(&c.Number)
