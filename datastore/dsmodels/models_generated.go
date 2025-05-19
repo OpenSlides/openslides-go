@@ -3522,6 +3522,7 @@ type Motion struct {
 	LastModified                                  int
 	LeadMotionID                                  dsfetch.Maybe[int]
 	ListOfSpeakersID                              int
+	MarkedForwarded                               bool
 	MeetingID                                     int
 	ModifiedFinalVersion                          string
 	Number                                        string
@@ -3614,6 +3615,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_LastModified(id).Lazy(&c.LastModified)
 	ds.Motion_LeadMotionID(id).Lazy(&c.LeadMotionID)
 	ds.Motion_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.Motion_MarkedForwarded(id).Lazy(&c.MarkedForwarded)
 	ds.Motion_MeetingID(id).Lazy(&c.MeetingID)
 	ds.Motion_ModifiedFinalVersion(id).Lazy(&c.ModifiedFinalVersion)
 	ds.Motion_Number(id).Lazy(&c.Number)
@@ -4545,6 +4547,7 @@ func (r *Fetch) MotionEditor(ids ...int) *motionEditorBuilder {
 
 // MotionState has all fields from motion_state.
 type MotionState struct {
+	AllowAmendmentForwarding         bool
 	AllowCreatePoll                  bool
 	AllowMotionForwarding            bool
 	AllowSubmitterEdit               bool
@@ -4587,6 +4590,7 @@ type motionStateBuilder struct {
 
 func (b *motionStateBuilder) lazy(ds *Fetch, id int) *MotionState {
 	c := MotionState{}
+	ds.MotionState_AllowAmendmentForwarding(id).Lazy(&c.AllowAmendmentForwarding)
 	ds.MotionState_AllowCreatePoll(id).Lazy(&c.AllowCreatePoll)
 	ds.MotionState_AllowMotionForwarding(id).Lazy(&c.AllowMotionForwarding)
 	ds.MotionState_AllowSubmitterEdit(id).Lazy(&c.AllowSubmitterEdit)
