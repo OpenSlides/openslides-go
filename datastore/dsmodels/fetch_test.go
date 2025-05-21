@@ -1,7 +1,6 @@
 package dsmodels_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsmock"
@@ -10,14 +9,15 @@ import (
 
 func TestRequestSingleModel(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
-	topic/1/sequential_number: 1
-	topic/1/title: foo
-	topic/1/meeting_id: 1
-	topic/1/agenda_item_id: 1
-	topic/1/list_of_speakers_id: 1
+	topic/1:
+		sequential_number: 1
+		title: foo
+		meeting_id: 1
+		agenda_item_id: 1
+		list_of_speakers_id: 1
 	`)))
 
-	_, err := ds.Topic(1).First(context.Background())
+	_, err := ds.Topic(1).First(t.Context())
 	if err != nil {
 		t.Errorf("Topic 1 returned unexpected error: %v", err)
 	}
@@ -25,17 +25,18 @@ func TestRequestSingleModel(t *testing.T) {
 
 func TestRequestSingleModelWithRequiredRelation(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
-	topic/1/sequential_number: 1
-	topic/1/title: foo
-	topic/1/meeting_id: 1
-	topic/1/agenda_item_id: 1
-	topic/1/list_of_speakers_id: 1
+	topic/1:
+		sequential_number: 1
+		title: foo
+		meeting_id: 1
+		agenda_item_id: 1
+		list_of_speakers_id: 1
 	agenda_item/1/content_object_id: topic/1
 	agenda_item/1/meeting_id: 1
 	`)))
 
 	tQ := ds.Topic(1)
-	_, err := tQ.Preload(tQ.AgendaItem()).First(context.Background())
+	_, err := tQ.Preload(tQ.AgendaItem()).First(t.Context())
 	if err != nil {
 		t.Errorf("Topic 1 with agenda item returned unexpected error: %v", err)
 	}
@@ -43,15 +44,16 @@ func TestRequestSingleModelWithRequiredRelation(t *testing.T) {
 
 func TestRequestSingleModelWithExistingMaybeRelation(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
-	agenda_item/1/content_object_id: topic/1
-	agenda_item/1/meeting_id: 1
-	agenda_item/1/parent_id: 2
+	agenda_item/1:
+		content_object_id: topic/1
+		meeting_id: 1
+		parent_id: 2
 	agenda_item/2/content_object_id: topic/2
 	agenda_item/2/meeting_id: 1
 	`)))
 
 	q := ds.AgendaItem(1)
-	res, err := q.Preload(q.Parent()).First(context.Background())
+	res, err := q.Preload(q.Parent()).First(t.Context())
 	if err != nil {
 		t.Errorf("Agenda item returned unexpected error: %v", err)
 	}
@@ -74,7 +76,7 @@ func TestRequestSingleModelWithNonExistingMaybeRelation(t *testing.T) {
 	`)))
 
 	q := ds.AgendaItem(1)
-	res, err := q.Preload(q.Parent()).First(context.Background())
+	res, err := q.Preload(q.Parent()).First(t.Context())
 	if err != nil {
 		t.Errorf("Agenda item returned unexpected error: %v", err)
 	}
@@ -95,7 +97,7 @@ func TestRequestSingleModelWithEmptyListRelation(t *testing.T) {
 	`)))
 
 	q := ds.AgendaItem(1)
-	res, err := q.Preload(q.ChildList()).First(context.Background())
+	res, err := q.Preload(q.ChildList()).First(t.Context())
 	if err != nil {
 		t.Errorf("Agenda item returned unexpected error: %v", err)
 	}
@@ -107,19 +109,22 @@ func TestRequestSingleModelWithEmptyListRelation(t *testing.T) {
 
 func TestRequestSingleModelWithListRelation(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
-	agenda_item/1/content_object_id: topic/1
-	agenda_item/1/meeting_id: 1
-	agenda_item/1/child_ids: [2, 3]
-	agenda_item/2/content_object_id: topic/2
-	agenda_item/2/meeting_id: 1
-	agenda_item/2/parent_id: 1
-	agenda_item/3/content_object_id: topic/3
-	agenda_item/3/meeting_id: 1
-	agenda_item/3/parent_id: 1
+	agenda_item/1:
+		content_object_id: topic/1
+		meeting_id: 1
+		child_ids: [2, 3]
+	agenda_item/2:
+		content_object_id: topic/2
+		meeting_id: 1
+		parent_id: 1
+	agenda_item/3:
+		content_object_id: topic/3
+		meeting_id: 1
+		parent_id: 1
 	`)))
 
 	q := ds.AgendaItem(1)
-	res, err := q.Preload(q.ChildList()).First(context.Background())
+	res, err := q.Preload(q.ChildList()).First(t.Context())
 	if err != nil {
 		t.Errorf("Agenda item returned unexpected error: %v", err)
 	}
@@ -139,23 +144,26 @@ func TestRequestSingleModelWithListRelation(t *testing.T) {
 
 func TestRequestSingleModelWithNestedRelation(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
-	topic/1/sequential_number: 1
-	topic/1/title: foo
-	topic/1/meeting_id: 1
-	topic/1/agenda_item_id: 1
-	topic/1/list_of_speakers_id: 1
-	agenda_item/1/content_object_id: topic/1
-	agenda_item/1/meeting_id: 1
-	agenda_item/1/parent_id: 2
-	agenda_item/2/content_object_id: topic/2
-	agenda_item/2/meeting_id: 1
-	agenda_item/2/parent_id: 3
+	topic/1:
+		sequential_number: 1
+		title: foo
+		meeting_id: 1
+		agenda_item_id: 1
+		list_of_speakers_id: 1
+	agenda_item/1:
+		content_object_id: topic/1
+		meeting_id: 1
+		parent_id: 2
+	agenda_item/2:
+		content_object_id: topic/2
+		meeting_id: 1
+		parent_id: 3
 	agenda_item/3/content_object_id: topic/3
 	agenda_item/3/meeting_id: 1
 	`)))
 
 	tQ := ds.Topic(1)
-	res, err := tQ.Preload(tQ.AgendaItem().Parent().Parent()).First(context.Background())
+	res, err := tQ.Preload(tQ.AgendaItem().Parent().Parent()).First(t.Context())
 	if err != nil {
 		t.Errorf("Topic 1 with agenda item returned unexpected error: %v", err)
 	}
@@ -177,20 +185,22 @@ func TestRequestSingleModelWithNestedRelation(t *testing.T) {
 
 func TestRequestSinglePreloadMulti(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
-	topic/1/sequential_number: 1
-	topic/1/title: foo
-	topic/1/meeting_id: 1
-	topic/1/agenda_item_id: 1
-	topic/1/list_of_speakers_id: 1
+	topic/1:
+		sequential_number: 1
+		title: foo
+		meeting_id: 1
+		agenda_item_id: 1
+		list_of_speakers_id: 1
 	agenda_item/1/content_object_id: topic/1
 	agenda_item/1/meeting_id: 1
-	list_of_speakers/1/sequential_number: 1
-	list_of_speakers/1/content_object_id: topic/1
-	list_of_speakers/1/meeting_id: 1
+	list_of_speakers/1:
+		sequential_number: 1
+		content_object_id: topic/1
+		meeting_id: 1
 	`)))
 
 	tQ := ds.Topic(1)
-	res, err := tQ.Preload(tQ.AgendaItem()).Preload(tQ.ListOfSpeakers()).First(context.Background())
+	res, err := tQ.Preload(tQ.AgendaItem()).Preload(tQ.ListOfSpeakers()).First(t.Context())
 	if err != nil {
 		t.Errorf("Topic 1 with agenda item returned unexpected error: %v", err)
 	}
