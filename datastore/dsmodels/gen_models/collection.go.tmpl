@@ -1,0 +1,51 @@
+// {{.GoName}} has all fields from {{.ModelsName}}.
+type {{.GoName}} struct{
+    {{- range .Fields}}
+    {{.Name}} {{.Type}}
+    {{- end}}
+    {{- range .Relations}}
+    {{.MethodName}} {{.ResultType}}
+    {{- end}}
+}
+
+type {{.GoNameLc}}Builder struct{
+    builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}]
+}
+
+func (b *{{.GoNameLc}}Builder)lazy(ds *Fetch, id int) *{{.GoName}} {
+    c := {{.GoName}}{}
+    {{- range .Fields}}
+    ds.{{.FetchName}}(id).Lazy(&c.{{.Name}})
+    {{- end}}
+    return &c
+}
+
+func (b *{{.GoNameLc}}Builder) Preload(rel builderWrapperI) *{{.GoNameLc}}Builder {
+	b.builder.Preload(rel)
+    return b
+}
+
+{{ range .Relations}}
+func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
+	return &{{.TypeLc}}Builder{
+		builder: builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}]{
+			fetch: b.fetch,
+			parent: b,
+			idField: "{{.FieldName}}",
+			relField: "{{.MethodName}}",
+            {{- if .IsList}}
+            many: true,
+	        {{- end}}
+		},
+	}
+}
+{{end}}
+
+func (r *Fetch){{.GoName}}(ids... int) *{{.GoNameLc}}Builder {
+	return &{{.GoNameLc}}Builder{
+		builder: builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}]{
+			ids: ids,
+			fetch: r,
+		},
+	}
+}
