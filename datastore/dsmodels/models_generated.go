@@ -1359,7 +1359,7 @@ type Meeting struct {
 	ExportCsvEncoding                            string
 	ExportCsvSeparator                           string
 	ExportPdfFontsize                            int
-	ExportPdfLineHeight                          float32
+	ExportPdfLineHeight                          float64
 	ExportPdfPageMarginBottom                    int
 	ExportPdfPageMarginLeft                      int
 	ExportPdfPageMarginRight                     int
@@ -6253,7 +6253,7 @@ func (r *Fetch) Projector(ids ...int) *projectorBuilder {
 
 // ProjectorCountdown has all fields from projector_countdown.
 type ProjectorCountdown struct {
-	CountdownTime                          float32
+	CountdownTime                          float64
 	DefaultTime                            int
 	Description                            string
 	ID                                     int
@@ -6605,13 +6605,13 @@ func (r *Fetch) StructureLevel(ids ...int) *structureLevelBuilder {
 
 // StructureLevelListOfSpeakers has all fields from structure_level_list_of_speakers.
 type StructureLevelListOfSpeakers struct {
-	AdditionalTime   float32
+	AdditionalTime   float64
 	CurrentStartTime int
 	ID               int
 	InitialTime      int
 	ListOfSpeakersID int
 	MeetingID        int
-	RemainingTime    float32
+	RemainingTime    float64
 	SpeakerIDs       []int
 	StructureLevelID int
 	ListOfSpeakers   *ListOfSpeakers

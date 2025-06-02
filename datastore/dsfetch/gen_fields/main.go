@@ -86,7 +86,7 @@ var typesToGo = map[string]string{
 	"ValueString":      "string",
 	"ValueMaybeString": "Maybe[string]",
 	"ValueBool":        "bool",
-	"ValueFloat":       "float32",
+	"ValueFloat":       "float64",
 	"ValueJSON":        "json.RawMessage",
 	"ValueIntSlice":    "[]int",
 	"ValueStringSlice": "[]string",
@@ -127,7 +127,7 @@ func genValueTypes(buf *bytes.Buffer) error {
 // zeroValue returns the zero value for a go type
 func zeroValue(t string) string {
 	switch t {
-	case "int", "float32":
+	case "int", "float64":
 		return "0"
 	case "string":
 		return `""`
