@@ -88,7 +88,7 @@ var typesToGo = map[string]string{
 	"ValueString":      "string",
 	"ValueMaybeString": "dsfetch.Maybe[string]",
 	"ValueBool":        "bool",
-	"ValueFloat":       "float32",
+	"ValueFloat":       "float64",
 	"ValueJSON":        "json.RawMessage",
 	"ValueIntSlice":    "[]int",
 	"ValueStringSlice": "[]string",

@@ -87,14 +87,14 @@ type ValueFloat struct {
 	key      dskey.Key
 	required bool
 
-	lazies []*float32
+	lazies []*float64
 
 	fetch *Fetch
 }
 
 // Value returns the value.
-func (v *ValueFloat) Value(ctx context.Context) (float32, error) {
-	var zero float32
+func (v *ValueFloat) Value(ctx context.Context) (float64, error) {
+	var zero float64
 	if err := v.err; err != nil {
 		return zero, v.err
 	}
@@ -115,21 +115,21 @@ func (v *ValueFloat) Value(ctx context.Context) (float32, error) {
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueFloat) Lazy(value *float32) {
+func (v *ValueFloat) Lazy(value *float64) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
 
 // convert converts the json value to the type.
-func (v *ValueFloat) convert(p []byte) (float32, error) {
-	var zero float32
+func (v *ValueFloat) convert(p []byte) (float64, error) {
+	var zero float64
 	if p == nil {
 		if v.required {
 			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
 		return zero, nil
 	}
-	var value float32
+	var value float64
 	if err := json.Unmarshal(p, &value); err != nil {
 		return zero, fmt.Errorf("decoding value %q: %w", p, err)
 	}
