@@ -571,6 +571,9 @@ func (r *Fetch) ChatMessage(ids ...int) *chatMessageBuilder {
 
 // Committee has all fields from committee.
 type Committee struct {
+	AllChildIDs                         []int
+	AllParentIDs                        []int
+	ChildIDs                            []int
 	DefaultMeetingID                    dsfetch.Maybe[int]
 	Description                         string
 	ExternalID                          string
@@ -579,16 +582,23 @@ type Committee struct {
 	ManagerIDs                          []int
 	MeetingIDs                          []int
 	Name                                string
+	NativeUserIDs                       []int
 	OrganizationID                      int
 	OrganizationTagIDs                  []int
+	ParentID                            dsfetch.Maybe[int]
 	ReceiveForwardingsFromCommitteeIDs  []int
 	UserIDs                             []int
+	AllChildList                        []Committee
+	AllParentList                       []Committee
+	ChildList                           []Committee
 	DefaultMeeting                      *dsfetch.Maybe[Meeting]
 	ForwardToCommitteeList              []Committee
 	ManagerList                         []User
 	MeetingList                         []Meeting
+	NativeUserList                      []User
 	Organization                        *Organization
 	OrganizationTagList                 []OrganizationTag
+	Parent                              *dsfetch.Maybe[Committee]
 	ReceiveForwardingsFromCommitteeList []Committee
 	UserList                            []User
 }
@@ -599,6 +609,9 @@ type committeeBuilder struct {
 
 func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
 	c := Committee{}
+	ds.Committee_AllChildIDs(id).Lazy(&c.AllChildIDs)
+	ds.Committee_AllParentIDs(id).Lazy(&c.AllParentIDs)
+	ds.Committee_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.Committee_DefaultMeetingID(id).Lazy(&c.DefaultMeetingID)
 	ds.Committee_Description(id).Lazy(&c.Description)
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
@@ -607,8 +620,10 @@ func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
 	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
 	ds.Committee_MeetingIDs(id).Lazy(&c.MeetingIDs)
 	ds.Committee_Name(id).Lazy(&c.Name)
+	ds.Committee_NativeUserIDs(id).Lazy(&c.NativeUserIDs)
 	ds.Committee_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.Committee_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
+	ds.Committee_ParentID(id).Lazy(&c.ParentID)
 	ds.Committee_ReceiveForwardingsFromCommitteeIDs(id).Lazy(&c.ReceiveForwardingsFromCommitteeIDs)
 	ds.Committee_UserIDs(id).Lazy(&c.UserIDs)
 	return &c
@@ -617,6 +632,42 @@ func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
 func (b *committeeBuilder) Preload(rel builderWrapperI) *committeeBuilder {
 	b.builder.Preload(rel)
 	return b
+}
+
+func (b *committeeBuilder) AllChildList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "AllChildIDs",
+			relField: "AllChildList",
+			many:     true,
+		},
+	}
+}
+
+func (b *committeeBuilder) AllParentList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "AllParentIDs",
+			relField: "AllParentList",
+			many:     true,
+		},
+	}
+}
+
+func (b *committeeBuilder) ChildList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ChildIDs",
+			relField: "ChildList",
+			many:     true,
+		},
+	}
 }
 
 func (b *committeeBuilder) DefaultMeeting() *meetingBuilder {
@@ -666,6 +717,18 @@ func (b *committeeBuilder) MeetingList() *meetingBuilder {
 	}
 }
 
+func (b *committeeBuilder) NativeUserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "NativeUserIDs",
+			relField: "NativeUserList",
+			many:     true,
+		},
+	}
+}
+
 func (b *committeeBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
@@ -685,6 +748,17 @@ func (b *committeeBuilder) OrganizationTagList() *organizationTagBuilder {
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
+		},
+	}
+}
+
+func (b *committeeBuilder) Parent() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ParentID",
+			relField: "Parent",
 		},
 	}
 }
@@ -7028,6 +7102,8 @@ type User struct {
 	Email                       string
 	FirstName                   string
 	GenderID                    dsfetch.Maybe[int]
+	Guest                       bool
+	HomeCommitteeID             dsfetch.Maybe[int]
 	ID                          int
 	IsActive                    bool
 	IsDemoUser                  bool
@@ -7054,6 +7130,7 @@ type User struct {
 	CommitteeManagementList     []Committee
 	DelegatedVoteList           []Vote
 	Gender                      *dsfetch.Maybe[Gender]
+	HomeCommittee               *dsfetch.Maybe[Committee]
 	IsPresentInMeetingList      []Meeting
 	MeetingUserList             []MeetingUser
 	OptionList                  []Option
@@ -7078,6 +7155,8 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_Email(id).Lazy(&c.Email)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
+	ds.User_Guest(id).Lazy(&c.Guest)
+	ds.User_HomeCommitteeID(id).Lazy(&c.HomeCommitteeID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)
 	ds.User_IsDemoUser(id).Lazy(&c.IsDemoUser)
@@ -7151,6 +7230,17 @@ func (b *userBuilder) Gender() *genderBuilder {
 			parent:   b,
 			idField:  "GenderID",
 			relField: "Gender",
+		},
+	}
+}
+
+func (b *userBuilder) HomeCommittee() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HomeCommitteeID",
+			relField: "HomeCommittee",
 		},
 	}
 }
