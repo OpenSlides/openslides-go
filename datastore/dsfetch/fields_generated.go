@@ -1153,6 +1153,33 @@ func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybeInt {
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Committee_AllChildIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "all_child_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_AllParentIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "all_parent_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_ChildIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "child_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("committee", committeeID, "default_meeting_id")
 	if err != nil {
@@ -1225,6 +1252,15 @@ func (r *Fetch) Committee_Name(committeeID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Committee_NativeUserIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "native_user_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Committee_OrganizationID(committeeID int) *ValueInt {
 	key, err := dskey.FromParts("committee", committeeID, "organization_id")
 	if err != nil {
@@ -1241,6 +1277,15 @@ func (r *Fetch) Committee_OrganizationTagIDs(committeeID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_ParentID(committeeID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("committee", committeeID, "parent_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *ValueIntSlice {
@@ -8085,6 +8130,24 @@ func (r *Fetch) User_FirstName(userID int) *ValueString {
 
 func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("user", userID, "gender_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) User_Guest(userID int) *ValueBool {
+	key, err := dskey.FromParts("user", userID, "guest")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) User_HomeCommitteeID(userID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("user", userID, "home_committee_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
