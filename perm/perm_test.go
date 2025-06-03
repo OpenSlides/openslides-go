@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestHasSuperAdmin(t *testing.T) {
