@@ -936,7 +936,6 @@ var collectionFields = [...]collectionField{
 	{"user", "username"},
 	{"user", "vote_ids"},
 	{"vote", "A"},
-	{"vote", "B"},
 	{"vote", "delegated_user_id"},
 	{"vote", "id"},
 	{"vote", "meeting_id"},
@@ -2815,24 +2814,22 @@ func collectionFieldToID(cf string) int {
 		return 932
 	case "vote/A":
 		return 933
-	case "vote/B":
-		return 934
 	case "vote/delegated_user_id":
-		return 935
+		return 934
 	case "vote/id":
-		return 936
+		return 935
 	case "vote/meeting_id":
-		return 937
+		return 936
 	case "vote/option_id":
-		return 938
+		return 937
 	case "vote/user_id":
-		return 939
+		return 938
 	case "vote/user_token":
-		return 940
+		return 939
 	case "vote/value":
-		return 941
+		return 940
 	case "vote/weight":
-		return 942
+		return 941
 	default:
 		return -1
 	}
