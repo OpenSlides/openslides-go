@@ -1344,7 +1344,7 @@ var RestrictionModes = map[string]string{
 	"vote/meeting_id":        "A",
 	"vote/option_id":         "A",
 	"vote/user_id":           "A",
+	"vote/user_token":        "A",
 	"vote/value":             "A",
 	"vote/weight":            "A",
-	"vote/user_token":        "B",
 }
