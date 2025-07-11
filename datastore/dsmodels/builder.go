@@ -155,21 +155,21 @@ func (b *builder[C, T, M]) First(ctx context.Context) (M, error) {
 }
 
 func (b *builder[C, T, M]) Get(ctx context.Context) ([]M, error) {
-	itemPtrs := []*M{}
-	for _, id := range b.ids {
-		itemPtrs = append(itemPtrs, b.value.lazy(b.fetch, id))
+	itemPtrs := make([]*M, len(b.ids))
+	for i, id := range b.ids {
+		itemPtrs[i] = b.value.lazy(b.fetch, id)
 	}
 
 	if err := b.fetch.Execute(ctx); err != nil {
 		return []M{}, err
 	}
 
-	items := []M{}
-	for _, el := range itemPtrs {
-		if err := b.loadChildren(ctx, &el); err != nil {
+	items := make([]M, len(itemPtrs))
+	for i, el := range itemPtrs {
+		if err := b.loadChildren(ctx, el); err != nil {
 			return []M{}, err
 		}
-		items = append(items, *el)
+		items[i] = *el
 	}
 
 	return items, nil
