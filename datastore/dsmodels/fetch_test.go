@@ -69,6 +69,39 @@ func TestRequestSingleModelWithExistingMaybeRelation(t *testing.T) {
 	}
 }
 
+func TestRequestModelsWithExistingMaybeRelation(t *testing.T) {
+	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	agenda_item/1:
+		content_object_id: topic/1
+		meeting_id: 1
+		parent_id: 2
+	agenda_item/2/content_object_id: topic/2
+	agenda_item/2/meeting_id: 1
+	`)))
+
+	q := ds.AgendaItem(1)
+	resAll, err := q.Preload(q.Parent()).Get(t.Context())
+	if err != nil {
+		t.Errorf("Agenda item returned unexpected error: %v", err)
+	}
+
+	if len(resAll) != 1 {
+		t.Errorf("len(resAll) = %d, expected 1", len(resAll))
+		return
+	}
+
+	res := resAll[0]
+	if res.ContentObjectID != "topic/1" {
+		t.Errorf("res.ContentObjectID = %s, expected topic/1", res.ContentObjectID)
+	}
+
+	if val, isSet := res.Parent.Value(); !isSet {
+		t.Errorf("parent is not set")
+	} else if val.ContentObjectID != "topic/2" {
+		t.Errorf("res.ContentObjectID = %s, expected topic/2", val.ContentObjectID)
+	}
+}
+
 func TestRequestSingleModelWithNonExistingMaybeRelation(t *testing.T) {
 	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
 	agenda_item/1/content_object_id: topic/1
