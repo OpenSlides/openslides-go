@@ -6418,15 +6418,6 @@ func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_HasVotedUserIDs(pollID int) *ValueIntSlice {
-	key, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 	key, err := dskey.FromParts("poll", pollID, "id")
 	if err != nil {
@@ -6438,6 +6429,24 @@ func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 
 func (r *Fetch) Poll_IsPseudoanonymized(pollID int) *ValueBool {
 	key, err := dskey.FromParts("poll", pollID, "is_pseudoanonymized")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Poll_LiveVotes(pollID int) *ValueJSON {
+	key, err := dskey.FromParts("poll", pollID, "live_votes")
+	if err != nil {
+		return &ValueJSON{err: err}
+	}
+
+	return &ValueJSON{fetch: r, key: key}
+}
+
+func (r *Fetch) Poll_LiveVotingEnabled(pollID int) *ValueBool {
+	key, err := dskey.FromParts("poll", pollID, "live_voting_enabled")
 	if err != nil {
 		return &ValueBool{err: err}
 	}

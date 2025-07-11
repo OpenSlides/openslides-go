@@ -5589,9 +5589,10 @@ type Poll struct {
 	GlobalNo              bool
 	GlobalOptionID        dsfetch.Maybe[int]
 	GlobalYes             bool
-	HasVotedUserIDs       []int
 	ID                    int
 	IsPseudoanonymized    bool
+	LiveVotes             json.RawMessage
+	LiveVotingEnabled     bool
 	MaxVotesAmount        int
 	MaxVotesPerOption     int
 	MeetingID             int
@@ -5635,9 +5636,10 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_GlobalNo(id).Lazy(&c.GlobalNo)
 	ds.Poll_GlobalOptionID(id).Lazy(&c.GlobalOptionID)
 	ds.Poll_GlobalYes(id).Lazy(&c.GlobalYes)
-	ds.Poll_HasVotedUserIDs(id).Lazy(&c.HasVotedUserIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
 	ds.Poll_IsPseudoanonymized(id).Lazy(&c.IsPseudoanonymized)
+	ds.Poll_LiveVotes(id).Lazy(&c.LiveVotes)
+	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
 	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
 	ds.Poll_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
 	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)
