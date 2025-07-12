@@ -937,6 +937,15 @@ func (r *Fetch) Assignment_Description(assignmentID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Assignment_HistoryEntryIDs(assignmentID int) *ValueIntSlice {
+	key, err := dskey.FromParts("assignment", assignmentID, "history_entry_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Assignment_ID(assignmentID int) *ValueInt {
 	key, err := dskey.FromParts("assignment", assignmentID, "id")
 	if err != nil {
@@ -1529,6 +1538,96 @@ func (r *Fetch) Group_WriteCommentSectionIDs(groupID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryEntry_Entries(historyEntryID int) *ValueStringSlice {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "entries")
+	if err != nil {
+		return &ValueStringSlice{err: err}
+	}
+
+	return &ValueStringSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryEntry_ID(historyEntryID int) *ValueInt {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueMaybeString {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "model_id")
+	if err != nil {
+		return &ValueMaybeString{err: err}
+	}
+
+	return &ValueMaybeString{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryEntry_OriginalModelID(historyEntryID int) *ValueString {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "original_model_id")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryEntry_PositionID(historyEntryID int) *ValueInt {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "position_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) HistoryPosition_EntryIDs(historyPositionID int) *ValueIntSlice {
+	key, err := dskey.FromParts("history_position", historyPositionID, "entry_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryPosition_ID(historyPositionID int) *ValueInt {
+	key, err := dskey.FromParts("history_position", historyPositionID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) HistoryPosition_OriginalUserID(historyPositionID int) *ValueInt {
+	key, err := dskey.FromParts("history_position", historyPositionID, "original_user_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryPosition_Timestamp(historyPositionID int) *ValueInt {
+	key, err := dskey.FromParts("history_position", historyPositionID, "timestamp")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryPosition_UserID(historyPositionID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("history_position", historyPositionID, "user_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ImportPreview_Created(importPreviewID int) *ValueInt {
@@ -5320,6 +5419,15 @@ func (r *Fetch) Motion_Forwarded(motionID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Motion_HistoryEntryIDs(motionID int) *ValueIntSlice {
+	key, err := dskey.FromParts("motion", motionID, "history_entry_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_ID(motionID int) *ValueInt {
 	key, err := dskey.FromParts("motion", motionID, "id")
 	if err != nil {
@@ -8144,6 +8252,24 @@ func (r *Fetch) User_Guest(userID int) *ValueBool {
 	}
 
 	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) User_HistoryEntryIDs(userID int) *ValueIntSlice {
+	key, err := dskey.FromParts("user", userID, "history_entry_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) User_HistoryPositionIDs(userID int) *ValueIntSlice {
+	key, err := dskey.FromParts("user", userID, "history_position_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) User_HomeCommitteeID(userID int) *ValueMaybeInt {
