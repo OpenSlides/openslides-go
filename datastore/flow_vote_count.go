@@ -31,8 +31,8 @@ type FlowVoteCount struct {
 	id             uint64
 
 	mu            sync.Mutex
-	pollLiveVotes map[int]map[int][]byte
-	update        chan map[int]map[int][]byte
+	pollLiveVotes map[int]map[int]*string
+	update        chan map[int]map[int]*string
 	ready         chan struct{}
 
 	debugLiveVotes bool
@@ -52,8 +52,8 @@ func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 	flow := FlowVoteCount{
 		voteServiceURL: url,
 		client:         &http.Client{},
-		update:         make(chan map[int]map[int][]byte, 1),
-		pollLiveVotes:  make(map[int]map[int][]byte),
+		update:         make(chan map[int]map[int]*string, 1),
+		pollLiveVotes:  make(map[int]map[int]*string),
 		ready:          make(chan struct{}),
 
 		debugLiveVotes: debug2025,
@@ -106,7 +106,7 @@ func (s *FlowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan t
 
 func (s *FlowVoteCount) connect(ctx context.Context) error {
 	s.mu.Lock()
-	s.pollLiveVotes = make(map[int]map[int][]byte)
+	s.pollLiveVotes = make(map[int]map[int]*string)
 	s.mu.Unlock()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+liveVotesPath, nil)
@@ -123,7 +123,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 
 	decoder := json.NewDecoder(resp.Body)
 	for {
-		var fromVoteService map[int]map[int][]byte
+		var fromVoteService map[int]map[int]*string
 		if err := decoder.Decode(&fromVoteService); err != nil {
 			if err == io.EOF {
 				return nil
@@ -139,7 +139,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 				continue
 			}
 			if s.pollLiveVotes[pollID] == nil {
-				s.pollLiveVotes[pollID] = make(map[int][]byte)
+				s.pollLiveVotes[pollID] = make(map[int]*string)
 			}
 			maps.Copy(s.pollLiveVotes[pollID], userID2Vote)
 		}
@@ -201,7 +201,7 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 // Update has to be called frequently. It blocks, until there is new data.
 func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	for {
-		var fromVoteService map[int]map[int][]byte
+		var fromVoteService map[int]map[int]*string
 		select {
 		case <-ctx.Done():
 			s.printDebugLiveVotes("Update exists after context is done: %v", ctx.Err())
