@@ -7100,9 +7100,9 @@ type User struct {
 	DefaultVoteWeight           string
 	DelegatedVoteIDs            []int
 	Email                       string
+	External                    bool
 	FirstName                   string
 	GenderID                    dsfetch.Maybe[int]
-	Guest                       bool
 	HomeCommitteeID             dsfetch.Maybe[int]
 	ID                          int
 	IsActive                    bool
@@ -7153,9 +7153,9 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_DefaultVoteWeight(id).Lazy(&c.DefaultVoteWeight)
 	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
 	ds.User_Email(id).Lazy(&c.Email)
+	ds.User_External(id).Lazy(&c.External)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
-	ds.User_Guest(id).Lazy(&c.Guest)
 	ds.User_HomeCommitteeID(id).Lazy(&c.HomeCommitteeID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)

@@ -1331,7 +1331,7 @@ var RestrictionModes = map[string]string{
 	"user/can_change_own_password":       "D",
 	"user/committee_ids":                 "E",
 	"user/committee_management_ids":      "E",
-	"user/guest":                         "E",
+	"user/external":                      "E",
 	"user/home_committee_id":             "E",
 	"user/meeting_ids":                   "E",
 	"user/organization_id":               "F",

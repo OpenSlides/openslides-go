@@ -8119,6 +8119,15 @@ func (r *Fetch) User_Email(userID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) User_External(userID int) *ValueBool {
+	key, err := dskey.FromParts("user", userID, "external")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) User_FirstName(userID int) *ValueString {
 	key, err := dskey.FromParts("user", userID, "first_name")
 	if err != nil {
@@ -8135,15 +8144,6 @@ func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
 	}
 
 	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) User_Guest(userID int) *ValueBool {
-	key, err := dskey.FromParts("user", userID, "guest")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) User_HomeCommitteeID(userID int) *ValueMaybeInt {
