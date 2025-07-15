@@ -1558,13 +1558,13 @@ func (r *Fetch) HistoryEntry_ID(historyEntryID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueMaybeString {
+func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueString {
 	key, err := dskey.FromParts("history_entry", historyEntryID, "model_id")
 	if err != nil {
-		return &ValueMaybeString{err: err}
+		return &ValueString{err: err}
 	}
 
-	return &ValueMaybeString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) HistoryEntry_OriginalModelID(historyEntryID int) *ValueString {
@@ -8227,6 +8227,15 @@ func (r *Fetch) User_Email(userID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) User_External(userID int) *ValueBool {
+	key, err := dskey.FromParts("user", userID, "external")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) User_FirstName(userID int) *ValueString {
 	key, err := dskey.FromParts("user", userID, "first_name")
 	if err != nil {
@@ -8243,15 +8252,6 @@ func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
 	}
 
 	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) User_Guest(userID int) *ValueBool {
-	key, err := dskey.FromParts("user", userID, "guest")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) User_HistoryEntryIDs(userID int) *ValueIntSlice {

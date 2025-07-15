@@ -1144,7 +1144,7 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 type HistoryEntry struct {
 	Entries         []string
 	ID              int
-	ModelID         dsfetch.Maybe[string]
+	ModelID         string
 	OriginalModelID string
 	PositionID      int
 	Position        *HistoryPosition
@@ -7241,9 +7241,9 @@ type User struct {
 	DefaultVoteWeight           string
 	DelegatedVoteIDs            []int
 	Email                       string
+	External                    bool
 	FirstName                   string
 	GenderID                    dsfetch.Maybe[int]
-	Guest                       bool
 	HistoryEntryIDs             []int
 	HistoryPositionIDs          []int
 	HomeCommitteeID             dsfetch.Maybe[int]
@@ -7298,9 +7298,9 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_DefaultVoteWeight(id).Lazy(&c.DefaultVoteWeight)
 	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
 	ds.User_Email(id).Lazy(&c.Email)
+	ds.User_External(id).Lazy(&c.External)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
-	ds.User_Guest(id).Lazy(&c.Guest)
 	ds.User_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.User_HistoryPositionIDs(id).Lazy(&c.HistoryPositionIDs)
 	ds.User_HomeCommitteeID(id).Lazy(&c.HomeCommitteeID)
