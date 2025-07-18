@@ -714,6 +714,7 @@ var RestrictionModes = map[string]string{
 	"meeting/poll_couple_countdown":                                 "B",
 	"meeting/poll_default_backend":                                  "B",
 	"meeting/poll_default_group_ids":                                "B",
+	"meeting/poll_default_live_voting_enabled":                      "B",
 	"meeting/poll_default_method":                                   "B",
 	"meeting/poll_default_onehundred_percent_base":                  "B",
 	"meeting/poll_default_type":                                     "B",

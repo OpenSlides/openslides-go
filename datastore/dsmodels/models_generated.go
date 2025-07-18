@@ -1562,6 +1562,7 @@ type Meeting struct {
 	PollCoupleCountdown                          bool
 	PollDefaultBackend                           string
 	PollDefaultGroupIDs                          []int
+	PollDefaultLiveVotingEnabled                 bool
 	PollDefaultMethod                            string
 	PollDefaultOnehundredPercentBase             string
 	PollDefaultType                              string
@@ -1897,6 +1898,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_PollCoupleCountdown(id).Lazy(&c.PollCoupleCountdown)
 	ds.Meeting_PollDefaultBackend(id).Lazy(&c.PollDefaultBackend)
 	ds.Meeting_PollDefaultGroupIDs(id).Lazy(&c.PollDefaultGroupIDs)
+	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
 	ds.Meeting_PollDefaultMethod(id).Lazy(&c.PollDefaultMethod)
 	ds.Meeting_PollDefaultOnehundredPercentBase(id).Lazy(&c.PollDefaultOnehundredPercentBase)
 	ds.Meeting_PollDefaultType(id).Lazy(&c.PollDefaultType)
