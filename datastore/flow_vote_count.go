@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strconv"
 	"sync"
@@ -15,13 +16,13 @@ import (
 )
 
 var (
-	envVoteHost             = environment.NewVariable("VOTE_HOST", "localhost", "Host of the vote-service.")
-	envVotePort             = environment.NewVariable("VOTE_PORT", "9013", "Port of the vote-service.")
-	envVoteProtocol         = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
-	envDebugHasVotedUserIDs = environment.NewVariable("DEBUG_HAS_VOTED_USER_IDS", "false", "Enable Debug message for an error from May 2025.")
+	envVoteHost       = environment.NewVariable("VOTE_HOST", "localhost", "Host of the vote-service.")
+	envVotePort       = environment.NewVariable("VOTE_PORT", "9013", "Port of the vote-service.")
+	envVoteProtocol   = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
+	envDebugLiveVotes = environment.NewVariable("DEBUG_HAS_VOTED_USER_IDS", "false", "Enable Debug message for an error from May 2025.")
 )
 
-const allVotedIdsPath = "/internal/vote/all_voted_ids"
+const liveVotesPath = "/internal/vote/live_votes"
 
 // FlowVoteCount is a datastore flow for the poll/vote_count value.
 type FlowVoteCount struct {
@@ -30,11 +31,11 @@ type FlowVoteCount struct {
 	id             uint64
 
 	mu            sync.Mutex
-	pollToUserIDs map[int][]int
-	update        chan map[int][]int
+	pollLiveVotes map[int]map[int]*string
+	update        chan map[int]map[int]*string
 	ready         chan struct{}
 
-	debugHasVotedUserIDs bool
+	debugLiveVotes bool
 }
 
 // NewFlowVoteCount initializes the object.
@@ -46,26 +47,26 @@ func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 		envVotePort.Value(lookup),
 	)
 
-	debug2025, _ := strconv.ParseBool(envDebugHasVotedUserIDs.Value(lookup))
+	debug2025, _ := strconv.ParseBool(envDebugLiveVotes.Value(lookup))
 
 	flow := FlowVoteCount{
 		voteServiceURL: url,
 		client:         &http.Client{},
-		update:         make(chan map[int][]int, 1),
-		pollToUserIDs:  make(map[int][]int),
+		update:         make(chan map[int]map[int]*string, 1),
+		pollLiveVotes:  make(map[int]map[int]*string),
 		ready:          make(chan struct{}),
 
-		debugHasVotedUserIDs: debug2025,
+		debugLiveVotes: debug2025,
 	}
 
 	return &flow
 }
 
-func (s *FlowVoteCount) printDebugHasVotedUserIDs(format string, a ...any) {
-	if !s.debugHasVotedUserIDs {
+func (s *FlowVoteCount) printDebugLiveVotes(format string, a ...any) {
+	if !s.debugLiveVotes {
 		return
 	}
-	fmt.Printf("DEBUG: HAS VOTED USER IDs: %s\n", fmt.Sprintf(format, a...))
+	fmt.Printf("DEBUG: Live Votes: %s\n", fmt.Sprintf(format, a...))
 }
 
 // Connect creates a connection to the vote service and makes sure, it stays
@@ -76,20 +77,20 @@ func (s *FlowVoteCount) printDebugHasVotedUserIDs(format string, a ...any) {
 // to open a new connection.
 func (s *FlowVoteCount) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
-		s.printDebugHasVotedUserIDs("Create connection to vote service")
+		s.printDebugLiveVotes("Create connection to vote service")
 		if err := s.connect(ctx); err != nil {
-			s.printDebugHasVotedUserIDs("Error with vote service connection: %v", err)
+			s.printDebugLiveVotes("Error with vote service connection: %v", err)
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
 		}
 
 		// TODO: When the connection is closed, s.ready has to be resetted. But
 		// this would be a race condition.
 
-		s.printDebugHasVotedUserIDs("Waiting for reconnect")
+		s.printDebugLiveVotes("Waiting for reconnect")
 		s.wait(ctx, eventProvider)
 	}
 
-	s.printDebugHasVotedUserIDs("Stop trying to connect to vote service: %v", ctx.Err())
+	s.printDebugLiveVotes("Stop trying to connect to vote service: %v", ctx.Err())
 }
 
 // wait waits for an event in s.eventProvider.
@@ -105,10 +106,10 @@ func (s *FlowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan t
 
 func (s *FlowVoteCount) connect(ctx context.Context) error {
 	s.mu.Lock()
-	s.pollToUserIDs = make(map[int][]int)
+	s.pollLiveVotes = make(map[int]map[int]*string)
 	s.mu.Unlock()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+allVotedIdsPath, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+liveVotesPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
 	}
@@ -122,7 +123,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 
 	decoder := json.NewDecoder(resp.Body)
 	for {
-		var fromVoteService map[int][]int
+		var fromVoteService map[int]map[int]*string
 		if err := decoder.Decode(&fromVoteService); err != nil {
 			if err == io.EOF {
 				return nil
@@ -131,12 +132,16 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 		}
 
 		s.mu.Lock()
-		for pollID, userIDs := range fromVoteService {
-			if userIDs == nil {
-				delete(s.pollToUserIDs, pollID)
+		for pollID, userID2Vote := range fromVoteService {
+			if userID2Vote == nil {
+				// The userID2Vote map is nil, if a poll was removed.
+				delete(s.pollLiveVotes, pollID)
 				continue
 			}
-			s.pollToUserIDs[pollID] = append(s.pollToUserIDs[pollID], userIDs...)
+			if s.pollLiveVotes[pollID] == nil {
+				s.pollLiveVotes[pollID] = make(map[int]*string)
+			}
+			maps.Copy(s.pollLiveVotes[pollID], userID2Vote)
 		}
 		s.mu.Unlock()
 
@@ -149,7 +154,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 		select {
 		case s.update <- fromVoteService:
 		default:
-			s.printDebugHasVotedUserIDs("Skripping message from vote service: %v", fromVoteService)
+			s.printDebugLiveVotes("Skripping message from vote service: %v", fromVoteService)
 		}
 	}
 }
@@ -171,18 +176,18 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 
 		switch key.Collection() {
 		case "poll":
-			if key.Field() != "has_voted_user_ids" {
+			if key.Field() != "live_votes" {
 				continue
 			}
 
-			userIDs, ok := s.pollToUserIDs[key.ID()]
+			userID2Vote, ok := s.pollLiveVotes[key.ID()]
 			if !ok {
 				continue
 			}
 
-			bytes, err := json.Marshal(userIDs)
+			bytes, err := json.Marshal(userID2Vote)
 			if err != nil {
-				return nil, fmt.Errorf("converting user_ids to json: %w", err)
+				return nil, fmt.Errorf("converting userID2Vote to json: %w", err)
 			}
 			out[key] = bytes
 
@@ -196,10 +201,10 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 // Update has to be called frequently. It blocks, until there is new data.
 func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	for {
-		var fromVoteService map[int][]int
+		var fromVoteService map[int]map[int]*string
 		select {
 		case <-ctx.Done():
-			s.printDebugHasVotedUserIDs("Update exists after context is done: %v", ctx.Err())
+			s.printDebugLiveVotes("Update exists after context is done: %v", ctx.Err())
 			return // TODO: Should the error be returned?
 
 		case fromVoteService = <-s.update:
@@ -207,10 +212,10 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 
 		var keys []dskey.Key
 		for pollID := range fromVoteService {
-			pollKey, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
+			pollKey, err := dskey.FromParts("poll", pollID, "live_votes")
 			if err != nil {
 				updateFn(nil, err)
-				s.printDebugHasVotedUserIDs("Update exists on error: %v", err)
+				s.printDebugLiveVotes("Update exists on error: %v", err)
 				return
 			}
 			keys = append(keys, pollKey)

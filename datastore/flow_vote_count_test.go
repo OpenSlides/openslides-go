@@ -26,8 +26,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 	}))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	host, port, schema := parseURL(ts.URL)
 	env := environment.ForTests(map[string]string{
@@ -43,7 +42,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
-	key1 := dskey.MustKey("poll/1/has_voted_user_ids")
+	key1 := dskey.MustKey("poll/1/live_votes")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		got, err := flow.Get(ctx, key1)
@@ -58,7 +57,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 
 	t.Run("first data from vote-service", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":[42]}`
+			sender <- `{"1":{"42":null}}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -66,14 +65,14 @@ func TestVoteCountSourceGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if string(got[key1]) != "[42]" {
-			t.Errorf("Get() after first data returned `%s`, expected `42`", got[key1])
+		if string(got[key1]) != `{"42":null}` {
+			t.Errorf(`Get() after first data returned %s, expected {"42":null}`, got[key1])
 		}
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":[43]}`
+			sender <- `{"1":{"43":null}}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -81,14 +80,14 @@ func TestVoteCountSourceGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if string(got[key1]) != "[42,43]" {
+		if string(got[key1]) != `{"42":null,"43":null}` {
 			t.Errorf("Get() after first data returned `%s`, expected `43`", got[key1])
 		}
 	})
 
 	t.Run("again data from vote-service", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":[44]}`
+			sender <- `{"1":{"44":null}}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -96,7 +95,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if string(got[key1]) != "[42,43,44]" {
+		if string(got[key1]) != `{"42":null,"43":null,"44":null}` {
 			t.Errorf("Get() after first data returned `%s`, expected `44`", got[key1])
 		}
 	})
@@ -118,8 +117,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 }
 
 func TestVoteCountSourceUpdate(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +144,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
-	key1 := dskey.MustKey("poll/1/has_voted_user_ids")
+	key1 := dskey.MustKey("poll/1/live_votes")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
@@ -159,13 +157,13 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 
 	t.Run("first data from vote-service", func(t *testing.T) {
 		got, err := updateResult(ctx, flow, func() {
-			sender <- `{"1":[42]}`
+			sender <- `{"1":{"42":null}}`
 		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[dskey.Key][]byte{key1: []byte("[42]")}
+		expect := map[dskey.Key][]byte{key1: []byte(`{"42":null}`)}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -173,13 +171,13 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 
 	t.Run("second data from vote-service", func(t *testing.T) {
 		got, err := updateResult(ctx, flow, func() {
-			sender <- `{"1":[43]}`
+			sender <- `{"1":{"43":null}}`
 		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[dskey.Key][]byte{key1: []byte("[42,43]")}
+		expect := map[dskey.Key][]byte{key1: []byte(`{"42":null,"43":null}`)}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -211,8 +209,7 @@ func TestReconnect(t *testing.T) {
 		<-sender
 	}))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	event := make(chan time.Time)
 	close(event)
@@ -259,7 +256,7 @@ func TestGetWithoutConnect(t *testing.T) {
 
 	source := datastore.NewFlowVoteCount(env)
 
-	key := dskey.MustKey("poll/1/has_voted_user_ids")
+	key := dskey.MustKey("poll/1/live_votes")
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
 	defer cancel()
