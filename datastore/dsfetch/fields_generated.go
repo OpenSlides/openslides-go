@@ -1558,13 +1558,22 @@ func (r *Fetch) HistoryEntry_ID(historyEntryID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueString {
-	key, err := dskey.FromParts("history_entry", historyEntryID, "model_id")
+func (r *Fetch) HistoryEntry_MeetingID(historyEntryID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "meeting_id")
 	if err != nil {
-		return &ValueString{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueMaybeString {
+	key, err := dskey.FromParts("history_entry", historyEntryID, "model_id")
+	if err != nil {
+		return &ValueMaybeString{err: err}
+	}
+
+	return &ValueMaybeString{fetch: r, key: key}
 }
 
 func (r *Fetch) HistoryEntry_OriginalModelID(historyEntryID int) *ValueString {
@@ -4060,6 +4069,15 @@ func (r *Fetch) Meeting_PollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_PollDefaultLiveVotingEnabled(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_default_live_voting_enabled")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
 	key, err := dskey.FromParts("meeting", meetingID, "poll_default_method")
 	if err != nil {
@@ -4175,6 +4193,15 @@ func (r *Fetch) Meeting_ReferenceProjectorID(meetingID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Meeting_RelevantHistoryEntryIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "relevant_history_entry_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_SpeakerIDs(meetingID int) *ValueIntSlice {
@@ -6526,15 +6553,6 @@ func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_HasVotedUserIDs(pollID int) *ValueIntSlice {
-	key, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 	key, err := dskey.FromParts("poll", pollID, "id")
 	if err != nil {
@@ -6546,6 +6564,24 @@ func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 
 func (r *Fetch) Poll_IsPseudoanonymized(pollID int) *ValueBool {
 	key, err := dskey.FromParts("poll", pollID, "is_pseudoanonymized")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Poll_LiveVotes(pollID int) *ValueJSON {
+	key, err := dskey.FromParts("poll", pollID, "live_votes")
+	if err != nil {
+		return &ValueJSON{err: err}
+	}
+
+	return &ValueJSON{fetch: r, key: key}
+}
+
+func (r *Fetch) Poll_LiveVotingEnabled(pollID int) *ValueBool {
+	key, err := dskey.FromParts("poll", pollID, "live_voting_enabled")
 	if err != nil {
 		return &ValueBool{err: err}
 	}

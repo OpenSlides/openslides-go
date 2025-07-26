@@ -1144,9 +1144,11 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 type HistoryEntry struct {
 	Entries         []string
 	ID              int
-	ModelID         string
+	MeetingID       dsfetch.Maybe[int]
+	ModelID         dsfetch.Maybe[string]
 	OriginalModelID string
 	PositionID      int
+	Meeting         *dsfetch.Maybe[Meeting]
 	Position        *HistoryPosition
 }
 
@@ -1158,6 +1160,7 @@ func (b *historyEntryBuilder) lazy(ds *Fetch, id int) *HistoryEntry {
 	c := HistoryEntry{}
 	ds.HistoryEntry_Entries(id).Lazy(&c.Entries)
 	ds.HistoryEntry_ID(id).Lazy(&c.ID)
+	ds.HistoryEntry_MeetingID(id).Lazy(&c.MeetingID)
 	ds.HistoryEntry_ModelID(id).Lazy(&c.ModelID)
 	ds.HistoryEntry_OriginalModelID(id).Lazy(&c.OriginalModelID)
 	ds.HistoryEntry_PositionID(id).Lazy(&c.PositionID)
@@ -1167,6 +1170,17 @@ func (b *historyEntryBuilder) lazy(ds *Fetch, id int) *HistoryEntry {
 func (b *historyEntryBuilder) Preload(rel builderWrapperI) *historyEntryBuilder {
 	b.builder.Preload(rel)
 	return b
+}
+
+func (b *historyEntryBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
+	}
 }
 
 func (b *historyEntryBuilder) Position() *historyPositionBuilder {
@@ -1688,6 +1702,7 @@ type Meeting struct {
 	PollCoupleCountdown                          bool
 	PollDefaultBackend                           string
 	PollDefaultGroupIDs                          []int
+	PollDefaultLiveVotingEnabled                 bool
 	PollDefaultMethod                            string
 	PollDefaultOnehundredPercentBase             string
 	PollDefaultType                              string
@@ -1701,6 +1716,7 @@ type Meeting struct {
 	ProjectorIDs                                 []int
 	ProjectorMessageIDs                          []int
 	ReferenceProjectorID                         int
+	RelevantHistoryEntryIDs                      []int
 	SpeakerIDs                                   []int
 	StartTime                                    int
 	StructureLevelIDs                            []int
@@ -1810,6 +1826,7 @@ type Meeting struct {
 	ProjectorList                                []Projector
 	ProjectorMessageList                         []ProjectorMessage
 	ReferenceProjector                           *Projector
+	RelevantHistoryEntryList                     []HistoryEntry
 	SpeakerList                                  []Speaker
 	StructureLevelList                           []StructureLevel
 	StructureLevelListOfSpeakersList             []StructureLevelListOfSpeakers
@@ -2023,6 +2040,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_PollCoupleCountdown(id).Lazy(&c.PollCoupleCountdown)
 	ds.Meeting_PollDefaultBackend(id).Lazy(&c.PollDefaultBackend)
 	ds.Meeting_PollDefaultGroupIDs(id).Lazy(&c.PollDefaultGroupIDs)
+	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
 	ds.Meeting_PollDefaultMethod(id).Lazy(&c.PollDefaultMethod)
 	ds.Meeting_PollDefaultOnehundredPercentBase(id).Lazy(&c.PollDefaultOnehundredPercentBase)
 	ds.Meeting_PollDefaultType(id).Lazy(&c.PollDefaultType)
@@ -2036,6 +2054,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_ProjectorIDs(id).Lazy(&c.ProjectorIDs)
 	ds.Meeting_ProjectorMessageIDs(id).Lazy(&c.ProjectorMessageIDs)
 	ds.Meeting_ReferenceProjectorID(id).Lazy(&c.ReferenceProjectorID)
+	ds.Meeting_RelevantHistoryEntryIDs(id).Lazy(&c.RelevantHistoryEntryIDs)
 	ds.Meeting_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.Meeting_StartTime(id).Lazy(&c.StartTime)
 	ds.Meeting_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
@@ -3001,6 +3020,18 @@ func (b *meetingBuilder) ReferenceProjector() *projectorBuilder {
 			parent:   b,
 			idField:  "ReferenceProjectorID",
 			relField: "ReferenceProjector",
+		},
+	}
+}
+
+func (b *meetingBuilder) RelevantHistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "RelevantHistoryEntryIDs",
+			relField: "RelevantHistoryEntryList",
+			many:     true,
 		},
 	}
 }
@@ -5730,9 +5761,10 @@ type Poll struct {
 	GlobalNo              bool
 	GlobalOptionID        dsfetch.Maybe[int]
 	GlobalYes             bool
-	HasVotedUserIDs       []int
 	ID                    int
 	IsPseudoanonymized    bool
+	LiveVotes             json.RawMessage
+	LiveVotingEnabled     bool
 	MaxVotesAmount        int
 	MaxVotesPerOption     int
 	MeetingID             int
@@ -5776,9 +5808,10 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_GlobalNo(id).Lazy(&c.GlobalNo)
 	ds.Poll_GlobalOptionID(id).Lazy(&c.GlobalOptionID)
 	ds.Poll_GlobalYes(id).Lazy(&c.GlobalYes)
-	ds.Poll_HasVotedUserIDs(id).Lazy(&c.HasVotedUserIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
 	ds.Poll_IsPseudoanonymized(id).Lazy(&c.IsPseudoanonymized)
+	ds.Poll_LiveVotes(id).Lazy(&c.LiveVotes)
+	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
 	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
 	ds.Poll_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
 	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)

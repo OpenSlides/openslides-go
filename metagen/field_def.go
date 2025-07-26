@@ -28,6 +28,7 @@ var RelationFields = map[string]string{
 	"group/used_as_motion_poll_default_id":                                   "meeting/motion_poll_default_group_ids",
 	"group/used_as_poll_default_id":                                          "meeting/poll_default_group_ids",
 	"group/used_as_topic_poll_default_id":                                    "meeting/topic_poll_default_group_ids",
+	"history_entry/meeting_id":                                               "meeting/relevant_history_entry_ids",
 	"history_entry/position_id":                                              "history_position/entry_ids",
 	"history_position/user_id":                                               "user/history_position_ids",
 	"list_of_speakers/meeting_id":                                            "meeting/list_of_speakers_ids",
@@ -278,6 +279,7 @@ var RelationListFields = map[string]string{
 	"meeting/projector_countdown_ids":                          "projector_countdown/meeting_id",
 	"meeting/projector_ids":                                    "projector/meeting_id",
 	"meeting/projector_message_ids":                            "projector_message/meeting_id",
+	"meeting/relevant_history_entry_ids":                       "history_entry/meeting_id",
 	"meeting/speaker_ids":                                      "speaker/meeting_id",
 	"meeting/structure_level_ids":                              "structure_level/meeting_id",
 	"meeting/structure_level_list_of_speakers_ids":             "structure_level_list_of_speakers/meeting_id",
@@ -520,6 +522,7 @@ var RestrictionModes = map[string]string{
 	// history_entry
 	"history_entry/entries":           "A",
 	"history_entry/id":                "A",
+	"history_entry/meeting_id":        "A",
 	"history_entry/model_id":          "A",
 	"history_entry/original_model_id": "A",
 	"history_entry/position_id":       "A",
@@ -737,6 +740,7 @@ var RestrictionModes = map[string]string{
 	"meeting/poll_couple_countdown":                                 "B",
 	"meeting/poll_default_backend":                                  "B",
 	"meeting/poll_default_group_ids":                                "B",
+	"meeting/poll_default_live_voting_enabled":                      "B",
 	"meeting/poll_default_method":                                   "B",
 	"meeting/poll_default_onehundred_percent_base":                  "B",
 	"meeting/poll_default_type":                                     "B",
@@ -805,6 +809,7 @@ var RestrictionModes = map[string]string{
 	"meeting/locked_from_inside":                                    "F",
 	"meeting/meeting_user_ids":                                      "F",
 	"meeting/start_time":                                            "F",
+	"meeting/relevant_history_entry_ids":                            "G",
 
 	// meeting_mediafile
 	"meeting_mediafile/access_group_ids":                               "A",
@@ -1113,6 +1118,7 @@ var RestrictionModes = map[string]string{
 	"poll/global_yes":              "A",
 	"poll/id":                      "A",
 	"poll/is_pseudoanonymized":     "A",
+	"poll/live_voting_enabled":     "A",
 	"poll/max_votes_amount":        "A",
 	"poll/max_votes_per_option":    "A",
 	"poll/meeting_id":              "A",
@@ -1130,7 +1136,7 @@ var RestrictionModes = map[string]string{
 	"poll/votes_signature":         "B",
 	"poll/votesinvalid":            "B",
 	"poll/votesvalid":              "B",
-	"poll/has_voted_user_ids":      "C",
+	"poll/live_votes":              "C",
 	"poll/votescast":               "D",
 
 	// poll_candidate
