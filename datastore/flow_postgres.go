@@ -27,7 +27,7 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	pool *pgxpool.Pool
+	Pool *pgxpool.Pool
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -67,19 +67,19 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	flow := FlowPostgres{pool: pool}
+	flow := FlowPostgres{Pool: pool}
 
 	return &flow, nil
 }
 
 // Close closes the connection pool.
 func (p *FlowPostgres) Close() {
-	p.pool.Close()
+	p.Pool.Close()
 }
 
 // Get fetches the keys from postgres.
 func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	conn, err := p.pool.Acquire(ctx)
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("acquiring connection: %w", err)
 	}
@@ -203,7 +203,7 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	conn, err := p.pool.Acquire(ctx)
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
 		return
