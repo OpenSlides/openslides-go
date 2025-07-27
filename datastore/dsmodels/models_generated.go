@@ -1692,6 +1692,7 @@ type Meeting struct {
 	TemplateForOrganization                      *dsfetch.Maybe[Organization]
 	TopicList                                    []Topic
 	TopicPollDefaultGroupList                    []Group
+	UserList                                     []User
 	VoteList                                     []Vote
 }
 
@@ -2959,6 +2960,18 @@ func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
 			parent:   b,
 			idField:  "TopicPollDefaultGroupIDs",
 			relField: "TopicPollDefaultGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) UserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UserIDs",
+			relField: "UserList",
 			many:     true,
 		},
 	}
@@ -7136,6 +7149,7 @@ type User struct {
 	Gender                      *dsfetch.Maybe[Gender]
 	HomeCommittee               *dsfetch.Maybe[Committee]
 	IsPresentInMeetingList      []Meeting
+	MeetingList                 []Meeting
 	MeetingUserList             []MeetingUser
 	OptionList                  []Option
 	Organization                *Organization
@@ -7256,6 +7270,18 @@ func (b *userBuilder) IsPresentInMeetingList() *meetingBuilder {
 			parent:   b,
 			idField:  "IsPresentInMeetingIDs",
 			relField: "IsPresentInMeetingList",
+			many:     true,
+		},
+	}
+}
+
+func (b *userBuilder) MeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingIDs",
+			relField: "MeetingList",
 			many:     true,
 		},
 	}
