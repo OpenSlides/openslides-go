@@ -1562,6 +1562,7 @@ type Meeting struct {
 	PollCoupleCountdown                          bool
 	PollDefaultBackend                           string
 	PollDefaultGroupIDs                          []int
+	PollDefaultLiveVotingEnabled                 bool
 	PollDefaultMethod                            string
 	PollDefaultOnehundredPercentBase             string
 	PollDefaultType                              string
@@ -1897,6 +1898,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_PollCoupleCountdown(id).Lazy(&c.PollCoupleCountdown)
 	ds.Meeting_PollDefaultBackend(id).Lazy(&c.PollDefaultBackend)
 	ds.Meeting_PollDefaultGroupIDs(id).Lazy(&c.PollDefaultGroupIDs)
+	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
 	ds.Meeting_PollDefaultMethod(id).Lazy(&c.PollDefaultMethod)
 	ds.Meeting_PollDefaultOnehundredPercentBase(id).Lazy(&c.PollDefaultOnehundredPercentBase)
 	ds.Meeting_PollDefaultType(id).Lazy(&c.PollDefaultType)
@@ -5589,9 +5591,10 @@ type Poll struct {
 	GlobalNo              bool
 	GlobalOptionID        dsfetch.Maybe[int]
 	GlobalYes             bool
-	HasVotedUserIDs       []int
 	ID                    int
 	IsPseudoanonymized    bool
+	LiveVotes             json.RawMessage
+	LiveVotingEnabled     bool
 	MaxVotesAmount        int
 	MaxVotesPerOption     int
 	MeetingID             int
@@ -5635,9 +5638,10 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_GlobalNo(id).Lazy(&c.GlobalNo)
 	ds.Poll_GlobalOptionID(id).Lazy(&c.GlobalOptionID)
 	ds.Poll_GlobalYes(id).Lazy(&c.GlobalYes)
-	ds.Poll_HasVotedUserIDs(id).Lazy(&c.HasVotedUserIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
 	ds.Poll_IsPseudoanonymized(id).Lazy(&c.IsPseudoanonymized)
+	ds.Poll_LiveVotes(id).Lazy(&c.LiveVotes)
+	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
 	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
 	ds.Poll_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
 	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)
@@ -7100,9 +7104,9 @@ type User struct {
 	DefaultVoteWeight           string
 	DelegatedVoteIDs            []int
 	Email                       string
+	External                    bool
 	FirstName                   string
 	GenderID                    dsfetch.Maybe[int]
-	Guest                       bool
 	HomeCommitteeID             dsfetch.Maybe[int]
 	ID                          int
 	IsActive                    bool
@@ -7153,9 +7157,9 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_DefaultVoteWeight(id).Lazy(&c.DefaultVoteWeight)
 	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
 	ds.User_Email(id).Lazy(&c.Email)
+	ds.User_External(id).Lazy(&c.External)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
-	ds.User_Guest(id).Lazy(&c.Guest)
 	ds.User_HomeCommitteeID(id).Lazy(&c.HomeCommitteeID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)

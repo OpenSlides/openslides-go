@@ -714,6 +714,7 @@ var RestrictionModes = map[string]string{
 	"meeting/poll_couple_countdown":                                 "B",
 	"meeting/poll_default_backend":                                  "B",
 	"meeting/poll_default_group_ids":                                "B",
+	"meeting/poll_default_live_voting_enabled":                      "B",
 	"meeting/poll_default_method":                                   "B",
 	"meeting/poll_default_onehundred_percent_base":                  "B",
 	"meeting/poll_default_type":                                     "B",
@@ -1089,6 +1090,7 @@ var RestrictionModes = map[string]string{
 	"poll/global_yes":              "A",
 	"poll/id":                      "A",
 	"poll/is_pseudoanonymized":     "A",
+	"poll/live_voting_enabled":     "A",
 	"poll/max_votes_amount":        "A",
 	"poll/max_votes_per_option":    "A",
 	"poll/meeting_id":              "A",
@@ -1106,7 +1108,7 @@ var RestrictionModes = map[string]string{
 	"poll/votes_signature":         "B",
 	"poll/votesinvalid":            "B",
 	"poll/votesvalid":              "B",
-	"poll/has_voted_user_ids":      "C",
+	"poll/live_votes":              "C",
 	"poll/votescast":               "D",
 
 	// poll_candidate
@@ -1331,7 +1333,7 @@ var RestrictionModes = map[string]string{
 	"user/can_change_own_password":       "D",
 	"user/committee_ids":                 "E",
 	"user/committee_management_ids":      "E",
-	"user/guest":                         "E",
+	"user/external":                      "E",
 	"user/home_committee_id":             "E",
 	"user/meeting_ids":                   "E",
 	"user/organization_id":               "F",
