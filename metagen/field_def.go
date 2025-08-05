@@ -577,6 +577,7 @@ var RestrictionModes = map[string]string{
 	"meeting/motions_default_line_numbering":                        "A",
 	"meeting/motions_line_length":                                   "A",
 	"meeting/name":                                                  "A",
+	"meeting/relevant_history_entry_ids":                            "A",
 	"meeting/tag_ids":                                               "A",
 	"meeting/user_ids":                                              "A",
 	"meeting/agenda_enable_numbering":                               "B",
@@ -809,7 +810,6 @@ var RestrictionModes = map[string]string{
 	"meeting/locked_from_inside":                                    "F",
 	"meeting/meeting_user_ids":                                      "F",
 	"meeting/start_time":                                            "F",
-	"meeting/relevant_history_entry_ids":                            "G",
 
 	// meeting_mediafile
 	"meeting_mediafile/access_group_ids":                               "A",
