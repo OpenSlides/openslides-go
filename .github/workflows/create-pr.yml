@@ -27,15 +27,15 @@ jobs:
       - name: Set up go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.25"
 
       # This is done, because setup-action will be called from here
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: current-go-repository
           ref: ${{ github.ref_name }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: ${{ github.repository_owner }}/${{ inputs.repository }}
           path: service-repository
