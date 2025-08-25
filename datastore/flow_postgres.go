@@ -27,7 +27,7 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	pool *pgxpool.Pool
+	Pool *pgxpool.Pool
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -67,19 +67,19 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	flow := FlowPostgres{pool: pool}
+	flow := FlowPostgres{Pool: pool}
 
 	return &flow, nil
 }
 
 // Close closes the connection pool.
 func (p *FlowPostgres) Close() {
-	p.pool.Close()
+	p.Pool.Close()
 }
 
 // Get fetches the keys from postgres.
 func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	conn, err := p.pool.Acquire(ctx)
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("acquiring connection: %w", err)
 	}
@@ -90,18 +90,24 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 
 func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	collectionIDs := make(map[string][]int)
+	collectionFields := make(map[string][]string)
 	for _, key := range keys {
-		if slices.Contains(collectionIDs[key.Collection()], key.ID()) {
-			continue
+		if !slices.Contains(collectionIDs[key.Collection()], key.ID()) {
+			collectionIDs[key.Collection()] = append(collectionIDs[key.Collection()], key.ID())
 		}
 
-		collectionIDs[key.Collection()] = append(collectionIDs[key.Collection()], key.ID())
+		if key.Field() != "id" && !slices.Contains(collectionFields[key.Collection()], key.Field()) {
+			collectionFields[key.Collection()] = append(collectionFields[key.Collection()], key.Field())
+		}
 	}
 
 	keyValues := make(map[dskey.Key][]byte, len(keys))
 	for collection, ids := range collectionIDs {
-		// TODO: maybe only fetch id and requested keys
-		sql := fmt.Sprintf(`SELECT * FROM "%s" WHERE id = ANY ($1) `, collection)
+		sql := fmt.Sprintf(
+			`SELECT id, %s FROM "%s" WHERE id = ANY ($1) `,
+			strings.Join(collectionFields[collection], ","),
+			collection,
+		)
 
 		rows, err := conn.Query(ctx, sql, ids)
 		if err != nil {
@@ -203,7 +209,7 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	conn, err := p.pool.Acquire(ctx)
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
 		return
