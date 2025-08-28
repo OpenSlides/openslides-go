@@ -6487,6 +6487,7 @@ func (r *Fetch) ProjectorMessage(ids ...int) *projectorMessageBuilder {
 
 // Speaker has all fields from speaker.
 type Speaker struct {
+	Answer                         bool
 	BeginTime                      int
 	EndTime                        int
 	ID                             int
@@ -6515,6 +6516,7 @@ type speakerBuilder struct {
 
 func (b *speakerBuilder) lazy(ds *Fetch, id int) *Speaker {
 	c := Speaker{}
+	ds.Speaker_Answer(id).Lazy(&c.Answer)
 	ds.Speaker_BeginTime(id).Lazy(&c.BeginTime)
 	ds.Speaker_EndTime(id).Lazy(&c.EndTime)
 	ds.Speaker_ID(id).Lazy(&c.ID)

@@ -1199,6 +1199,7 @@ var RestrictionModes = map[string]string{
 	"projector_message/projection_ids": "A",
 
 	// speaker
+	"speaker/answer":                              "A",
 	"speaker/begin_time":                          "A",
 	"speaker/end_time":                            "A",
 	"speaker/id":                                  "A",

@@ -7219,6 +7219,15 @@ func (r *Fetch) Projector_Width(projectorID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Speaker_Answer(speakerID int) *ValueBool {
+	key, err := dskey.FromParts("speaker", speakerID, "answer")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Speaker_BeginTime(speakerID int) *ValueInt {
 	key, err := dskey.FromParts("speaker", speakerID, "begin_time")
 	if err != nil {
