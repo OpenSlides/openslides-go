@@ -27,7 +27,7 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	pool *pgxpool.Pool
+	Pool *pgxpool.Pool
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -67,19 +67,19 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	flow := FlowPostgres{pool: pool}
+	flow := FlowPostgres{Pool: pool}
 
 	return &flow, nil
 }
 
 // Close closes the connection pool.
 func (p *FlowPostgres) Close() {
-	p.pool.Close()
+	p.Pool.Close()
 }
 
 // Get fetches the keys from postgres.
 func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	conn, err := p.pool.Acquire(ctx)
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("acquiring connection: %w", err)
 	}
@@ -90,18 +90,24 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 
 func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	collectionIDs := make(map[string][]int)
+	collectionFields := make(map[string][]string)
 	for _, key := range keys {
-		if slices.Contains(collectionIDs[key.Collection()], key.ID()) {
-			continue
+		if !slices.Contains(collectionIDs[key.Collection()], key.ID()) {
+			collectionIDs[key.Collection()] = append(collectionIDs[key.Collection()], key.ID())
 		}
 
-		collectionIDs[key.Collection()] = append(collectionIDs[key.Collection()], key.ID())
+		if key.Field() != "id" && !slices.Contains(collectionFields[key.Collection()], key.Field()) {
+			collectionFields[key.Collection()] = append(collectionFields[key.Collection()], key.Field())
+		}
 	}
 
 	keyValues := make(map[dskey.Key][]byte, len(keys))
 	for collection, ids := range collectionIDs {
-		// TODO: maybe only fetch id and requested keys
-		sql := fmt.Sprintf(`SELECT * FROM "%s" WHERE id = ANY ($1) `, collection)
+		sql := fmt.Sprintf(
+			`SELECT id, %s FROM "%s" WHERE id = ANY ($1) `,
+			strings.Join(collectionFields[collection], ","),
+			collection,
+		)
 
 		rows, err := conn.Query(ctx, sql, ids)
 		if err != nil {
@@ -118,6 +124,12 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 			if err != nil {
 				return fmt.Errorf("invalid id %s: %w", string(values[0]), err)
 			}
+
+			idKey, err := dskey.FromParts(collection, id, "id")
+			if err != nil {
+				return fmt.Errorf("invalid id-key for id %d: %w", id, err)
+			}
+			keyValues[idKey] = []byte(strconv.Itoa(id))
 
 			for i, value := range values {
 				field := row.FieldDescriptions()[i].Name
@@ -203,7 +215,7 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	conn, err := p.pool.Acquire(ctx)
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
 		return
@@ -232,23 +244,12 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
-		tmpRows, err := conn.Conn().Query(ctx, `SELECT * from os_notify_log_t`)
-		if err != nil {
-			panic(err)
-		}
-		data, err := pgx.CollectRows(tmpRows, pgx.RowToMap)
-		fmt.Println(data, err)
-
 		sql := `SELECT DISTINCT fqid FROM os_notify_log_t WHERE xact_id = $1::xid8;`
 		rows, err := conn.Conn().Query(ctx, sql, payload.XACTID)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("query fqids for transaction %q: %w", payload.XACTID, err))
 			return
 		}
-
-		// data, err = pgx.CollectRows(rows, pgx.RowToMap)
-		// fmt.Println(data, err)
-		// return
 
 		fqids, err := pgx.CollectRows(rows, pgx.RowTo[string])
 		if err != nil {
