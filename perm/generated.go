@@ -6,6 +6,7 @@ const (
 	AgendaItemCanSee                      TPermission = "agenda_item.can_see"
 	AgendaItemCanSeeInternal              TPermission = "agenda_item.can_see_internal"
 	AssignmentCanManage                   TPermission = "assignment.can_manage"
+	AssignmentCanManagePolls              TPermission = "assignment.can_manage_polls"
 	AssignmentCanNominateOther            TPermission = "assignment.can_nominate_other"
 	AssignmentCanNominateSelf             TPermission = "assignment.can_nominate_self"
 	AssignmentCanSee                      TPermission = "assignment.can_see"
@@ -51,6 +52,7 @@ var derivatePerms = map[TPermission][]TPermission{
 	"agenda_item.can_see":                         {},
 	"agenda_item.can_see_internal":                {"agenda_item.can_see"},
 	"assignment.can_manage":                       {"assignment.can_nominate_other", "assignment.can_see"},
+	"assignment.can_manage_polls":                 {"assignment.can_see"},
 	"assignment.can_nominate_other":               {"assignment.can_see"},
 	"assignment.can_nominate_self":                {"assignment.can_see"},
 	"assignment.can_see":                          {},
@@ -71,7 +73,7 @@ var derivatePerms = map[TPermission][]TPermission{
 	"motion.can_create":                           {"motion.can_see"},
 	"motion.can_create_amendments":                {"motion.can_see"},
 	"motion.can_forward":                          {"motion.can_see"},
-	"motion.can_manage":                           {"motion.can_create", "motion.can_create_amendments", "motion.can_forward", "motion.can_manage_metadata", "motion.can_manage_polls", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see_internal"},
+	"motion.can_manage":                           {"motion.can_create", "motion.can_create_amendments", "motion.can_forward", "motion.can_manage_metadata", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see_internal"},
 	"motion.can_manage_metadata":                  {"motion.can_see"},
 	"motion.can_manage_polls":                     {"motion.can_see"},
 	"motion.can_see":                              {},
