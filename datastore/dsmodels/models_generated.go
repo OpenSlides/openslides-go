@@ -176,6 +176,7 @@ type Assignment struct {
 	CandidateIDs                   []int
 	DefaultPollDescription         string
 	Description                    string
+	HistoryEntryIDs                []int
 	ID                             int
 	ListOfSpeakersID               int
 	MeetingID                      int
@@ -190,6 +191,7 @@ type Assignment struct {
 	AgendaItem                     *dsfetch.Maybe[AgendaItem]
 	AttachmentMeetingMediafileList []MeetingMediafile
 	CandidateList                  []AssignmentCandidate
+	HistoryEntryList               []HistoryEntry
 	ListOfSpeakers                 *ListOfSpeakers
 	Meeting                        *Meeting
 	PollList                       []Poll
@@ -208,6 +210,7 @@ func (b *assignmentBuilder) lazy(ds *Fetch, id int) *Assignment {
 	ds.Assignment_CandidateIDs(id).Lazy(&c.CandidateIDs)
 	ds.Assignment_DefaultPollDescription(id).Lazy(&c.DefaultPollDescription)
 	ds.Assignment_Description(id).Lazy(&c.Description)
+	ds.Assignment_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.Assignment_ID(id).Lazy(&c.ID)
 	ds.Assignment_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
 	ds.Assignment_MeetingID(id).Lazy(&c.MeetingID)
@@ -257,6 +260,18 @@ func (b *assignmentBuilder) CandidateList() *assignmentCandidateBuilder {
 			parent:   b,
 			idField:  "CandidateIDs",
 			relField: "CandidateList",
+			many:     true,
+		},
+	}
+}
+
+func (b *assignmentBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
 			many:     true,
 		},
 	}
@@ -1125,6 +1140,131 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 	}
 }
 
+// HistoryEntry has all fields from history_entry.
+type HistoryEntry struct {
+	Entries         []string
+	ID              int
+	MeetingID       dsfetch.Maybe[int]
+	ModelID         dsfetch.Maybe[string]
+	OriginalModelID string
+	PositionID      int
+	Meeting         *dsfetch.Maybe[Meeting]
+	Position        *HistoryPosition
+}
+
+type historyEntryBuilder struct {
+	builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]
+}
+
+func (b *historyEntryBuilder) lazy(ds *Fetch, id int) *HistoryEntry {
+	c := HistoryEntry{}
+	ds.HistoryEntry_Entries(id).Lazy(&c.Entries)
+	ds.HistoryEntry_ID(id).Lazy(&c.ID)
+	ds.HistoryEntry_MeetingID(id).Lazy(&c.MeetingID)
+	ds.HistoryEntry_ModelID(id).Lazy(&c.ModelID)
+	ds.HistoryEntry_OriginalModelID(id).Lazy(&c.OriginalModelID)
+	ds.HistoryEntry_PositionID(id).Lazy(&c.PositionID)
+	return &c
+}
+
+func (b *historyEntryBuilder) Preload(rel builderWrapperI) *historyEntryBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *historyEntryBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
+	}
+}
+
+func (b *historyEntryBuilder) Position() *historyPositionBuilder {
+	return &historyPositionBuilder{
+		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PositionID",
+			relField: "Position",
+		},
+	}
+}
+
+func (r *Fetch) HistoryEntry(ids ...int) *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// HistoryPosition has all fields from history_position.
+type HistoryPosition struct {
+	EntryIDs       []int
+	ID             int
+	OriginalUserID int
+	Timestamp      int
+	UserID         dsfetch.Maybe[int]
+	EntryList      []HistoryEntry
+	User           *dsfetch.Maybe[User]
+}
+
+type historyPositionBuilder struct {
+	builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]
+}
+
+func (b *historyPositionBuilder) lazy(ds *Fetch, id int) *HistoryPosition {
+	c := HistoryPosition{}
+	ds.HistoryPosition_EntryIDs(id).Lazy(&c.EntryIDs)
+	ds.HistoryPosition_ID(id).Lazy(&c.ID)
+	ds.HistoryPosition_OriginalUserID(id).Lazy(&c.OriginalUserID)
+	ds.HistoryPosition_Timestamp(id).Lazy(&c.Timestamp)
+	ds.HistoryPosition_UserID(id).Lazy(&c.UserID)
+	return &c
+}
+
+func (b *historyPositionBuilder) Preload(rel builderWrapperI) *historyPositionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *historyPositionBuilder) EntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "EntryIDs",
+			relField: "EntryList",
+			many:     true,
+		},
+	}
+}
+
+func (b *historyPositionBuilder) User() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UserID",
+			relField: "User",
+		},
+	}
+}
+
+func (r *Fetch) HistoryPosition(ids ...int) *historyPositionBuilder {
+	return &historyPositionBuilder{
+		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
 // ImportPreview has all fields from import_preview.
 type ImportPreview struct {
 	Created int
@@ -1576,6 +1716,7 @@ type Meeting struct {
 	ProjectorIDs                                 []int
 	ProjectorMessageIDs                          []int
 	ReferenceProjectorID                         int
+	RelevantHistoryEntryIDs                      []int
 	SpeakerIDs                                   []int
 	StartTime                                    int
 	StructureLevelIDs                            []int
@@ -1685,6 +1826,7 @@ type Meeting struct {
 	ProjectorList                                []Projector
 	ProjectorMessageList                         []ProjectorMessage
 	ReferenceProjector                           *Projector
+	RelevantHistoryEntryList                     []HistoryEntry
 	SpeakerList                                  []Speaker
 	StructureLevelList                           []StructureLevel
 	StructureLevelListOfSpeakersList             []StructureLevelListOfSpeakers
@@ -1912,6 +2054,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_ProjectorIDs(id).Lazy(&c.ProjectorIDs)
 	ds.Meeting_ProjectorMessageIDs(id).Lazy(&c.ProjectorMessageIDs)
 	ds.Meeting_ReferenceProjectorID(id).Lazy(&c.ReferenceProjectorID)
+	ds.Meeting_RelevantHistoryEntryIDs(id).Lazy(&c.RelevantHistoryEntryIDs)
 	ds.Meeting_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.Meeting_StartTime(id).Lazy(&c.StartTime)
 	ds.Meeting_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
@@ -2881,6 +3024,18 @@ func (b *meetingBuilder) ReferenceProjector() *projectorBuilder {
 	}
 }
 
+func (b *meetingBuilder) RelevantHistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "RelevantHistoryEntryIDs",
+			relField: "RelevantHistoryEntryList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
@@ -3593,6 +3748,7 @@ type Motion struct {
 	DerivedMotionIDs                              []int
 	EditorIDs                                     []int
 	Forwarded                                     int
+	HistoryEntryIDs                               []int
 	ID                                            int
 	IDenticalMotionIDs                            []int
 	LastModified                                  int
@@ -3642,6 +3798,7 @@ type Motion struct {
 	CommentList                                   []MotionComment
 	DerivedMotionList                             []Motion
 	EditorList                                    []MotionEditor
+	HistoryEntryList                              []HistoryEntry
 	IDenticalMotionList                           []Motion
 	LeadMotion                                    *dsfetch.Maybe[Motion]
 	ListOfSpeakers                                *ListOfSpeakers
@@ -3686,6 +3843,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_DerivedMotionIDs(id).Lazy(&c.DerivedMotionIDs)
 	ds.Motion_EditorIDs(id).Lazy(&c.EditorIDs)
 	ds.Motion_Forwarded(id).Lazy(&c.Forwarded)
+	ds.Motion_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.Motion_ID(id).Lazy(&c.ID)
 	ds.Motion_IDenticalMotionIDs(id).Lazy(&c.IDenticalMotionIDs)
 	ds.Motion_LastModified(id).Lazy(&c.LastModified)
@@ -3856,6 +4014,18 @@ func (b *motionBuilder) EditorList() *motionEditorBuilder {
 			parent:   b,
 			idField:  "EditorIDs",
 			relField: "EditorList",
+			many:     true,
+		},
+	}
+}
+
+func (b *motionBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
 			many:     true,
 		},
 	}
@@ -7109,6 +7279,8 @@ type User struct {
 	External                    bool
 	FirstName                   string
 	GenderID                    dsfetch.Maybe[int]
+	HistoryEntryIDs             []int
+	HistoryPositionIDs          []int
 	HomeCommitteeID             dsfetch.Maybe[int]
 	ID                          int
 	IsActive                    bool
@@ -7136,6 +7308,8 @@ type User struct {
 	CommitteeManagementList     []Committee
 	DelegatedVoteList           []Vote
 	Gender                      *dsfetch.Maybe[Gender]
+	HistoryEntryList            []HistoryEntry
+	HistoryPositionList         []HistoryPosition
 	HomeCommittee               *dsfetch.Maybe[Committee]
 	IsPresentInMeetingList      []Meeting
 	MeetingUserList             []MeetingUser
@@ -7162,6 +7336,8 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_External(id).Lazy(&c.External)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
 	ds.User_GenderID(id).Lazy(&c.GenderID)
+	ds.User_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
+	ds.User_HistoryPositionIDs(id).Lazy(&c.HistoryPositionIDs)
 	ds.User_HomeCommitteeID(id).Lazy(&c.HomeCommitteeID)
 	ds.User_ID(id).Lazy(&c.ID)
 	ds.User_IsActive(id).Lazy(&c.IsActive)
@@ -7236,6 +7412,30 @@ func (b *userBuilder) Gender() *genderBuilder {
 			parent:   b,
 			idField:  "GenderID",
 			relField: "Gender",
+		},
+	}
+}
+
+func (b *userBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
+			many:     true,
+		},
+	}
+}
+
+func (b *userBuilder) HistoryPositionList() *historyPositionBuilder {
+	return &historyPositionBuilder{
+		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryPositionIDs",
+			relField: "HistoryPositionList",
+			many:     true,
 		},
 	}
 }
