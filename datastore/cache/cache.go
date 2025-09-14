@@ -80,8 +80,11 @@ func (c *Cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byt
 }
 
 // Snapshot returns a shnapshot over all data in the cache as a Getter.
-func (c *Cache) Snapshot() Snapshot {
-	return Snapshot{c.data.Snapshot()}
+func (c *Cache) Snapshot(notFoundHandler flow.Getter) Snapshot {
+	return Snapshot{
+		data:            c.data.Snapshot(),
+		notFoundHandler: notFoundHandler,
+	}
 }
 
 // fetchMissing loads all keys, that are currently not in the cache.
