@@ -24,16 +24,21 @@ type Cache struct {
 	data *pendingmap.PendingMap
 	flow flow.Flow
 
-	onlyCollectionField bool
-	collectionField     dskey.Key
+	fullMessagebus bool
 }
 
 // New creates an initialized cache instance.
-func New(flow flow.Flow) *Cache {
-	return &Cache{
+func New(flow flow.Flow, options ...Options) *Cache {
+	c := Cache{
 		data: pendingmap.New(),
 		flow: flow,
 	}
+
+	for _, option := range options {
+		option(&c)
+	}
+
+	return &c
 }
 
 // Get returns the values for a list of keys. If one or more keys do not exist
@@ -72,6 +77,11 @@ func (c *Cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byt
 	}
 
 	return got, nil
+}
+
+// Snapshot returns a shnapshot over all data in the cache as a Getter.
+func (c *Cache) Snapshot() Snapshot {
+	return Snapshot{c.data.Snapshot()}
 }
 
 // fetchMissing loads all keys, that are currently not in the cache.
@@ -133,7 +143,11 @@ func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 			return
 		}
 
-		c.data.SetIfPendingOrExists(data)
+		if c.fullMessagebus {
+			c.data.Set(data)
+		} else {
+			c.data.SetIfPendingOrExists(data)
+		}
 		updateFn(data, nil)
 	})
 }
