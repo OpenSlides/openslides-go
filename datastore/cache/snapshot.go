@@ -8,6 +8,8 @@ import (
 	"github.com/benbjohnson/immutable"
 )
 
+// ErrIncompleteSnapshot is returned when a snapshot is ask for data, that does
+// not exist in the snapshot..
 var ErrIncompleteSnapshot = errors.New("snapshot is incomplete")
 
 // Snapshot implements the flow.Getter interface over an immutable map.

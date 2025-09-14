@@ -91,6 +91,7 @@ func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key
 	return out, nil
 }
 
+// Snapshot returns a snapshot of the data inside the pending map.
 func (pm *PendingMap) Snapshot() *immutable.Map[dskey.Key, []byte] {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
