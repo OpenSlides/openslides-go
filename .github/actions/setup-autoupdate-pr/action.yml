@@ -1,4 +1,5 @@
-name: Prepare meta update PR in autoupdate repo
+name: Prepare meta
+description: Prepare meta update PR in autoupdate repo
 
 runs:
   using: "composite"
