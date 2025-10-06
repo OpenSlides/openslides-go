@@ -14,7 +14,7 @@ type builderWrapperI interface {
 	getIDField() string
 	getRelField() string
 	getMany() bool
-	loadChildren(ctx context.Context, parent any) error
+	loadChildren(ctx context.Context, parent ...any) error
 	lazyAll(ctx context.Context) []any
 }
 
@@ -88,43 +88,63 @@ func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 	}
 }
 
-func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
+func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) error {
 	if b.children == nil {
 		return nil
 	}
 
-	rParent := reflect.ValueOf(parent).Elem()
-	for _, child := range b.children {
-		ids := []int{}
-		idField := rParent.FieldByName(child.getIDField())
-		targetField := rParent.FieldByName(child.getRelField())
-		if child.getMany() {
-			ids = idField.Interface().([]int)
-		} else if idField.Kind() == reflect.Int {
-			ids = append(ids, int(idField.Int()))
-		} else if idField.Type().Name() == "Maybe[int]" {
-			relMaybeType := targetField.Type().Elem()
-			relValue := reflect.New(relMaybeType)
-			relValue.MethodByName("SetNull").Call([]reflect.Value{})
-			targetField.Set(relValue)
+	type childInfo struct {
+		child       builderWrapperI
+		items       []any
+		idField     reflect.Value
+		targetField reflect.Value
+	}
+	childInfos := make([]childInfo, 0, len(b.children))
+	for _, parent := range parents {
+		rParent := reflect.ValueOf(parent).Elem()
+		for _, child := range b.children {
+			ids := []int{}
+			idField := rParent.FieldByName(child.getIDField())
+			targetField := rParent.FieldByName(child.getRelField())
+			if child.getMany() {
+				ids = idField.Interface().([]int)
+			} else if idField.Kind() == reflect.Int {
+				ids = append(ids, int(idField.Int()))
+			} else if idField.Type().Name() == "Maybe[int]" {
+				relMaybeType := targetField.Type().Elem()
+				relValue := reflect.New(relMaybeType)
+				relValue.MethodByName("SetNull").Call([]reflect.Value{})
+				targetField.Set(relValue)
 
-			id := idField.Interface().(dsfetch.Maybe[int])
-			if val, set := id.Value(); set {
-				ids = append(ids, val)
+				id := idField.Interface().(dsfetch.Maybe[int])
+				if val, set := id.Value(); set {
+					ids = append(ids, val)
+				}
 			}
+			child.SetIds(ids)
+			items := child.lazyAll(ctx)
+			childInfos = append(childInfos, childInfo{
+				child:       child,
+				items:       items,
+				idField:     idField,
+				targetField: targetField,
+			})
 		}
-		child.SetIds(ids)
+	}
 
-		items := child.lazyAll(ctx)
-		if err := b.fetch.Execute(ctx); err != nil {
+	if err := b.fetch.Execute(ctx); err != nil {
+		return err
+	}
+
+	for _, ci := range childInfos {
+		child := ci.child
+		targetField := ci.targetField
+		idField := ci.idField
+		if err := child.loadChildren(ctx, ci.items...); err != nil {
 			return err
 		}
 
-		for _, item := range items {
-			if err := child.loadChildren(ctx, item); err != nil {
-				return err
-			}
-
+		for _, item := range ci.items {
 			if child.getMany() {
 				targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
 			} else if idField.Type().Name() == "Maybe[int]" {
