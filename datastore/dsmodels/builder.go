@@ -15,6 +15,7 @@ type builderWrapperI interface {
 	getRelField() string
 	getMany() bool
 	loadChildren(ctx context.Context, parent ...any) error
+	prepareChildren(ctx context.Context, parent ...any) []childInfo
 	lazyAll(ctx context.Context) []any
 }
 
@@ -119,17 +120,14 @@ func setRelationField(idField reflect.Value, targetField reflect.Value, item any
 	}
 }
 
-func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) error {
-	if b.children == nil {
-		return nil
-	}
+type childInfo struct {
+	child       builderWrapperI
+	items       []any
+	idField     reflect.Value
+	targetField reflect.Value
+}
 
-	type childInfo struct {
-		child       builderWrapperI
-		items       []any
-		idField     reflect.Value
-		targetField reflect.Value
-	}
+func (b *builder[C, T, M]) prepareChildren(ctx context.Context, parents ...any) []childInfo {
 	childInfos := make([]childInfo, 0, len(b.children))
 	for _, parent := range parents {
 		rParent := reflect.ValueOf(parent).Elem()
@@ -148,24 +146,65 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) err
 		}
 	}
 
-	if err := b.fetch.Execute(ctx); err != nil {
+	return childInfos
+}
+
+type loadRequest struct {
+	builder builderWrapperI
+	parents []any
+}
+
+func bulkLoadChildren(ctx context.Context, fetch *Fetch, requests []loadRequest) error {
+	if len(requests) == 0 {
+		return nil
+	}
+
+	builderChildInfos := [][]childInfo{}
+	for _, lr := range requests {
+		builderChildInfos = append(builderChildInfos, lr.builder.prepareChildren(ctx, lr.parents...))
+	}
+
+	if err := fetch.Execute(ctx); err != nil {
 		return err
 	}
 
-	for _, ci := range childInfos {
-		child := ci.child
-		targetField := ci.targetField
-		idField := ci.idField
-		if err := child.loadChildren(ctx, ci.items...); err != nil {
-			return err
+	nextRequests := []loadRequest{}
+	for _, childInfos := range builderChildInfos {
+		for _, ci := range childInfos {
+			child := ci.child
+			nextRequests = append(nextRequests, loadRequest{
+				builder: child,
+				parents: ci.items,
+			})
 		}
+	}
 
-		for _, item := range ci.items {
-			setRelationField(idField, targetField, item, child.getMany())
+	if err := bulkLoadChildren(ctx, fetch, nextRequests); err != nil {
+		return err
+	}
+
+	for _, childInfos := range builderChildInfos {
+		for _, ci := range childInfos {
+			targetField := ci.targetField
+			idField := ci.idField
+			for _, item := range ci.items {
+				setRelationField(idField, targetField, item, ci.child.getMany())
+			}
 		}
 	}
 
 	return nil
+}
+
+func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) error {
+	if b.children == nil {
+		return nil
+	}
+
+	return bulkLoadChildren(ctx, b.fetch, []loadRequest{{
+		builder: b,
+		parents: parents,
+	}})
 }
 
 func (b *builder[C, T, M]) First(ctx context.Context) (M, error) {
