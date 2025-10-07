@@ -88,6 +88,37 @@ func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 	}
 }
 
+func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) []int {
+	ids := []int{}
+	if many {
+		ids = idField.Interface().([]int)
+	} else if idField.Kind() == reflect.Int {
+		ids = append(ids, int(idField.Int()))
+	} else if idField.Type().Name() == "Maybe[int]" {
+		relMaybeType := targetField.Type().Elem()
+		relValue := reflect.New(relMaybeType)
+		relValue.MethodByName("SetNull").Call([]reflect.Value{})
+		targetField.Set(relValue)
+
+		id := idField.Interface().(dsfetch.Maybe[int])
+		if val, set := id.Value(); set {
+			ids = append(ids, val)
+		}
+	}
+
+	return ids
+}
+
+func setRelationField(idField reflect.Value, targetField reflect.Value, item any, many bool) {
+	if many {
+		targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
+	} else if idField.Type().Name() == "Maybe[int]" {
+		targetField.MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(item).Elem()})
+	} else {
+		targetField.Set(reflect.ValueOf(item))
+	}
+}
+
 func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) error {
 	if b.children == nil {
 		return nil
@@ -103,24 +134,9 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) err
 	for _, parent := range parents {
 		rParent := reflect.ValueOf(parent).Elem()
 		for _, child := range b.children {
-			ids := []int{}
 			idField := rParent.FieldByName(child.getIDField())
 			targetField := rParent.FieldByName(child.getRelField())
-			if child.getMany() {
-				ids = idField.Interface().([]int)
-			} else if idField.Kind() == reflect.Int {
-				ids = append(ids, int(idField.Int()))
-			} else if idField.Type().Name() == "Maybe[int]" {
-				relMaybeType := targetField.Type().Elem()
-				relValue := reflect.New(relMaybeType)
-				relValue.MethodByName("SetNull").Call([]reflect.Value{})
-				targetField.Set(relValue)
-
-				id := idField.Interface().(dsfetch.Maybe[int])
-				if val, set := id.Value(); set {
-					ids = append(ids, val)
-				}
-			}
+			ids := getRelationIds(idField, targetField, child.getMany())
 			child.SetIds(ids)
 			items := child.lazyAll(ctx)
 			childInfos = append(childInfos, childInfo{
@@ -145,13 +161,7 @@ func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) err
 		}
 
 		for _, item := range ci.items {
-			if child.getMany() {
-				targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
-			} else if idField.Type().Name() == "Maybe[int]" {
-				targetField.MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(item).Elem()})
-			} else {
-				targetField.Set(reflect.ValueOf(item))
-			}
+			setRelationField(idField, targetField, item, child.getMany())
 		}
 	}
 
