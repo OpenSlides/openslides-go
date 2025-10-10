@@ -2,6 +2,7 @@
 package perm
 
 const (
+	AgendaItemCanForward                  TPermission = "agenda_item.can_forward"
 	AgendaItemCanManage                   TPermission = "agenda_item.can_manage"
 	AgendaItemCanSee                      TPermission = "agenda_item.can_see"
 	AgendaItemCanSeeInternal              TPermission = "agenda_item.can_see_internal"
@@ -48,7 +49,8 @@ const (
 )
 
 var derivatePerms = map[TPermission][]TPermission{
-	"agenda_item.can_manage":                      {"agenda_item.can_see", "agenda_item.can_see_internal"},
+	"agenda_item.can_forward":                     {"agenda_item.can_see", "agenda_item.can_see_internal"},
+	"agenda_item.can_manage":                      {"agenda_item.can_forward", "agenda_item.can_see", "agenda_item.can_see_internal"},
 	"agenda_item.can_see":                         {},
 	"agenda_item.can_see_internal":                {"agenda_item.can_see"},
 	"assignment.can_manage":                       {"assignment.can_nominate_other", "assignment.can_see"},

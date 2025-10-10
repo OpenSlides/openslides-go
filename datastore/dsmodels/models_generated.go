@@ -586,36 +586,40 @@ func (r *Fetch) ChatMessage(ids ...int) *chatMessageBuilder {
 
 // Committee has all fields from committee.
 type Committee struct {
-	AllChildIDs                         []int
-	AllParentIDs                        []int
-	ChildIDs                            []int
-	DefaultMeetingID                    dsfetch.Maybe[int]
-	Description                         string
-	ExternalID                          string
-	ForwardToCommitteeIDs               []int
-	ID                                  int
-	ManagerIDs                          []int
-	MeetingIDs                          []int
-	Name                                string
-	NativeUserIDs                       []int
-	OrganizationID                      int
-	OrganizationTagIDs                  []int
-	ParentID                            dsfetch.Maybe[int]
-	ReceiveForwardingsFromCommitteeIDs  []int
-	UserIDs                             []int
-	AllChildList                        []Committee
-	AllParentList                       []Committee
-	ChildList                           []Committee
-	DefaultMeeting                      *dsfetch.Maybe[Meeting]
-	ForwardToCommitteeList              []Committee
-	ManagerList                         []User
-	MeetingList                         []Meeting
-	NativeUserList                      []User
-	Organization                        *Organization
-	OrganizationTagList                 []OrganizationTag
-	Parent                              *dsfetch.Maybe[Committee]
-	ReceiveForwardingsFromCommitteeList []Committee
-	UserList                            []User
+	AllChildIDs                               []int
+	AllParentIDs                              []int
+	ChildIDs                                  []int
+	DefaultMeetingID                          dsfetch.Maybe[int]
+	Description                               string
+	ExternalID                                string
+	ForwardAgendaToCommitteeIDs               []int
+	ForwardToCommitteeIDs                     []int
+	ID                                        int
+	ManagerIDs                                []int
+	MeetingIDs                                []int
+	Name                                      string
+	NativeUserIDs                             []int
+	OrganizationID                            int
+	OrganizationTagIDs                        []int
+	ParentID                                  dsfetch.Maybe[int]
+	ReceiveAgendaForwardingsFromCommitteeIDs  []int
+	ReceiveForwardingsFromCommitteeIDs        []int
+	UserIDs                                   []int
+	AllChildList                              []Committee
+	AllParentList                             []Committee
+	ChildList                                 []Committee
+	DefaultMeeting                            *dsfetch.Maybe[Meeting]
+	ForwardAgendaToCommitteeList              []Committee
+	ForwardToCommitteeList                    []Committee
+	ManagerList                               []User
+	MeetingList                               []Meeting
+	NativeUserList                            []User
+	Organization                              *Organization
+	OrganizationTagList                       []OrganizationTag
+	Parent                                    *dsfetch.Maybe[Committee]
+	ReceiveAgendaForwardingsFromCommitteeList []Committee
+	ReceiveForwardingsFromCommitteeList       []Committee
+	UserList                                  []User
 }
 
 type committeeBuilder struct {
@@ -630,6 +634,7 @@ func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
 	ds.Committee_DefaultMeetingID(id).Lazy(&c.DefaultMeetingID)
 	ds.Committee_Description(id).Lazy(&c.Description)
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
+	ds.Committee_ForwardAgendaToCommitteeIDs(id).Lazy(&c.ForwardAgendaToCommitteeIDs)
 	ds.Committee_ForwardToCommitteeIDs(id).Lazy(&c.ForwardToCommitteeIDs)
 	ds.Committee_ID(id).Lazy(&c.ID)
 	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
@@ -639,6 +644,7 @@ func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
 	ds.Committee_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.Committee_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
 	ds.Committee_ParentID(id).Lazy(&c.ParentID)
+	ds.Committee_ReceiveAgendaForwardingsFromCommitteeIDs(id).Lazy(&c.ReceiveAgendaForwardingsFromCommitteeIDs)
 	ds.Committee_ReceiveForwardingsFromCommitteeIDs(id).Lazy(&c.ReceiveForwardingsFromCommitteeIDs)
 	ds.Committee_UserIDs(id).Lazy(&c.UserIDs)
 	return &c
@@ -692,6 +698,18 @@ func (b *committeeBuilder) DefaultMeeting() *meetingBuilder {
 			parent:   b,
 			idField:  "DefaultMeetingID",
 			relField: "DefaultMeeting",
+		},
+	}
+}
+
+func (b *committeeBuilder) ForwardAgendaToCommitteeList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ForwardAgendaToCommitteeIDs",
+			relField: "ForwardAgendaToCommitteeList",
+			many:     true,
 		},
 	}
 }
@@ -774,6 +792,18 @@ func (b *committeeBuilder) Parent() *committeeBuilder {
 			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
+		},
+	}
+}
+
+func (b *committeeBuilder) ReceiveAgendaForwardingsFromCommitteeList() *committeeBuilder {
+	return &committeeBuilder{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ReceiveAgendaForwardingsFromCommitteeIDs",
+			relField: "ReceiveAgendaForwardingsFromCommitteeList",
+			many:     true,
 		},
 	}
 }
@@ -5339,54 +5369,55 @@ func (r *Fetch) Option(ids ...int) *optionBuilder {
 
 // Organization has all fields from organization.
 type Organization struct {
-	ActiveMeetingIDs           []int
-	ArchivedMeetingIDs         []int
-	CommitteeIDs               []int
-	DefaultLanguage            string
-	Description                string
-	EnableAnonymous            bool
-	EnableChat                 bool
-	EnableElectronicVoting     bool
-	GenderIDs                  []int
-	ID                         int
-	LegalNotice                string
-	LimitOfMeetings            int
-	LimitOfUsers               int
-	LoginText                  string
-	MediafileIDs               []int
-	Name                       string
-	OrganizationTagIDs         []int
-	PrivacyPolicy              string
-	PublishedMediafileIDs      []int
-	RequireDuplicateFrom       bool
-	ResetPasswordVerboseErrors bool
-	SamlAttrMapping            json.RawMessage
-	SamlEnabled                bool
-	SamlLoginButtonText        string
-	SamlMetadataIDp            string
-	SamlMetadataSp             string
-	SamlPrivateKey             string
-	TemplateMeetingIDs         []int
-	ThemeID                    int
-	ThemeIDs                   []int
-	Url                        string
-	UserIDs                    []int
-	UsersEmailBody             string
-	UsersEmailReplyto          string
-	UsersEmailSender           string
-	UsersEmailSubject          string
-	VoteDecryptPublicMainKey   string
-	ActiveMeetingList          []Meeting
-	ArchivedMeetingList        []Meeting
-	CommitteeList              []Committee
-	GenderList                 []Gender
-	MediafileList              []Mediafile
-	OrganizationTagList        []OrganizationTag
-	PublishedMediafileList     []Mediafile
-	TemplateMeetingList        []Meeting
-	Theme                      *Theme
-	ThemeList                  []Theme
-	UserList                   []User
+	ActiveMeetingIDs                                    []int
+	ArchivedMeetingIDs                                  []int
+	CommitteeIDs                                        []int
+	DefaultLanguage                                     string
+	Description                                         string
+	EnableAnonymous                                     bool
+	EnableChat                                          bool
+	EnableElectronicVoting                              bool
+	ForbidCommitteeAdminsToSetAgendaForwardingRelations bool
+	GenderIDs                                           []int
+	ID                                                  int
+	LegalNotice                                         string
+	LimitOfMeetings                                     int
+	LimitOfUsers                                        int
+	LoginText                                           string
+	MediafileIDs                                        []int
+	Name                                                string
+	OrganizationTagIDs                                  []int
+	PrivacyPolicy                                       string
+	PublishedMediafileIDs                               []int
+	RequireDuplicateFrom                                bool
+	ResetPasswordVerboseErrors                          bool
+	SamlAttrMapping                                     json.RawMessage
+	SamlEnabled                                         bool
+	SamlLoginButtonText                                 string
+	SamlMetadataIDp                                     string
+	SamlMetadataSp                                      string
+	SamlPrivateKey                                      string
+	TemplateMeetingIDs                                  []int
+	ThemeID                                             int
+	ThemeIDs                                            []int
+	Url                                                 string
+	UserIDs                                             []int
+	UsersEmailBody                                      string
+	UsersEmailReplyto                                   string
+	UsersEmailSender                                    string
+	UsersEmailSubject                                   string
+	VoteDecryptPublicMainKey                            string
+	ActiveMeetingList                                   []Meeting
+	ArchivedMeetingList                                 []Meeting
+	CommitteeList                                       []Committee
+	GenderList                                          []Gender
+	MediafileList                                       []Mediafile
+	OrganizationTagList                                 []OrganizationTag
+	PublishedMediafileList                              []Mediafile
+	TemplateMeetingList                                 []Meeting
+	Theme                                               *Theme
+	ThemeList                                           []Theme
+	UserList                                            []User
 }
 
 type organizationBuilder struct {
@@ -5403,6 +5434,7 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
 	ds.Organization_EnableChat(id).Lazy(&c.EnableChat)
 	ds.Organization_EnableElectronicVoting(id).Lazy(&c.EnableElectronicVoting)
+	ds.Organization_ForbidCommitteeAdminsToSetAgendaForwardingRelations(id).Lazy(&c.ForbidCommitteeAdminsToSetAgendaForwardingRelations)
 	ds.Organization_GenderIDs(id).Lazy(&c.GenderIDs)
 	ds.Organization_ID(id).Lazy(&c.ID)
 	ds.Organization_LegalNotice(id).Lazy(&c.LegalNotice)

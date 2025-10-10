@@ -1216,6 +1216,15 @@ func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Committee_ForwardAgendaToCommitteeIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "forward_agenda_to_committee_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice {
 	key, err := dskey.FromParts("committee", committeeID, "forward_to_committee_ids")
 	if err != nil {
@@ -1295,6 +1304,15 @@ func (r *Fetch) Committee_ParentID(committeeID int) *ValueMaybeInt {
 	}
 
 	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Committee_ReceiveAgendaForwardingsFromCommitteeIDs(committeeID int) *ValueIntSlice {
+	key, err := dskey.FromParts("committee", committeeID, "receive_agenda_forwardings_from_committee_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *ValueIntSlice {
@@ -6033,6 +6051,15 @@ func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 
 func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBool {
 	key, err := dskey.FromParts("organization", organizationID, "enable_electronic_voting")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_ForbidCommitteeAdminsToSetAgendaForwardingRelations(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "forbid_committee_admins_to_set_agenda_forwarding_relations")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
