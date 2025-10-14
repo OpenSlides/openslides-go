@@ -14,7 +14,8 @@ type builderWrapperI interface {
 	getIDField() string
 	getRelField() string
 	getMany() bool
-	loadChildren(ctx context.Context, parent any) error
+	loadChildren(ctx context.Context, parent ...any) error
+	prepareChildren(ctx context.Context, parent ...any) []childInfo
 	lazyAll(ctx context.Context) []any
 }
 
@@ -88,54 +89,122 @@ func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 	}
 }
 
-func (b *builder[C, T, M]) loadChildren(ctx context.Context, parent any) error {
-	if b.children == nil {
+func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) []int {
+	ids := []int{}
+	if many {
+		ids = idField.Interface().([]int)
+	} else if idField.Kind() == reflect.Int {
+		ids = append(ids, int(idField.Int()))
+	} else if idField.Type().Name() == "Maybe[int]" {
+		relMaybeType := targetField.Type().Elem()
+		relValue := reflect.New(relMaybeType)
+		relValue.MethodByName("SetNull").Call([]reflect.Value{})
+		targetField.Set(relValue)
+
+		id := idField.Interface().(dsfetch.Maybe[int])
+		if val, set := id.Value(); set {
+			ids = append(ids, val)
+		}
+	}
+
+	return ids
+}
+
+func setRelationField(idField reflect.Value, targetField reflect.Value, item any, many bool) {
+	if many {
+		targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
+	} else if idField.Type().Name() == "Maybe[int]" {
+		targetField.MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(item).Elem()})
+	} else {
+		targetField.Set(reflect.ValueOf(item))
+	}
+}
+
+type childInfo struct {
+	child       builderWrapperI
+	items       []any
+	idField     reflect.Value
+	targetField reflect.Value
+}
+
+func (b *builder[C, T, M]) prepareChildren(ctx context.Context, parents ...any) []childInfo {
+	childInfos := make([]childInfo, 0, len(b.children))
+	for _, parent := range parents {
+		rParent := reflect.ValueOf(parent).Elem()
+		for _, child := range b.children {
+			idField := rParent.FieldByName(child.getIDField())
+			targetField := rParent.FieldByName(child.getRelField())
+			ids := getRelationIds(idField, targetField, child.getMany())
+			child.SetIds(ids)
+			items := child.lazyAll(ctx)
+			childInfos = append(childInfos, childInfo{
+				child:       child,
+				items:       items,
+				idField:     idField,
+				targetField: targetField,
+			})
+		}
+	}
+
+	return childInfos
+}
+
+type loadRequest struct {
+	builder builderWrapperI
+	parents []any
+}
+
+func bulkLoadChildren(ctx context.Context, fetch *Fetch, requests []loadRequest) error {
+	if len(requests) == 0 {
 		return nil
 	}
 
-	rParent := reflect.ValueOf(parent).Elem()
-	for _, child := range b.children {
-		ids := []int{}
-		idField := rParent.FieldByName(child.getIDField())
-		targetField := rParent.FieldByName(child.getRelField())
-		if child.getMany() {
-			ids = idField.Interface().([]int)
-		} else if idField.Kind() == reflect.Int {
-			ids = append(ids, int(idField.Int()))
-		} else if idField.Type().Name() == "Maybe[int]" {
-			relMaybeType := targetField.Type().Elem()
-			relValue := reflect.New(relMaybeType)
-			relValue.MethodByName("SetNull").Call([]reflect.Value{})
-			targetField.Set(relValue)
+	builderChildInfos := [][]childInfo{}
+	for _, lr := range requests {
+		builderChildInfos = append(builderChildInfos, lr.builder.prepareChildren(ctx, lr.parents...))
+	}
 
-			id := idField.Interface().(dsfetch.Maybe[int])
-			if val, set := id.Value(); set {
-				ids = append(ids, val)
-			}
+	if err := fetch.Execute(ctx); err != nil {
+		return err
+	}
+
+	nextRequests := []loadRequest{}
+	for _, childInfos := range builderChildInfos {
+		for _, ci := range childInfos {
+			child := ci.child
+			nextRequests = append(nextRequests, loadRequest{
+				builder: child,
+				parents: ci.items,
+			})
 		}
-		child.SetIds(ids)
+	}
 
-		items := child.lazyAll(ctx)
-		if err := b.fetch.Execute(ctx); err != nil {
-			return err
-		}
+	if err := bulkLoadChildren(ctx, fetch, nextRequests); err != nil {
+		return err
+	}
 
-		for _, item := range items {
-			if err := child.loadChildren(ctx, item); err != nil {
-				return err
-			}
-
-			if child.getMany() {
-				targetField.Set(reflect.Append(targetField, reflect.ValueOf(item).Elem()))
-			} else if idField.Type().Name() == "Maybe[int]" {
-				targetField.MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(item).Elem()})
-			} else {
-				targetField.Set(reflect.ValueOf(item))
+	for _, childInfos := range builderChildInfos {
+		for _, ci := range childInfos {
+			targetField := ci.targetField
+			idField := ci.idField
+			for _, item := range ci.items {
+				setRelationField(idField, targetField, item, ci.child.getMany())
 			}
 		}
 	}
 
 	return nil
+}
+
+func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) error {
+	if b.children == nil {
+		return nil
+	}
+
+	return bulkLoadChildren(ctx, b.fetch, []loadRequest{{
+		builder: b,
+		parents: parents,
+	}})
 }
 
 func (b *builder[C, T, M]) First(ctx context.Context) (M, error) {
