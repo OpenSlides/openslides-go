@@ -3772,6 +3772,24 @@ func (r *Fetch) Meeting_MotionsEnableRecommendationOnProjector(meetingID int) *V
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionsEnableRestrictedEditorForManager(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_restricted_editor_for_manager")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionsEnableRestrictedEditorForNonManager(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_restricted_editor_for_non_manager")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsEnableSideboxOnProjector(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_sidebox_on_projector")
 	if err != nil {
@@ -5102,6 +5120,15 @@ func (r *Fetch) MotionState_ShowStateExtensionField(motionStateID int) *ValueBoo
 	}
 
 	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) MotionState_StateButtonLabel(motionStateID int) *ValueString {
+	key, err := dskey.FromParts("motion_state", motionStateID, "state_button_label")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_SubmitterWithdrawBackIDs(motionStateID int) *ValueIntSlice {
