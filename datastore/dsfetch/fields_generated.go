@@ -88,14 +88,14 @@ type ValueDecimal struct {
 	key      dskey.Key
 	required bool
 
-	lazies []*decimal.Decimal
+	lazies []*Maybe[decimal.Decimal]
 
 	fetch *Fetch
 }
 
 // Value returns the value.
-func (v *ValueDecimal) Value(ctx context.Context) (decimal.Decimal, error) {
-	var zero decimal.Decimal
+func (v *ValueDecimal) Value(ctx context.Context) (Maybe[decimal.Decimal], error) {
+	var zero Maybe[decimal.Decimal]
 	if err := v.err; err != nil {
 		return zero, v.err
 	}
@@ -116,14 +116,14 @@ func (v *ValueDecimal) Value(ctx context.Context) (decimal.Decimal, error) {
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueDecimal) Lazy(value *decimal.Decimal) {
+func (v *ValueDecimal) Lazy(value *Maybe[decimal.Decimal]) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
 
 // convert converts the json value to the type.
-func (v *ValueDecimal) convert(p []byte) (decimal.Decimal, error) {
-	var zero decimal.Decimal
+func (v *ValueDecimal) convert(p []byte) (Maybe[decimal.Decimal], error) {
+	var zero Maybe[decimal.Decimal]
 	if p == nil {
 		if v.required {
 			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
@@ -135,10 +135,16 @@ func (v *ValueDecimal) convert(p []byte) (decimal.Decimal, error) {
 		return zero, fmt.Errorf("decoding value %q: %w", p, err)
 	}
 
-	value, err := decimal.NewFromString(strValue)
+	if strValue == "" {
+		return zero, nil
+	}
+
+	decValue, err := decimal.NewFromString(strValue)
 	if err != nil {
 		return zero, fmt.Errorf("decoding value %q: %w", p, err)
 	}
+
+	value := MaybeValue(decValue)
 	return value, nil
 }
 

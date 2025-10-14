@@ -85,7 +85,7 @@ var typesToGo = map[string]string{
 	"ValueMaybeInt":    "Maybe[int]",
 	"ValueString":      "string",
 	"ValueMaybeString": "Maybe[string]",
-	"ValueDecimal":     "decimal.Decimal",
+	"ValueDecimal":     "Maybe[decimal.Decimal]",
 	"ValueBool":        "bool",
 	"ValueFloat":       "float64",
 	"ValueJSON":        "json.RawMessage",

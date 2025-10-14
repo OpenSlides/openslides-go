@@ -87,7 +87,7 @@ var typesToGo = map[string]string{
 	"ValueMaybeInt":    "dsfetch.Maybe[int]",
 	"ValueString":      "string",
 	"ValueMaybeString": "dsfetch.Maybe[string]",
-	"ValueDecimal":     "decimal.Decimal",
+	"ValueDecimal":     "dsfetch.Maybe[decimal.Decimal]",
 	"ValueBool":        "bool",
 	"ValueFloat":       "float64",
 	"ValueJSON":        "json.RawMessage",

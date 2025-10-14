@@ -64,10 +64,16 @@ func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 			return zero, fmt.Errorf("decoding value %q: %w", p, err)
 		}
 
-		value, err := decimal.NewFromString(strValue)
+		if strValue == "" {
+			return zero, nil
+		}
+
+		decValue, err := decimal.NewFromString(strValue)
 		if err != nil {
 			return zero, fmt.Errorf("decoding value %q: %w", p, err)
 		}
+
+		value := MaybeValue(decValue)
 	{{- else }}
 		var value {{.GoType}}
 		if err := json.Unmarshal(p, &value); err != nil {
