@@ -87,6 +87,7 @@ var typesToGo = map[string]string{
 	"ValueMaybeInt":    "dsfetch.Maybe[int]",
 	"ValueString":      "string",
 	"ValueMaybeString": "dsfetch.Maybe[string]",
+	"ValueDecimal":     "decimal.Decimal",
 	"ValueBool":        "bool",
 	"ValueFloat":       "float64",
 	"ValueJSON":        "json.RawMessage",
@@ -323,8 +324,11 @@ func valueType(modelsType string, required bool) string {
 	case "number", "relation", "timestamp":
 		return "ValueInt"
 
-	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "decimal(6)":
+	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template":
 		return "ValueString"
+
+	case "decimal(6)":
+		return "ValueDecimal"
 
 	case "boolean":
 		return "ValueBool"
