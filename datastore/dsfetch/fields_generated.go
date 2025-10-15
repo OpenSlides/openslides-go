@@ -3772,24 +3772,6 @@ func (r *Fetch) Meeting_MotionsEnableRecommendationOnProjector(meetingID int) *V
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionsEnableRestrictedEditorForManager(meetingID int) *ValueBool {
-	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_restricted_editor_for_manager")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
-func (r *Fetch) Meeting_MotionsEnableRestrictedEditorForNonManager(meetingID int) *ValueBool {
-	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_restricted_editor_for_non_manager")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
 func (r *Fetch) Meeting_MotionsEnableSideboxOnProjector(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_sidebox_on_projector")
 	if err != nil {
@@ -4897,13 +4879,13 @@ func (r *Fetch) MotionEditor_MeetingID(motionEditorID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionEditor_MeetingUserID(motionEditorID int) *ValueInt {
+func (r *Fetch) MotionEditor_MeetingUserID(motionEditorID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("motion_editor", motionEditorID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionEditor_MotionID(motionEditorID int) *ValueInt {
@@ -5122,15 +5104,6 @@ func (r *Fetch) MotionState_ShowStateExtensionField(motionStateID int) *ValueBoo
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionState_StateButtonLabel(motionStateID int) *ValueString {
-	key, err := dskey.FromParts("motion_state", motionStateID, "state_button_label")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
 func (r *Fetch) MotionState_SubmitterWithdrawBackIDs(motionStateID int) *ValueIntSlice {
 	key, err := dskey.FromParts("motion_state", motionStateID, "submitter_withdraw_back_ids")
 	if err != nil {
@@ -5185,13 +5158,13 @@ func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueInt {
+func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("motion_submitter", motionSubmitterID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
@@ -5302,13 +5275,13 @@ func (r *Fetch) MotionWorkingGroupSpeaker_MeetingID(motionWorkingGroupSpeakerID 
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionWorkingGroupSpeaker_MeetingUserID(motionWorkingGroupSpeakerID int) *ValueInt {
+func (r *Fetch) MotionWorkingGroupSpeaker_MeetingUserID(motionWorkingGroupSpeakerID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("motion_working_group_speaker", motionWorkingGroupSpeakerID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkingGroupSpeaker_MotionID(motionWorkingGroupSpeakerID int) *ValueInt {
