@@ -3510,7 +3510,7 @@ type MeetingUser struct {
 	UserID                        int
 	VoteDelegatedToID             dsfetch.Maybe[int]
 	VoteDelegationsFromIDs        []int
-	VoteWeight                    dsfetch.Maybe[decimal.Decimal]
+	VoteWeight                    decimal.Decimal
 	AssignmentCandidateList       []AssignmentCandidate
 	ChatMessageList               []ChatMessage
 	GroupList                     []Group
@@ -5242,17 +5242,17 @@ func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeaker
 
 // Option has all fields from option.
 type Option struct {
-	Abstain                    dsfetch.Maybe[decimal.Decimal]
+	Abstain                    decimal.Decimal
 	ContentObjectID            dsfetch.Maybe[string]
 	ID                         int
 	MeetingID                  int
-	No                         dsfetch.Maybe[decimal.Decimal]
+	No                         decimal.Decimal
 	PollID                     dsfetch.Maybe[int]
 	Text                       string
 	UsedAsGlobalOptionInPollID dsfetch.Maybe[int]
 	VoteIDs                    []int
 	Weight                     int
-	Yes                        dsfetch.Maybe[decimal.Decimal]
+	Yes                        decimal.Decimal
 	Meeting                    *Meeting
 	Poll                       *dsfetch.Maybe[Poll]
 	UsedAsGlobalOptionInPoll   *dsfetch.Maybe[Poll]
@@ -5787,9 +5787,9 @@ type Poll struct {
 	VotedIDs              []int
 	VotesRaw              string
 	VotesSignature        string
-	Votescast             dsfetch.Maybe[decimal.Decimal]
-	Votesinvalid          dsfetch.Maybe[decimal.Decimal]
-	Votesvalid            dsfetch.Maybe[decimal.Decimal]
+	Votescast             decimal.Decimal
+	Votesinvalid          decimal.Decimal
+	Votesvalid            decimal.Decimal
 	EntitledGroupList     []Group
 	GlobalOption          *dsfetch.Maybe[Option]
 	Meeting               *Meeting
@@ -7280,7 +7280,7 @@ type User struct {
 	CommitteeIDs                []int
 	CommitteeManagementIDs      []int
 	DefaultPassword             string
-	DefaultVoteWeight           dsfetch.Maybe[decimal.Decimal]
+	DefaultVoteWeight           decimal.Decimal
 	DelegatedVoteIDs            []int
 	Email                       string
 	External                    bool
@@ -7559,7 +7559,7 @@ type Vote struct {
 	UserID          dsfetch.Maybe[int]
 	UserToken       string
 	Value           string
-	Weight          dsfetch.Maybe[decimal.Decimal]
+	Weight          decimal.Decimal
 	DelegatedUser   *dsfetch.Maybe[User]
 	Meeting         *Meeting
 	Option          *Option
