@@ -62,12 +62,11 @@ INSERT INTO
 motion_workflow_t (
     id,
     name,
-    sequential_number,
     first_state_id,
     meeting_id
 )
 VALUES
-(1, 'Simple Workflow', 1, 1, 1);
+(1, 'Simple Workflow', 1, 1);
 -- Increase sequence of motion_workflow_t.id to avoid errors.
 SELECT nextval('motion_workflow_t_id_seq');
 
@@ -146,7 +145,6 @@ INSERT INTO
 projector_t
 (
     id,
-    sequential_number,
     meeting_id,
     used_as_default_projector_for_agenda_item_list_in_meeting_id,
     used_as_default_projector_for_topic_in_meeting_id,
@@ -163,6 +161,7 @@ projector_t
     used_as_default_projector_for_motion_poll_in_meeting_id,
     used_as_default_projector_for_poll_in_meeting_id
 )
-VALUES (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+VALUES (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+SELECT nextval('projector_t_id_seq');
 
 COMMIT;
