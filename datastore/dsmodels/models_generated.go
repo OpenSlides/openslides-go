@@ -4727,11 +4727,11 @@ func (r *Fetch) MotionCommentSection(ids ...int) *motionCommentSectionBuilder {
 type MotionEditor struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID int
+	MeetingUserID dsfetch.Maybe[int]
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Motion        *Motion
 }
 
@@ -4994,11 +4994,11 @@ func (r *Fetch) MotionState(ids ...int) *motionStateBuilder {
 type MotionSubmitter struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID int
+	MeetingUserID dsfetch.Maybe[int]
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Motion        *Motion
 }
 
@@ -5171,11 +5171,11 @@ func (r *Fetch) MotionWorkflow(ids ...int) *motionWorkflowBuilder {
 type MotionWorkingGroupSpeaker struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID int
+	MeetingUserID dsfetch.Maybe[int]
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Motion        *Motion
 }
 
