@@ -2282,6 +2282,15 @@ func (r *Fetch) MeetingUser_MotionSubmitterIDs(meetingUserID int) *ValueIntSlice
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) MeetingUser_MotionSupporterIDs(meetingUserID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_user", meetingUserID, "motion_supporter_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) MeetingUser_MotionWorkingGroupSpeakerIDs(meetingUserID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "motion_working_group_speaker_ids")
 	if err != nil {
@@ -2320,15 +2329,6 @@ func (r *Fetch) MeetingUser_SpeakerIDs(meetingUserID int) *ValueIntSlice {
 
 func (r *Fetch) MeetingUser_StructureLevelIDs(meetingUserID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "structure_level_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingUser_SupportedMotionIDs(meetingUserID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting_user", meetingUserID, "supported_motion_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -3679,6 +3679,15 @@ func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
 
 func (r *Fetch) Meeting_MotionSubmitterIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_submitter_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionSupporterIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_supporter_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -5288,6 +5297,42 @@ func (r *Fetch) MotionSubmitter_Weight(motionSubmitterID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) MotionSupporter_ID(motionSupporterID int) *ValueInt {
+	key, err := dskey.FromParts("motion_supporter", motionSupporterID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) MotionSupporter_MeetingID(motionSupporterID int) *ValueInt {
+	key, err := dskey.FromParts("motion_supporter", motionSupporterID, "meeting_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) MotionSupporter_MeetingUserID(motionSupporterID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("motion_supporter", motionSupporterID, "meeting_user_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) MotionSupporter_MotionID(motionSupporterID int) *ValueInt {
+	key, err := dskey.FromParts("motion_supporter", motionSupporterID, "motion_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("motion_workflow", motionWorkflowID, "default_amendment_workflow_meeting_id")
 	if err != nil {
@@ -5837,8 +5882,8 @@ func (r *Fetch) Motion_SubmitterIDs(motionID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_SupporterMeetingUserIDs(motionID int) *ValueIntSlice {
-	key, err := dskey.FromParts("motion", motionID, "supporter_meeting_user_ids")
+func (r *Fetch) Motion_SupporterIDs(motionID int) *ValueIntSlice {
+	key, err := dskey.FromParts("motion", motionID, "supporter_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
