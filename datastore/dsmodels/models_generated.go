@@ -5340,54 +5340,55 @@ func (r *Fetch) Option(ids ...int) *optionBuilder {
 
 // Organization has all fields from organization.
 type Organization struct {
-	ActiveMeetingIDs           []int
-	ArchivedMeetingIDs         []int
-	CommitteeIDs               []int
-	DefaultLanguage            string
-	Description                string
-	EnableAnonymous            bool
-	EnableChat                 bool
-	EnableElectronicVoting     bool
-	GenderIDs                  []int
-	ID                         int
-	LegalNotice                string
-	LimitOfMeetings            int
-	LimitOfUsers               int
-	LoginText                  string
-	MediafileIDs               []int
-	Name                       string
-	OrganizationTagIDs         []int
-	PrivacyPolicy              string
-	PublishedMediafileIDs      []int
-	RequireDuplicateFrom       bool
-	ResetPasswordVerboseErrors bool
-	SamlAttrMapping            json.RawMessage
-	SamlEnabled                bool
-	SamlLoginButtonText        string
-	SamlMetadataIDp            string
-	SamlMetadataSp             string
-	SamlPrivateKey             string
-	TemplateMeetingIDs         []int
-	ThemeID                    int
-	ThemeIDs                   []int
-	Url                        string
-	UserIDs                    []int
-	UsersEmailBody             string
-	UsersEmailReplyto          string
-	UsersEmailSender           string
-	UsersEmailSubject          string
-	VoteDecryptPublicMainKey   string
-	ActiveMeetingList          []Meeting
-	ArchivedMeetingList        []Meeting
-	CommitteeList              []Committee
-	GenderList                 []Gender
-	MediafileList              []Mediafile
-	OrganizationTagList        []OrganizationTag
-	PublishedMediafileList     []Mediafile
-	TemplateMeetingList        []Meeting
-	Theme                      *Theme
-	ThemeList                  []Theme
-	UserList                   []User
+	ActiveMeetingIDs              []int
+	ArchivedMeetingIDs            []int
+	CommitteeIDs                  []int
+	DefaultLanguage               string
+	Description                   string
+	DisableForwardWithAttachments bool
+	EnableAnonymous               bool
+	EnableChat                    bool
+	EnableElectronicVoting        bool
+	GenderIDs                     []int
+	ID                            int
+	LegalNotice                   string
+	LimitOfMeetings               int
+	LimitOfUsers                  int
+	LoginText                     string
+	MediafileIDs                  []int
+	Name                          string
+	OrganizationTagIDs            []int
+	PrivacyPolicy                 string
+	PublishedMediafileIDs         []int
+	RequireDuplicateFrom          bool
+	ResetPasswordVerboseErrors    bool
+	SamlAttrMapping               json.RawMessage
+	SamlEnabled                   bool
+	SamlLoginButtonText           string
+	SamlMetadataIDp               string
+	SamlMetadataSp                string
+	SamlPrivateKey                string
+	TemplateMeetingIDs            []int
+	ThemeID                       int
+	ThemeIDs                      []int
+	Url                           string
+	UserIDs                       []int
+	UsersEmailBody                string
+	UsersEmailReplyto             string
+	UsersEmailSender              string
+	UsersEmailSubject             string
+	VoteDecryptPublicMainKey      string
+	ActiveMeetingList             []Meeting
+	ArchivedMeetingList           []Meeting
+	CommitteeList                 []Committee
+	GenderList                    []Gender
+	MediafileList                 []Mediafile
+	OrganizationTagList           []OrganizationTag
+	PublishedMediafileList        []Mediafile
+	TemplateMeetingList           []Meeting
+	Theme                         *Theme
+	ThemeList                     []Theme
+	UserList                      []User
 }
 
 type organizationBuilder struct {
@@ -5401,6 +5402,7 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
 	ds.Organization_DefaultLanguage(id).Lazy(&c.DefaultLanguage)
 	ds.Organization_Description(id).Lazy(&c.Description)
+	ds.Organization_DisableForwardWithAttachments(id).Lazy(&c.DisableForwardWithAttachments)
 	ds.Organization_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
 	ds.Organization_EnableChat(id).Lazy(&c.EnableChat)
 	ds.Organization_EnableElectronicVoting(id).Lazy(&c.EnableElectronicVoting)
