@@ -1837,6 +1837,7 @@ type Meeting struct {
 	TemplateForOrganization                      *dsfetch.Maybe[Organization]
 	TopicList                                    []Topic
 	TopicPollDefaultGroupList                    []Group
+	UserList                                     []User
 	VoteList                                     []Vote
 }
 
@@ -3119,6 +3120,18 @@ func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
 			parent:   b,
 			idField:  "TopicPollDefaultGroupIDs",
 			relField: "TopicPollDefaultGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) UserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UserIDs",
+			relField: "UserList",
 			many:     true,
 		},
 	}
@@ -5340,55 +5353,53 @@ func (r *Fetch) Option(ids ...int) *optionBuilder {
 
 // Organization has all fields from organization.
 type Organization struct {
-	ActiveMeetingIDs              []int
-	ArchivedMeetingIDs            []int
-	CommitteeIDs                  []int
-	DefaultLanguage               string
-	Description                   string
-	DisableForwardWithAttachments bool
-	EnableAnonymous               bool
-	EnableChat                    bool
-	EnableElectronicVoting        bool
-	GenderIDs                     []int
-	ID                            int
-	LegalNotice                   string
-	LimitOfMeetings               int
-	LimitOfUsers                  int
-	LoginText                     string
-	MediafileIDs                  []int
-	Name                          string
-	OrganizationTagIDs            []int
-	PrivacyPolicy                 string
-	PublishedMediafileIDs         []int
-	RequireDuplicateFrom          bool
-	ResetPasswordVerboseErrors    bool
-	SamlAttrMapping               json.RawMessage
-	SamlEnabled                   bool
-	SamlLoginButtonText           string
-	SamlMetadataIDp               string
-	SamlMetadataSp                string
-	SamlPrivateKey                string
-	TemplateMeetingIDs            []int
-	ThemeID                       int
-	ThemeIDs                      []int
-	Url                           string
-	UserIDs                       []int
-	UsersEmailBody                string
-	UsersEmailReplyto             string
-	UsersEmailSender              string
-	UsersEmailSubject             string
-	VoteDecryptPublicMainKey      string
-	ActiveMeetingList             []Meeting
-	ArchivedMeetingList           []Meeting
-	CommitteeList                 []Committee
-	GenderList                    []Gender
-	MediafileList                 []Mediafile
-	OrganizationTagList           []OrganizationTag
-	PublishedMediafileList        []Mediafile
-	TemplateMeetingList           []Meeting
-	Theme                         *Theme
-	ThemeList                     []Theme
-	UserList                      []User
+	ActiveMeetingIDs           []int
+	ArchivedMeetingIDs         []int
+	CommitteeIDs               []int
+	DefaultLanguage            string
+	Description                string
+	EnableAnonymous            bool
+	EnableChat                 bool
+	EnableElectronicVoting     bool
+	GenderIDs                  []int
+	ID                         int
+	LegalNotice                string
+	LimitOfMeetings            int
+	LimitOfUsers               int
+	LoginText                  string
+	MediafileIDs               []int
+	Name                       string
+	OrganizationTagIDs         []int
+	PrivacyPolicy              string
+	PublishedMediafileIDs      []int
+	RequireDuplicateFrom       bool
+	ResetPasswordVerboseErrors bool
+	SamlAttrMapping            json.RawMessage
+	SamlEnabled                bool
+	SamlLoginButtonText        string
+	SamlMetadataIDp            string
+	SamlMetadataSp             string
+	SamlPrivateKey             string
+	TemplateMeetingIDs         []int
+	ThemeID                    int
+	ThemeIDs                   []int
+	Url                        string
+	UserIDs                    []int
+	UsersEmailBody             string
+	UsersEmailReplyto          string
+	UsersEmailSender           string
+	UsersEmailSubject          string
+	ActiveMeetingList          []Meeting
+	ArchivedMeetingList        []Meeting
+	CommitteeList              []Committee
+	GenderList                 []Gender
+	MediafileList              []Mediafile
+	OrganizationTagList        []OrganizationTag
+	PublishedMediafileList     []Mediafile
+	TemplateMeetingList        []Meeting
+	Theme                      *Theme
+	ThemeList                  []Theme
+	UserList                   []User
 }
 
 type organizationBuilder struct {
@@ -5402,7 +5413,6 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
 	ds.Organization_DefaultLanguage(id).Lazy(&c.DefaultLanguage)
 	ds.Organization_Description(id).Lazy(&c.Description)
-	ds.Organization_DisableForwardWithAttachments(id).Lazy(&c.DisableForwardWithAttachments)
 	ds.Organization_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
 	ds.Organization_EnableChat(id).Lazy(&c.EnableChat)
 	ds.Organization_EnableElectronicVoting(id).Lazy(&c.EnableElectronicVoting)
@@ -5434,7 +5444,6 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_UsersEmailReplyto(id).Lazy(&c.UsersEmailReplyto)
 	ds.Organization_UsersEmailSender(id).Lazy(&c.UsersEmailSender)
 	ds.Organization_UsersEmailSubject(id).Lazy(&c.UsersEmailSubject)
-	ds.Organization_VoteDecryptPublicMainKey(id).Lazy(&c.VoteDecryptPublicMainKey)
 	return &c
 }
 
@@ -5761,8 +5770,6 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 type Poll struct {
 	Backend               string
 	ContentObjectID       string
-	CryptKey              string
-	CryptSignature        string
 	Description           string
 	EntitledGroupIDs      []int
 	EntitledUsersAtStop   json.RawMessage
@@ -5787,8 +5794,6 @@ type Poll struct {
 	Title                 string
 	Type                  string
 	VotedIDs              []int
-	VotesRaw              string
-	VotesSignature        string
 	Votescast             decimal.Decimal
 	Votesinvalid          decimal.Decimal
 	Votesvalid            decimal.Decimal
@@ -5808,8 +5813,6 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	c := Poll{}
 	ds.Poll_Backend(id).Lazy(&c.Backend)
 	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
-	ds.Poll_CryptKey(id).Lazy(&c.CryptKey)
-	ds.Poll_CryptSignature(id).Lazy(&c.CryptSignature)
 	ds.Poll_Description(id).Lazy(&c.Description)
 	ds.Poll_EntitledGroupIDs(id).Lazy(&c.EntitledGroupIDs)
 	ds.Poll_EntitledUsersAtStop(id).Lazy(&c.EntitledUsersAtStop)
@@ -5834,8 +5837,6 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_Title(id).Lazy(&c.Title)
 	ds.Poll_Type(id).Lazy(&c.Type)
 	ds.Poll_VotedIDs(id).Lazy(&c.VotedIDs)
-	ds.Poll_VotesRaw(id).Lazy(&c.VotesRaw)
-	ds.Poll_VotesSignature(id).Lazy(&c.VotesSignature)
 	ds.Poll_Votescast(id).Lazy(&c.Votescast)
 	ds.Poll_Votesinvalid(id).Lazy(&c.Votesinvalid)
 	ds.Poll_Votesvalid(id).Lazy(&c.Votesvalid)
@@ -7321,6 +7322,7 @@ type User struct {
 	HistoryPositionList         []HistoryPosition
 	HomeCommittee               *dsfetch.Maybe[Committee]
 	IsPresentInMeetingList      []Meeting
+	MeetingList                 []Meeting
 	MeetingUserList             []MeetingUser
 	OptionList                  []Option
 	Organization                *Organization
@@ -7467,6 +7469,18 @@ func (b *userBuilder) IsPresentInMeetingList() *meetingBuilder {
 			parent:   b,
 			idField:  "IsPresentInMeetingIDs",
 			relField: "IsPresentInMeetingList",
+			many:     true,
+		},
+	}
+}
+
+func (b *userBuilder) MeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingIDs",
+			relField: "MeetingList",
 			many:     true,
 		},
 	}

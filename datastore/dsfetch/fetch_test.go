@@ -27,13 +27,13 @@ func TestRequestTwoWithErrors(t *testing.T) {
 }
 
 func TestRequestTwoWithErrorsOften(t *testing.T) {
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		TestRequestTwoWithErrors(t)
 	}
 }
 
 func TestRequestEmpty(t *testing.T) {
-	counter := dsmock.NewCounter(dsmock.Stub(nil)).(*dsmock.Counter)
+	counter := dsmock.NewCounter(dsmock.Stub(nil))
 	ds := dsfetch.New(counter)
 
 	if err := ds.Execute(context.Background()); err != nil {

@@ -6089,15 +6089,6 @@ func (r *Fetch) Organization_Description(organizationID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Organization_DisableForwardWithAttachments(organizationID int) *ValueBool {
-	key, err := dskey.FromParts("organization", organizationID, "disable_forward_with_attachments")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
 func (r *Fetch) Organization_EnableAnonymous(organizationID int) *ValueBool {
 	key, err := dskey.FromParts("organization", organizationID, "enable_anonymous")
 	if err != nil {
@@ -6377,15 +6368,6 @@ func (r *Fetch) Organization_UsersEmailSubject(organizationID int) *ValueString 
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Organization_VoteDecryptPublicMainKey(organizationID int) *ValueString {
-	key, err := dskey.FromParts("organization", organizationID, "vote_decrypt_public_main_key")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
 func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeString {
 	key, err := dskey.FromParts("personal_note", personalNoteID, "content_object_id")
 	if err != nil {
@@ -6582,24 +6564,6 @@ func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) Poll_CryptKey(pollID int) *ValueString {
-	key, err := dskey.FromParts("poll", pollID, "crypt_key")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) Poll_CryptSignature(pollID int) *ValueString {
-	key, err := dskey.FromParts("poll", pollID, "crypt_signature")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_Description(pollID int) *ValueString {
@@ -6816,24 +6780,6 @@ func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
-}
-
-func (r *Fetch) Poll_VotesRaw(pollID int) *ValueString {
-	key, err := dskey.FromParts("poll", pollID, "votes_raw")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) Poll_VotesSignature(pollID int) *ValueString {
-	key, err := dskey.FromParts("poll", pollID, "votes_signature")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_Votescast(pollID int) *ValueDecimal {
