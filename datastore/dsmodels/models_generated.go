@@ -1652,6 +1652,7 @@ type Meeting struct {
 	MotionPollProjectionNameOrderFirst           string
 	MotionStateIDs                               []int
 	MotionSubmitterIDs                           []int
+	MotionSupporterIDs                           []int
 	MotionWorkflowIDs                            []int
 	MotionWorkingGroupSpeakerIDs                 []int
 	MotionsAmendmentsEnabled                     bool
@@ -1810,6 +1811,7 @@ type Meeting struct {
 	MotionPollDefaultGroupList                   []Group
 	MotionStateList                              []MotionState
 	MotionSubmitterList                          []MotionSubmitter
+	MotionSupporterList                          []MotionSupporter
 	MotionWorkflowList                           []MotionWorkflow
 	MotionWorkingGroupSpeakerList                []MotionWorkingGroupSpeaker
 	MotionsDefaultAmendmentWorkflow              *MotionWorkflow
@@ -1992,6 +1994,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionPollProjectionNameOrderFirst(id).Lazy(&c.MotionPollProjectionNameOrderFirst)
 	ds.Meeting_MotionStateIDs(id).Lazy(&c.MotionStateIDs)
 	ds.Meeting_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
+	ds.Meeting_MotionSupporterIDs(id).Lazy(&c.MotionSupporterIDs)
 	ds.Meeting_MotionWorkflowIDs(id).Lazy(&c.MotionWorkflowIDs)
 	ds.Meeting_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
 	ds.Meeting_MotionsAmendmentsEnabled(id).Lazy(&c.MotionsAmendmentsEnabled)
@@ -2805,6 +2808,18 @@ func (b *meetingBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	}
 }
 
+func (b *meetingBuilder) MotionSupporterList() *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MotionSupporterIDs",
+			relField: "MotionSupporterList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingBuilder) MotionWorkflowList() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
@@ -3501,12 +3516,12 @@ type MeetingUser struct {
 	MeetingID                     int
 	MotionEditorIDs               []int
 	MotionSubmitterIDs            []int
+	MotionSupporterIDs            []int
 	MotionWorkingGroupSpeakerIDs  []int
 	Number                        string
 	PersonalNoteIDs               []int
 	SpeakerIDs                    []int
 	StructureLevelIDs             []int
-	SupportedMotionIDs            []int
 	UserID                        int
 	VoteDelegatedToID             dsfetch.Maybe[int]
 	VoteDelegationsFromIDs        []int
@@ -3517,11 +3532,11 @@ type MeetingUser struct {
 	Meeting                       *Meeting
 	MotionEditorList              []MotionEditor
 	MotionSubmitterList           []MotionSubmitter
+	MotionSupporterList           []MotionSupporter
 	MotionWorkingGroupSpeakerList []MotionWorkingGroupSpeaker
 	PersonalNoteList              []PersonalNote
 	SpeakerList                   []Speaker
 	StructureLevelList            []StructureLevel
-	SupportedMotionList           []Motion
 	User                          *User
 	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
 	VoteDelegationsFromList       []MeetingUser
@@ -3543,12 +3558,12 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
 	ds.MeetingUser_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MeetingUser_MotionEditorIDs(id).Lazy(&c.MotionEditorIDs)
 	ds.MeetingUser_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
+	ds.MeetingUser_MotionSupporterIDs(id).Lazy(&c.MotionSupporterIDs)
 	ds.MeetingUser_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
 	ds.MeetingUser_Number(id).Lazy(&c.Number)
 	ds.MeetingUser_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
 	ds.MeetingUser_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.MeetingUser_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
-	ds.MeetingUser_SupportedMotionIDs(id).Lazy(&c.SupportedMotionIDs)
 	ds.MeetingUser_UserID(id).Lazy(&c.UserID)
 	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
 	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
@@ -3632,6 +3647,18 @@ func (b *meetingUserBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	}
 }
 
+func (b *meetingUserBuilder) MotionSupporterList() *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MotionSupporterIDs",
+			relField: "MotionSupporterList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingUserBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
 		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
@@ -3675,18 +3702,6 @@ func (b *meetingUserBuilder) StructureLevelList() *structureLevelBuilder {
 			parent:   b,
 			idField:  "StructureLevelIDs",
 			relField: "StructureLevelList",
-			many:     true,
-		},
-	}
-}
-
-func (b *meetingUserBuilder) SupportedMotionList() *motionBuilder {
-	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "SupportedMotionIDs",
-			relField: "SupportedMotionList",
 			many:     true,
 		},
 	}
@@ -3785,7 +3800,7 @@ type Motion struct {
 	StateExtensionReferenceIDs                    []string
 	StateID                                       int
 	SubmitterIDs                                  []int
-	SupporterMeetingUserIDs                       []int
+	SupporterIDs                                  []int
 	TagIDs                                        []int
 	Text                                          string
 	TextHash                                      string
@@ -3821,7 +3836,7 @@ type Motion struct {
 	SortParent                                    *dsfetch.Maybe[Motion]
 	State                                         *MotionState
 	SubmitterList                                 []MotionSubmitter
-	SupporterMeetingUserList                      []MeetingUser
+	SupporterList                                 []MotionSupporter
 	TagList                                       []Tag
 	WorkingGroupSpeakerList                       []MotionWorkingGroupSpeaker
 }
@@ -3880,7 +3895,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_StateExtensionReferenceIDs(id).Lazy(&c.StateExtensionReferenceIDs)
 	ds.Motion_StateID(id).Lazy(&c.StateID)
 	ds.Motion_SubmitterIDs(id).Lazy(&c.SubmitterIDs)
-	ds.Motion_SupporterMeetingUserIDs(id).Lazy(&c.SupporterMeetingUserIDs)
+	ds.Motion_SupporterIDs(id).Lazy(&c.SupporterIDs)
 	ds.Motion_TagIDs(id).Lazy(&c.TagIDs)
 	ds.Motion_Text(id).Lazy(&c.Text)
 	ds.Motion_TextHash(id).Lazy(&c.TextHash)
@@ -4232,13 +4247,13 @@ func (b *motionBuilder) SubmitterList() *motionSubmitterBuilder {
 	}
 }
 
-func (b *motionBuilder) SupporterMeetingUserList() *meetingUserBuilder {
-	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+func (b *motionBuilder) SupporterList() *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "SupporterMeetingUserIDs",
-			relField: "SupporterMeetingUserList",
+			idField:  "SupporterIDs",
+			relField: "SupporterList",
 			many:     true,
 		},
 	}
@@ -5057,6 +5072,77 @@ func (b *motionSubmitterBuilder) Motion() *motionBuilder {
 func (r *Fetch) MotionSubmitter(ids ...int) *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
 		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// MotionSupporter has all fields from motion_supporter.
+type MotionSupporter struct {
+	ID            int
+	MeetingID     int
+	MeetingUserID dsfetch.Maybe[int]
+	MotionID      int
+	Meeting       *Meeting
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
+	Motion        *Motion
+}
+
+type motionSupporterBuilder struct {
+	builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]
+}
+
+func (b *motionSupporterBuilder) lazy(ds *Fetch, id int) *MotionSupporter {
+	c := MotionSupporter{}
+	ds.MotionSupporter_ID(id).Lazy(&c.ID)
+	ds.MotionSupporter_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionSupporter_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.MotionSupporter_MotionID(id).Lazy(&c.MotionID)
+	return &c
+}
+
+func (b *motionSupporterBuilder) Preload(rel builderWrapperI) *motionSupporterBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionSupporterBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
+	}
+}
+
+func (b *motionSupporterBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
+	}
+}
+
+func (b *motionSupporterBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
+	}
+}
+
+func (r *Fetch) MotionSupporter(ids ...int) *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
 			ids:   ids,
 			fetch: r,
 		},
