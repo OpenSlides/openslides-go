@@ -296,6 +296,19 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 func createKeyList(collection string, id int) ([]dskey.Key, error) {
 	fields := collectionFields[collection]
+
+	// TODO: Remove me, if the new vote service and projector service are merged
+	switch collection {
+	case "poll":
+		fields = slices.DeleteFunc(fields, func(s string) bool {
+			return s == "live_votes"
+		})
+	case "projector":
+		fields = slices.DeleteFunc(fields, func(s string) bool {
+			return s == "content"
+		})
+	}
+
 	keys := make([]dskey.Key, len(fields))
 	var err error
 	for i, field := range fields {
