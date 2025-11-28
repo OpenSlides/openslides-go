@@ -303,7 +303,7 @@ func createKeyList(collection string, id int) ([]dskey.Key, error) {
 		fields = slices.DeleteFunc(fields, func(s string) bool {
 			return s == "live_votes"
 		})
-	case "projector":
+	case "projection":
 		fields = slices.DeleteFunc(fields, func(s string) bool {
 			return s == "content"
 		})
