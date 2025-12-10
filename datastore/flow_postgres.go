@@ -118,11 +118,13 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 			})
 		}
 
-		// TODO: if collectionFields[collection] is empty (only id field
-		// requested), then the query is wrong. The comma behind id has to be
-		// deleted in this case.
+		comma := ""
+		if len(fields) > 0 {
+			comma = ","
+		}
 		sql := fmt.Sprintf(
-			`SELECT id, %s FROM "%s" WHERE id = ANY ($1) `,
+			`SELECT id%s %s FROM "%s" WHERE id = ANY ($1) `,
+			comma,
 			strings.Join(fields, ","),
 			collection,
 		)
