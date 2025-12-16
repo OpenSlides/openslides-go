@@ -270,7 +270,7 @@ func valueType(modelsType string, required bool) string {
 	case "JSON":
 		return "ValueJSON"
 
-	case "string[]", "generic-relation-list":
+	case "string[]", "text[]", "generic-relation-list":
 		return "ValueStringSlice"
 
 	default:
