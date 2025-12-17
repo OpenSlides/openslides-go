@@ -3,6 +3,7 @@ package dsmock
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
@@ -107,7 +108,7 @@ type Counter struct {
 }
 
 // NewCounter initializes a Counter.
-func NewCounter(ds flow.Getter) flow.Getter {
+func NewCounter(ds flow.Getter) *Counter {
 	return &Counter{ds: ds}
 }
 
@@ -142,6 +143,38 @@ func (ds *Counter) Requests() [][]dskey.Key {
 	defer ds.mu.Unlock()
 
 	return ds.requests
+}
+
+// PrintRequests returns all requests as a string.
+func (ds *Counter) PrintRequests() string {
+	var sb strings.Builder
+	for _, requestKeys := range ds.Requests() {
+		sb.WriteString("* ")
+		for i, key := range requestKeys {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(key.String())
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
+
+// CounterFlow is a Counter and a Flow.
+type CounterFlow struct {
+	Counter
+	flow flow.Flow
+}
+
+// NewCounterFlow initializes a CounterFlow.
+func NewCounterFlow(ds flow.Flow) *CounterFlow {
+	return &CounterFlow{Counter: Counter{ds: ds}, flow: ds}
+}
+
+// Update encapsulates and call the underling flow.
+func (ds *CounterFlow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	ds.flow.Update(ctx, updateFn)
 }
 
 // Cache caches all requested keys and only redirects keys, if they where
