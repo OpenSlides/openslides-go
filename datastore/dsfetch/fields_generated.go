@@ -6287,6 +6287,15 @@ func (r *Fetch) Organization_ResetPasswordVerboseErrors(organizationID int) *Val
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Organization_RestrictEditForwardCommittees(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "restrict_edit_forward_committees")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Organization_SamlAttrMapping(organizationID int) *ValueJSON {
 	key, err := dskey.FromParts("organization", organizationID, "saml_attr_mapping")
 	if err != nil {

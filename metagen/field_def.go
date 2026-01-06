@@ -1073,6 +1073,7 @@ var RestrictionModes = map[string]string{
 	"organization/organization_tag_ids":             "A",
 	"organization/privacy_policy":                   "A",
 	"organization/require_duplicate_from":           "A",
+	"organization/restrict_edit_forward_committees": "A",
 	"organization/saml_enabled":                     "A",
 	"organization/saml_login_button_text":           "A",
 	"organization/template_meeting_ids":             "A",

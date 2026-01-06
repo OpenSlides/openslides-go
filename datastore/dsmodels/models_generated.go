@@ -5448,6 +5448,7 @@ type Organization struct {
 	PublishedMediafileIDs         []int
 	RequireDuplicateFrom          bool
 	ResetPasswordVerboseErrors    bool
+	RestrictEditForwardCommittees bool
 	SamlAttrMapping               json.RawMessage
 	SamlEnabled                   bool
 	SamlLoginButtonText           string
@@ -5505,6 +5506,7 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_PublishedMediafileIDs(id).Lazy(&c.PublishedMediafileIDs)
 	ds.Organization_RequireDuplicateFrom(id).Lazy(&c.RequireDuplicateFrom)
 	ds.Organization_ResetPasswordVerboseErrors(id).Lazy(&c.ResetPasswordVerboseErrors)
+	ds.Organization_RestrictEditForwardCommittees(id).Lazy(&c.RestrictEditForwardCommittees)
 	ds.Organization_SamlAttrMapping(id).Lazy(&c.SamlAttrMapping)
 	ds.Organization_SamlEnabled(id).Lazy(&c.SamlEnabled)
 	ds.Organization_SamlLoginButtonText(id).Lazy(&c.SamlLoginButtonText)
