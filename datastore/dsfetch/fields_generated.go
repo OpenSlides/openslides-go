@@ -2234,7 +2234,7 @@ func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
