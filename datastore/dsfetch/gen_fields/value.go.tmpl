@@ -58,6 +58,16 @@ func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 		if err != nil {
 			return zero, fmt.Errorf("decoding value %q: %w", p, err)
 		}
+	{{- else if eq .TypeName "ValueDecimal" }}
+		var strValue string
+		if err := json.Unmarshal(p, &strValue); err != nil {
+			return zero, fmt.Errorf("decoding value %q: %w", p, err)
+		}
+
+		value, err := decimal.NewFromString(strValue)
+		if err != nil {
+			return zero, fmt.Errorf("decoding value %q: %w", p, err)
+		}
 	{{- else }}
 		var value {{.GoType}}
 		if err := json.Unmarshal(p, &value); err != nil {

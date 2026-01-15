@@ -1,10 +1,11 @@
-name: Prepare meta update PR in autoupdate repo
+name: Prepare meta
+description: Prepare meta update PR in autoupdate repo
 
 runs:
   using: "composite"
   steps:
     - name: Set up go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: "1.25"
 

@@ -34,7 +34,7 @@ var ErrNotExist = errors.New("key does not exist")
 // retrieved until it is set or unmarked.
 //
 // pendingmap.UnMarkPending(key) can be used to undo a MarkPending call. This is
-// usefull in error cases where a value should be freed for other callers.
+// useful in error cases where a value should be freed for other callers.
 //
 // To set a value, there are different methods. SetIfExist() sets values if they
 // are pending or already stored. SetIfPending() sets a value only if it is

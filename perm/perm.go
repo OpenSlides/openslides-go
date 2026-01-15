@@ -108,13 +108,13 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 func isCommitteeAdminFromMeetingID(ctx context.Context, ds *dsfetch.Fetch, userID int, meetingID int) (bool, error) {
 	committeeID, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
 	if err != nil {
-		// This is a small hack for testing. The field meeting/commitee_id
-		// is required. If it does not exist, it would indicate an invalid
-		// database. But for testing, this would mean, that each meeting
-		// would need a committee. This would create unnecessary tension to
-		// all test. If there realy would be a meeting without a committee,
-		// returning false here would be correct. So this hack does not make
-		// any problems in production.
+		// This is a small hack for testing. The field meeting/committee_id is
+		// required. If it does not exist, it would indicate an invalid
+		// database. But for testing, this would mean, that each meeting would
+		// need a committee. This would create unnecessary tension to all test.
+		// If there really would be a meeting without a committee, returning
+		// false here would be correct. So this hack does not make any problems
+		// in production.
 		return false, nil
 
 	}
@@ -264,7 +264,7 @@ func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, user
 func HasCommitteeManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID int, committeeID int) (bool, error) {
 	ids, err := ManagementLevelCommittees(ctx, ds, userID)
 	if err != nil {
-		return false, fmt.Errorf("fetching list of commitee_ids: %w", err)
+		return false, fmt.Errorf("fetching list of committee_ids: %w", err)
 	}
 
 	if slices.Contains(ids, committeeID) {

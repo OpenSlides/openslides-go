@@ -25,17 +25,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25"
 
       # This is done, because setup-action will be called from here
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: current-go-repository
           ref: ${{ github.ref_name }}
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/${{ inputs.repository }}
           path: service-repository
@@ -63,7 +63,7 @@ jobs:
           private_key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
 
       - name: Create or update PR
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           path: service-repository
           token: ${{ steps.generate-token.outputs.token }}

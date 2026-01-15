@@ -209,7 +209,8 @@ func NewWait(waiter chan error) func(flow.Getter) flow.Getter {
 	}
 }
 
-// Get retuns the values from the getter as soon, as there is a signal on the channel.
+// Get returns the values from the getter as soon, as there is a signal on the
+// channel.
 func (w *Wait) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	select {
 	case <-ctx.Done():

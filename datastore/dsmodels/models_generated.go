@@ -4,6 +4,7 @@ package dsmodels
 import (
 	"encoding/json"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/shopspring/decimal"
 )
 
 // ActionWorker has all fields from action_worker.
@@ -1651,6 +1652,7 @@ type Meeting struct {
 	MotionPollProjectionNameOrderFirst           string
 	MotionStateIDs                               []int
 	MotionSubmitterIDs                           []int
+	MotionSupporterIDs                           []int
 	MotionWorkflowIDs                            []int
 	MotionWorkingGroupSpeakerIDs                 []int
 	MotionsAmendmentsEnabled                     bool
@@ -1669,6 +1671,8 @@ type Meeting struct {
 	MotionsEnableOriginMotionDisplay             bool
 	MotionsEnableReasonOnProjector               bool
 	MotionsEnableRecommendationOnProjector       bool
+	MotionsEnableRestrictedEditorForManager      bool
+	MotionsEnableRestrictedEditorForNonManager   bool
 	MotionsEnableSideboxOnProjector              bool
 	MotionsEnableTextOnProjector                 bool
 	MotionsEnableWorkingGroupSpeaker             bool
@@ -1807,6 +1811,7 @@ type Meeting struct {
 	MotionPollDefaultGroupList                   []Group
 	MotionStateList                              []MotionState
 	MotionSubmitterList                          []MotionSubmitter
+	MotionSupporterList                          []MotionSupporter
 	MotionWorkflowList                           []MotionWorkflow
 	MotionWorkingGroupSpeakerList                []MotionWorkingGroupSpeaker
 	MotionsDefaultAmendmentWorkflow              *MotionWorkflow
@@ -1989,6 +1994,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionPollProjectionNameOrderFirst(id).Lazy(&c.MotionPollProjectionNameOrderFirst)
 	ds.Meeting_MotionStateIDs(id).Lazy(&c.MotionStateIDs)
 	ds.Meeting_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
+	ds.Meeting_MotionSupporterIDs(id).Lazy(&c.MotionSupporterIDs)
 	ds.Meeting_MotionWorkflowIDs(id).Lazy(&c.MotionWorkflowIDs)
 	ds.Meeting_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
 	ds.Meeting_MotionsAmendmentsEnabled(id).Lazy(&c.MotionsAmendmentsEnabled)
@@ -2007,6 +2013,8 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionsEnableOriginMotionDisplay(id).Lazy(&c.MotionsEnableOriginMotionDisplay)
 	ds.Meeting_MotionsEnableReasonOnProjector(id).Lazy(&c.MotionsEnableReasonOnProjector)
 	ds.Meeting_MotionsEnableRecommendationOnProjector(id).Lazy(&c.MotionsEnableRecommendationOnProjector)
+	ds.Meeting_MotionsEnableRestrictedEditorForManager(id).Lazy(&c.MotionsEnableRestrictedEditorForManager)
+	ds.Meeting_MotionsEnableRestrictedEditorForNonManager(id).Lazy(&c.MotionsEnableRestrictedEditorForNonManager)
 	ds.Meeting_MotionsEnableSideboxOnProjector(id).Lazy(&c.MotionsEnableSideboxOnProjector)
 	ds.Meeting_MotionsEnableTextOnProjector(id).Lazy(&c.MotionsEnableTextOnProjector)
 	ds.Meeting_MotionsEnableWorkingGroupSpeaker(id).Lazy(&c.MotionsEnableWorkingGroupSpeaker)
@@ -2800,6 +2808,18 @@ func (b *meetingBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	}
 }
 
+func (b *meetingBuilder) MotionSupporterList() *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MotionSupporterIDs",
+			relField: "MotionSupporterList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingBuilder) MotionWorkflowList() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
 		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
@@ -3496,27 +3516,27 @@ type MeetingUser struct {
 	MeetingID                     int
 	MotionEditorIDs               []int
 	MotionSubmitterIDs            []int
+	MotionSupporterIDs            []int
 	MotionWorkingGroupSpeakerIDs  []int
 	Number                        string
 	PersonalNoteIDs               []int
 	SpeakerIDs                    []int
 	StructureLevelIDs             []int
-	SupportedMotionIDs            []int
 	UserID                        int
 	VoteDelegatedToID             dsfetch.Maybe[int]
 	VoteDelegationsFromIDs        []int
-	VoteWeight                    string
+	VoteWeight                    decimal.Decimal
 	AssignmentCandidateList       []AssignmentCandidate
 	ChatMessageList               []ChatMessage
 	GroupList                     []Group
 	Meeting                       *Meeting
 	MotionEditorList              []MotionEditor
 	MotionSubmitterList           []MotionSubmitter
+	MotionSupporterList           []MotionSupporter
 	MotionWorkingGroupSpeakerList []MotionWorkingGroupSpeaker
 	PersonalNoteList              []PersonalNote
 	SpeakerList                   []Speaker
 	StructureLevelList            []StructureLevel
-	SupportedMotionList           []Motion
 	User                          *User
 	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
 	VoteDelegationsFromList       []MeetingUser
@@ -3538,12 +3558,12 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
 	ds.MeetingUser_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MeetingUser_MotionEditorIDs(id).Lazy(&c.MotionEditorIDs)
 	ds.MeetingUser_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
+	ds.MeetingUser_MotionSupporterIDs(id).Lazy(&c.MotionSupporterIDs)
 	ds.MeetingUser_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
 	ds.MeetingUser_Number(id).Lazy(&c.Number)
 	ds.MeetingUser_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
 	ds.MeetingUser_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.MeetingUser_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
-	ds.MeetingUser_SupportedMotionIDs(id).Lazy(&c.SupportedMotionIDs)
 	ds.MeetingUser_UserID(id).Lazy(&c.UserID)
 	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
 	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
@@ -3627,6 +3647,18 @@ func (b *meetingUserBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	}
 }
 
+func (b *meetingUserBuilder) MotionSupporterList() *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MotionSupporterIDs",
+			relField: "MotionSupporterList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingUserBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
 		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
@@ -3670,18 +3702,6 @@ func (b *meetingUserBuilder) StructureLevelList() *structureLevelBuilder {
 			parent:   b,
 			idField:  "StructureLevelIDs",
 			relField: "StructureLevelList",
-			many:     true,
-		},
-	}
-}
-
-func (b *meetingUserBuilder) SupportedMotionList() *motionBuilder {
-	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "SupportedMotionIDs",
-			relField: "SupportedMotionList",
 			many:     true,
 		},
 	}
@@ -3780,7 +3800,7 @@ type Motion struct {
 	StateExtensionReferenceIDs                    []string
 	StateID                                       int
 	SubmitterIDs                                  []int
-	SupporterMeetingUserIDs                       []int
+	SupporterIDs                                  []int
 	TagIDs                                        []int
 	Text                                          string
 	TextHash                                      string
@@ -3816,7 +3836,7 @@ type Motion struct {
 	SortParent                                    *dsfetch.Maybe[Motion]
 	State                                         *MotionState
 	SubmitterList                                 []MotionSubmitter
-	SupporterMeetingUserList                      []MeetingUser
+	SupporterList                                 []MotionSupporter
 	TagList                                       []Tag
 	WorkingGroupSpeakerList                       []MotionWorkingGroupSpeaker
 }
@@ -3875,7 +3895,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_StateExtensionReferenceIDs(id).Lazy(&c.StateExtensionReferenceIDs)
 	ds.Motion_StateID(id).Lazy(&c.StateID)
 	ds.Motion_SubmitterIDs(id).Lazy(&c.SubmitterIDs)
-	ds.Motion_SupporterMeetingUserIDs(id).Lazy(&c.SupporterMeetingUserIDs)
+	ds.Motion_SupporterIDs(id).Lazy(&c.SupporterIDs)
 	ds.Motion_TagIDs(id).Lazy(&c.TagIDs)
 	ds.Motion_Text(id).Lazy(&c.Text)
 	ds.Motion_TextHash(id).Lazy(&c.TextHash)
@@ -4227,13 +4247,13 @@ func (b *motionBuilder) SubmitterList() *motionSubmitterBuilder {
 	}
 }
 
-func (b *motionBuilder) SupporterMeetingUserList() *meetingUserBuilder {
-	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+func (b *motionBuilder) SupporterList() *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "SupporterMeetingUserIDs",
-			relField: "SupporterMeetingUserList",
+			idField:  "SupporterIDs",
+			relField: "SupporterList",
 			many:     true,
 		},
 	}
@@ -4722,11 +4742,11 @@ func (r *Fetch) MotionCommentSection(ids ...int) *motionCommentSectionBuilder {
 type MotionEditor struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID int
+	MeetingUserID dsfetch.Maybe[int]
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Motion        *Motion
 }
 
@@ -4815,6 +4835,7 @@ type MotionState struct {
 	SetWorkflowTimestamp             bool
 	ShowRecommendationExtensionField bool
 	ShowStateExtensionField          bool
+	StateButtonLabel                 string
 	SubmitterWithdrawBackIDs         []int
 	SubmitterWithdrawStateID         dsfetch.Maybe[int]
 	Weight                           int
@@ -4858,6 +4879,7 @@ func (b *motionStateBuilder) lazy(ds *Fetch, id int) *MotionState {
 	ds.MotionState_SetWorkflowTimestamp(id).Lazy(&c.SetWorkflowTimestamp)
 	ds.MotionState_ShowRecommendationExtensionField(id).Lazy(&c.ShowRecommendationExtensionField)
 	ds.MotionState_ShowStateExtensionField(id).Lazy(&c.ShowStateExtensionField)
+	ds.MotionState_StateButtonLabel(id).Lazy(&c.StateButtonLabel)
 	ds.MotionState_SubmitterWithdrawBackIDs(id).Lazy(&c.SubmitterWithdrawBackIDs)
 	ds.MotionState_SubmitterWithdrawStateID(id).Lazy(&c.SubmitterWithdrawStateID)
 	ds.MotionState_Weight(id).Lazy(&c.Weight)
@@ -4987,11 +5009,11 @@ func (r *Fetch) MotionState(ids ...int) *motionStateBuilder {
 type MotionSubmitter struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID int
+	MeetingUserID dsfetch.Maybe[int]
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Motion        *Motion
 }
 
@@ -5050,6 +5072,77 @@ func (b *motionSubmitterBuilder) Motion() *motionBuilder {
 func (r *Fetch) MotionSubmitter(ids ...int) *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
 		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// MotionSupporter has all fields from motion_supporter.
+type MotionSupporter struct {
+	ID            int
+	MeetingID     int
+	MeetingUserID dsfetch.Maybe[int]
+	MotionID      int
+	Meeting       *Meeting
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
+	Motion        *Motion
+}
+
+type motionSupporterBuilder struct {
+	builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]
+}
+
+func (b *motionSupporterBuilder) lazy(ds *Fetch, id int) *MotionSupporter {
+	c := MotionSupporter{}
+	ds.MotionSupporter_ID(id).Lazy(&c.ID)
+	ds.MotionSupporter_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionSupporter_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.MotionSupporter_MotionID(id).Lazy(&c.MotionID)
+	return &c
+}
+
+func (b *motionSupporterBuilder) Preload(rel builderWrapperI) *motionSupporterBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *motionSupporterBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
+	}
+}
+
+func (b *motionSupporterBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
+	}
+}
+
+func (b *motionSupporterBuilder) Motion() *motionBuilder {
+	return &motionBuilder{
+		builder: builder[motionBuilder, *motionBuilder, Motion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MotionID",
+			relField: "Motion",
+		},
+	}
+}
+
+func (r *Fetch) MotionSupporter(ids ...int) *motionSupporterBuilder {
+	return &motionSupporterBuilder{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
 			ids:   ids,
 			fetch: r,
 		},
@@ -5164,11 +5257,11 @@ func (r *Fetch) MotionWorkflow(ids ...int) *motionWorkflowBuilder {
 type MotionWorkingGroupSpeaker struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID int
+	MeetingUserID dsfetch.Maybe[int]
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
-	MeetingUser   *MeetingUser
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Motion        *Motion
 }
 
@@ -5235,17 +5328,17 @@ func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeaker
 
 // Option has all fields from option.
 type Option struct {
-	Abstain                    string
+	Abstain                    decimal.Decimal
 	ContentObjectID            dsfetch.Maybe[string]
 	ID                         int
 	MeetingID                  int
-	No                         string
+	No                         decimal.Decimal
 	PollID                     dsfetch.Maybe[int]
 	Text                       string
 	UsedAsGlobalOptionInPollID dsfetch.Maybe[int]
 	VoteIDs                    []int
 	Weight                     int
-	Yes                        string
+	Yes                        decimal.Decimal
 	Meeting                    *Meeting
 	Poll                       *dsfetch.Maybe[Poll]
 	UsedAsGlobalOptionInPoll   *dsfetch.Maybe[Poll]
@@ -5333,54 +5426,57 @@ func (r *Fetch) Option(ids ...int) *optionBuilder {
 
 // Organization has all fields from organization.
 type Organization struct {
-	ActiveMeetingIDs           []int
-	ArchivedMeetingIDs         []int
-	CommitteeIDs               []int
-	DefaultLanguage            string
-	Description                string
-	EnableAnonymous            bool
-	EnableChat                 bool
-	EnableElectronicVoting     bool
-	GenderIDs                  []int
-	ID                         int
-	LegalNotice                string
-	LimitOfMeetings            int
-	LimitOfUsers               int
-	LoginText                  string
-	MediafileIDs               []int
-	Name                       string
-	OrganizationTagIDs         []int
-	PrivacyPolicy              string
-	PublishedMediafileIDs      []int
-	RequireDuplicateFrom       bool
-	ResetPasswordVerboseErrors bool
-	SamlAttrMapping            json.RawMessage
-	SamlEnabled                bool
-	SamlLoginButtonText        string
-	SamlMetadataIDp            string
-	SamlMetadataSp             string
-	SamlPrivateKey             string
-	TemplateMeetingIDs         []int
-	ThemeID                    int
-	ThemeIDs                   []int
-	Url                        string
-	UserIDs                    []int
-	UsersEmailBody             string
-	UsersEmailReplyto          string
-	UsersEmailSender           string
-	UsersEmailSubject          string
-	VoteDecryptPublicMainKey   string
-	ActiveMeetingList          []Meeting
-	ArchivedMeetingList        []Meeting
-	CommitteeList              []Committee
-	GenderList                 []Gender
-	MediafileList              []Mediafile
-	OrganizationTagList        []OrganizationTag
-	PublishedMediafileList     []Mediafile
-	TemplateMeetingList        []Meeting
-	Theme                      *Theme
-	ThemeList                  []Theme
-	UserList                   []User
+	ActiveMeetingIDs                        []int
+	ArchivedMeetingIDs                      []int
+	CommitteeIDs                            []int
+	DefaultLanguage                         string
+	Description                             string
+	DisableForwardWithAttachments           bool
+	EnableAnonymous                         bool
+	EnableChat                              bool
+	EnableElectronicVoting                  bool
+	GenderIDs                               []int
+	ID                                      int
+	LegalNotice                             string
+	LimitOfMeetings                         int
+	LimitOfUsers                            int
+	LoginText                               string
+	MediafileIDs                            []int
+	Name                                    string
+	OrganizationTagIDs                      []int
+	PrivacyPolicy                           string
+	PublishedMediafileIDs                   []int
+	RequireDuplicateFrom                    bool
+	ResetPasswordVerboseErrors              bool
+	RestrictEditForwardCommittees           bool
+	RestrictEditingSameLevelCommitteeAdmins bool
+	SamlAttrMapping                         json.RawMessage
+	SamlEnabled                             bool
+	SamlLoginButtonText                     string
+	SamlMetadataIDp                         string
+	SamlMetadataSp                          string
+	SamlPrivateKey                          string
+	TemplateMeetingIDs                      []int
+	ThemeID                                 int
+	ThemeIDs                                []int
+	Url                                     string
+	UserIDs                                 []int
+	UsersEmailBody                          string
+	UsersEmailReplyto                       string
+	UsersEmailSender                        string
+	UsersEmailSubject                       string
+	VoteDecryptPublicMainKey                string
+	ActiveMeetingList                       []Meeting
+	ArchivedMeetingList                     []Meeting
+	CommitteeList                           []Committee
+	GenderList                              []Gender
+	MediafileList                           []Mediafile
+	OrganizationTagList                     []OrganizationTag
+	PublishedMediafileList                  []Mediafile
+	TemplateMeetingList                     []Meeting
+	Theme                                   *Theme
+	ThemeList                               []Theme
+	UserList                                []User
 }
 
 type organizationBuilder struct {
@@ -5394,6 +5490,7 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
 	ds.Organization_DefaultLanguage(id).Lazy(&c.DefaultLanguage)
 	ds.Organization_Description(id).Lazy(&c.Description)
+	ds.Organization_DisableForwardWithAttachments(id).Lazy(&c.DisableForwardWithAttachments)
 	ds.Organization_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
 	ds.Organization_EnableChat(id).Lazy(&c.EnableChat)
 	ds.Organization_EnableElectronicVoting(id).Lazy(&c.EnableElectronicVoting)
@@ -5410,6 +5507,8 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_PublishedMediafileIDs(id).Lazy(&c.PublishedMediafileIDs)
 	ds.Organization_RequireDuplicateFrom(id).Lazy(&c.RequireDuplicateFrom)
 	ds.Organization_ResetPasswordVerboseErrors(id).Lazy(&c.ResetPasswordVerboseErrors)
+	ds.Organization_RestrictEditForwardCommittees(id).Lazy(&c.RestrictEditForwardCommittees)
+	ds.Organization_RestrictEditingSameLevelCommitteeAdmins(id).Lazy(&c.RestrictEditingSameLevelCommitteeAdmins)
 	ds.Organization_SamlAttrMapping(id).Lazy(&c.SamlAttrMapping)
 	ds.Organization_SamlEnabled(id).Lazy(&c.SamlEnabled)
 	ds.Organization_SamlLoginButtonText(id).Lazy(&c.SamlLoginButtonText)
@@ -5780,9 +5879,9 @@ type Poll struct {
 	VotedIDs              []int
 	VotesRaw              string
 	VotesSignature        string
-	Votescast             string
-	Votesinvalid          string
-	Votesvalid            string
+	Votescast             decimal.Decimal
+	Votesinvalid          decimal.Decimal
+	Votesvalid            decimal.Decimal
 	EntitledGroupList     []Group
 	GlobalOption          *dsfetch.Maybe[Option]
 	Meeting               *Meeting
@@ -7273,7 +7372,7 @@ type User struct {
 	CommitteeIDs                []int
 	CommitteeManagementIDs      []int
 	DefaultPassword             string
-	DefaultVoteWeight           string
+	DefaultVoteWeight           decimal.Decimal
 	DelegatedVoteIDs            []int
 	Email                       string
 	External                    bool
@@ -7552,7 +7651,7 @@ type Vote struct {
 	UserID          dsfetch.Maybe[int]
 	UserToken       string
 	Value           string
-	Weight          string
+	Weight          decimal.Decimal
 	DelegatedUser   *dsfetch.Maybe[User]
 	Meeting         *Meeting
 	Option          *Option

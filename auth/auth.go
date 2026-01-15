@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -131,14 +132,9 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return a.AuthenticatedContext(ctx, 0), nil
 	}
 
-	_, sessionIDs, err := a.logedoutSessions.Receive(ctx, 0)
-	if err != nil {
-		return nil, fmt.Errorf("getting already logged out sessions: %w", err)
-	}
-	for _, sid := range sessionIDs {
-		if sid == p.SessionID {
-			return nil, &authError{"invalid session", nil}
-		}
+	cid, sessionIDs := a.logedoutSessions.ReceiveAll()
+	if slices.Contains(sessionIDs, p.SessionID) {
+		return nil, &authError{"invalid session", nil}
 	}
 
 	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
@@ -146,19 +142,16 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	go func() {
 		defer cancelCtx()
 
-		var cid uint64
 		var sessionIDs []string
 		var err error
 		for {
-			cid, sessionIDs, err = a.logedoutSessions.Receive(ctx, cid)
+			cid, sessionIDs, err = a.logedoutSessions.ReceiveSince(ctx, cid)
 			if err != nil {
 				return
 			}
 
-			for _, sid := range sessionIDs {
-				if sid == p.SessionID {
-					return
-				}
+			if slices.Contains(sessionIDs, p.SessionID) {
+				return
 			}
 		}
 	}()

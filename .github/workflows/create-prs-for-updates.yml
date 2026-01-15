@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - staging/4*
+      - staging**
 
 jobs:
   create-pull-requests:

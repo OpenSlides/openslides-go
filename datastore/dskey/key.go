@@ -103,7 +103,7 @@ func (k Key) CollectionField() string {
 	return collectionFields[cfIdx].collection + "/" + collectionFields[cfIdx].field
 }
 
-// IDField retuns the the /id field for the key.
+// IDField returns the the /id field for the key.
 func (k Key) IDField() Key {
 	idCfID := collectionFieldToID(k.Collection() + "/id")
 

@@ -1,4 +1,4 @@
-// Package metagen contains go definitions automaticly created from the meta
+// Package metagen contains go definitions automatically created from the meta
 // repository.
 package metagen
 
