@@ -1,4 +1,4 @@
-// Code generated from models.yml DO NOT EDIT.
+// Code generated from meta permissions. DO NOT EDIT.
 package perm
 
 const (

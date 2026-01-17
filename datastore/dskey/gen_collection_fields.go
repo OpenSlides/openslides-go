@@ -1,4 +1,4 @@
-// Code generated with models.yml DO NOT EDIT.
+// Code generated from meta/collections. DO NOT EDIT.
 package dskey
 
 var collectionFields = [...]collectionField{

@@ -1,45 +1,88 @@
-package models
+package collection
 
 import (
 	_ "embed" // needed for embeding
 	"fmt"
-	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/goccy/go-yaml"
 )
 
-// Unmarshal parses the content of models.yml to a datastruct.q
-func Unmarshal(r io.Reader) (map[string]Model, error) {
-	var m map[string]Model
-
-	var tmp map[string]interface{}
-	if err := yaml.NewDecoder(r).Decode(&tmp); err != nil {
-		return m, err
-	}
-
-	if _, ok := tmp["_meta"]; ok {
-		delete(tmp, "_meta")
-	}
-
-	cleanYml, err := yaml.Marshal(tmp)
+func openMetaFile(metaPath string) ([]byte, error) {
+	content, err := os.ReadFile(filepath.Join(metaPath, "collection-meta.yml"))
 	if err != nil {
-		return m, err
+		return nil, fmt.Errorf("reading file: %w", err)
 	}
 
-	if err := yaml.Unmarshal(cleanYml, &m); err != nil {
-		return nil, fmt.Errorf("decoding models: %w", err)
-	}
-	return m, nil
+	return content, nil
 }
 
-// Model represents one model from models.yml.
-type Model struct {
+func openWithMeta(path string, meta []byte) (Collection, error) {
+	fileContent, err := os.ReadFile(path)
+	if err != nil {
+		return Collection{}, fmt.Errorf("open collection: %w", err)
+	}
+
+	combined := append(meta, []byte("\n")...)
+	combined = append(combined, []byte("\ncollection:\n")...)
+	combined = append(combined, indent(fileContent)...)
+
+	var wrapper struct {
+		Collection Collection `yaml:"collection"`
+	}
+
+	if err = yaml.Unmarshal(combined, &wrapper); err != nil {
+		return Collection{}, fmt.Errorf("parse yml: %w", err)
+	}
+
+	return wrapper.Collection, nil
+}
+
+func indent(content []byte) []byte {
+	lines := strings.Split(string(content), "\n")
+	indent := strings.Repeat(" ", 2)
+	for i, line := range lines {
+		if line != "" {
+			lines[i] = indent + line
+		}
+	}
+	return []byte(strings.Join(lines, "\n"))
+}
+
+// Collections returns all collections.
+func Collections(meta string) (map[string]Collection, error) {
+	metaContent, err := openMetaFile(meta)
+	if err != nil {
+		return nil, fmt.Errorf("open collection meta data: %w", err)
+	}
+
+	collections, err := os.ReadDir(filepath.Join(meta, "collections"))
+	if err != nil {
+		return nil, fmt.Errorf("reading collections: %w", err)
+	}
+
+	all := make(map[string]Collection)
+	for _, collection := range collections {
+		c, err := openWithMeta(filepath.Join(meta, "collections", collection.Name()), metaContent)
+		if err != nil {
+			return nil, fmt.Errorf("reading collection %s: %w", collection.Name(), err)
+		}
+		nameWithoutExt := strings.TrimSuffix(collection.Name(), ".yml")
+		all[nameWithoutExt] = c
+	}
+
+	return all, nil
+}
+
+// Collection represents collection from meta/collection.
+type Collection struct {
 	Fields map[string]*Field
 }
 
-// UnmarshalYAML decodes a yaml model to models.Model.
-func (m *Model) UnmarshalYAML(node []byte) error {
+// UnmarshalYAML decodes a yaml collection.
+func (m *Collection) UnmarshalYAML(node []byte) error {
 	return yaml.Unmarshal(node, &m.Fields)
 }
 
@@ -123,7 +166,7 @@ type ToCollectionField struct {
 	ToField    ToField `yaml:"field"`
 }
 
-// UnmarshalYAML decodes the models.yml to a To object.
+// UnmarshalYAML decodes the collection to a To object.
 func (t *ToCollectionField) UnmarshalYAML(node []byte) error {
 	var s string
 	if err := yaml.Unmarshal(node, &s); err == nil {
@@ -154,7 +197,7 @@ type ToField struct {
 	Type string `yaml:"type"`
 }
 
-// UnmarshalYAML decodes the models.yml to a ToField object.
+// UnmarshalYAML decodes the collection to a ToField object.
 func (t *ToField) UnmarshalYAML(node []byte) error {
 	var s string
 	if err := yaml.Unmarshal(node, &s); err == nil {
@@ -197,7 +240,7 @@ type To struct {
 	CollectionField ToCollectionField
 }
 
-// UnmarshalYAML decodes the models.yml to a To object.
+// UnmarshalYAML decodes the collection to a To object.
 func (t *To) UnmarshalYAML(node []byte) error {
 	var s string
 	if err := yaml.Unmarshal(node, &s); err == nil {

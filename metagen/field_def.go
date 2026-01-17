@@ -1,4 +1,4 @@
-// Code generated with models.yml DO NOT EDIT.
+// Code generated from meta collections. DO NOT EDIT.
 package metagen
 
 // RelatoinFields is a map from are all (single) relation fields to the fields,

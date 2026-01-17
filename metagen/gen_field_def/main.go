@@ -12,28 +12,18 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-go/models"
+	"github.com/OpenSlides/openslides-go/collection"
 )
 
 func main() {
-	r, err := openModelYML()
-	if err != nil {
-		log.Fatalf("Can not load models defition: %v", err)
-	}
-	defer r.Close()
-
-	td, err := parse(r)
+	collectionFields, err := parse("../meta")
 	if err != nil {
 		log.Fatalf("Can not parse model definition: %v", err)
 	}
 
-	if err := writeFile(os.Stdout, td); err != nil {
+	if err := writeFile(os.Stdout, collectionFields); err != nil {
 		log.Fatalf("Can not write result: %v", err)
 	}
-}
-
-func openModelYML() (io.ReadCloser, error) {
-	return os.Open("../meta/models.yml")
 }
 
 type restriction struct {
@@ -57,10 +47,10 @@ type templateData struct {
 
 // parse returns all relation-list and generic-relation-list fields and where
 // they point to.
-func parse(r io.Reader) (td templateData, err error) {
-	inData, err := models.Unmarshal(r)
+func parse(metaPath string) (td templateData, err error) {
+	inData, err := collection.Collections(metaPath)
 	if err != nil {
-		return td, fmt.Errorf("unmarshalling models.yml: %w", err)
+		return td, fmt.Errorf("parse collections: %w", err)
 	}
 
 	td.Relation = make(map[string]string)
@@ -80,7 +70,7 @@ func parse(r io.Reader) (td templateData, err error) {
 			}
 
 			switch v := relation.(type) {
-			case *models.AttributeRelation:
+			case *collection.AttributeRelation:
 				to := v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
 				if relation.List() {
 					td.RelationList[collectionField] = to
@@ -88,7 +78,7 @@ func parse(r io.Reader) (td templateData, err error) {
 					td.Relation[collectionField] = to
 				}
 
-			case *models.AttributeGenericRelation:
+			case *collection.AttributeGenericRelation:
 				fields := make(map[string]string)
 				for _, toField := range v.ToCollections() {
 					fields[toField.Collection] = toField.ToField.Name
@@ -116,7 +106,7 @@ func parse(r io.Reader) (td templateData, err error) {
 	return td, nil
 }
 
-const tpl = `// Code generated with models.yml DO NOT EDIT.
+const tpl = `// Code generated from meta collections. DO NOT EDIT.
 package metagen
 
 // RelatoinFields is a map from are all (single) relation fields to the fields,
