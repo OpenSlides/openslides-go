@@ -3,15 +3,15 @@ module github.com/OpenSlides/openslides-go
 go 1.25.0
 
 require (
-	github.com/goccy/go-yaml v1.18.0
+	github.com/goccy/go-yaml v1.19.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/gomodule/redigo v1.9.3
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/ostcar/topic v0.6.0
 	github.com/shopspring/decimal v1.4.0
-	golang.org/x/sync v0.18.0
-	golang.org/x/sys v0.38.0
+	golang.org/x/sync v0.19.0
+	golang.org/x/sys v0.39.0
 )
 
 require (
