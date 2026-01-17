@@ -141,6 +141,7 @@ var RelationFields = map[string]string{
 	"poll_config_rating_approval/poll_id":                                    "poll/config_id",
 	"poll_config_rating_score/poll_id":                                       "poll/config_id",
 	"poll_config_selection/poll_id":                                          "poll/config_id",
+	"poll_config_stv_scottish/poll_id":                                       "poll/config_id",
 	"projection/current_projector_id":                                        "projector/current_projection_ids",
 	"projection/history_projector_id":                                        "projector/history_projection_ids",
 	"projection/meeting_id":                                                  "meeting/all_projection_ids",
@@ -353,6 +354,7 @@ var RelationListFields = map[string]string{
 	"poll_config_rating_approval/option_ids":                   "poll_config_option/poll_config_id",
 	"poll_config_rating_score/option_ids":                      "poll_config_option/poll_config_id",
 	"poll_config_selection/option_ids":                         "poll_config_option/poll_config_id",
+	"poll_config_stv_scottish/option_ids":                      "poll_config_option/poll_config_id",
 	"projector/current_projection_ids":                         "projection/current_projector_id",
 	"projector/history_projection_ids":                         "projection/history_projector_id",
 	"projector/preview_projection_ids":                         "projection/preview_projector_id",
@@ -381,9 +383,9 @@ var GenericRelationFields = map[string]map[string]string{
 	"list_of_speakers/content_object_id": {"assignment": "list_of_speakers_id", "meeting_mediafile": "list_of_speakers_id", "motion": "list_of_speakers_id", "motion_block": "list_of_speakers_id", "topic": "list_of_speakers_id"},
 	"mediafile/owner_id":                 {"meeting": "mediafile_ids", "organization": "mediafile_ids"},
 	"personal_note/content_object_id":    {"motion": "personal_note_ids"},
-	"poll/config_id":                     {"poll_config_approval": "poll_id", "poll_config_rating_approval": "poll_id", "poll_config_rating_score": "poll_id", "poll_config_selection": "poll_id"},
+	"poll/config_id":                     {"poll_config_approval": "poll_id", "poll_config_rating_approval": "poll_id", "poll_config_rating_score": "poll_id", "poll_config_selection": "poll_id", "poll_config_stv_scottish": "poll_id"},
 	"poll/content_object_id":             {"assignment": "poll_ids", "motion": "poll_ids", "topic": "poll_ids"},
-	"poll_config_option/poll_config_id":  {"poll_config_approval": "option_ids", "poll_config_rating_approval": "option_ids", "poll_config_rating_score": "option_ids", "poll_config_selection": "option_ids"},
+	"poll_config_option/poll_config_id":  {"poll_config_approval": "option_ids", "poll_config_rating_approval": "option_ids", "poll_config_rating_score": "option_ids", "poll_config_selection": "option_ids", "poll_config_stv_scottish": "option_ids"},
 	"projection/content_object_id":       {"agenda_item": "projection_ids", "assignment": "projection_ids", "list_of_speakers": "projection_ids", "meeting": "projection_ids", "meeting_mediafile": "projection_ids", "motion": "projection_ids", "motion_block": "projection_ids", "poll": "projection_ids", "projector_countdown": "projection_ids", "projector_message": "projection_ids", "topic": "projection_ids"},
 }
 
@@ -1164,6 +1166,12 @@ var RestrictionModes = map[string]string{
 	"poll_config_selection/min_options_amount": "A",
 	"poll_config_selection/option_ids":         "A",
 	"poll_config_selection/poll_id":            "A",
+
+	// poll_config_stv_scottish
+	"poll_config_stv_scottish/id":         "A",
+	"poll_config_stv_scottish/option_ids": "A",
+	"poll_config_stv_scottish/poll_id":    "A",
+	"poll_config_stv_scottish/posts":      "A",
 
 	// projection
 	"projection/content_object_id":    "A",
