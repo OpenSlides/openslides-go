@@ -6248,6 +6248,66 @@ func (r *Fetch) PollConfigSelection(ids ...int) *pollConfigSelectionBuilder {
 	}
 }
 
+// PollConfigStvScottish has all fields from poll_config_stv_scottish.
+type PollConfigStvScottish struct {
+	ID         int
+	OptionIDs  []int
+	PollID     int
+	Posts      int
+	OptionList []PollConfigOption
+	Poll       *Poll
+}
+
+type pollConfigStvScottishBuilder struct {
+	builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]
+}
+
+func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, id int) *PollConfigStvScottish {
+	c := PollConfigStvScottish{}
+	ds.PollConfigStvScottish_ID(id).Lazy(&c.ID)
+	ds.PollConfigStvScottish_OptionIDs(id).Lazy(&c.OptionIDs)
+	ds.PollConfigStvScottish_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigStvScottish_Posts(id).Lazy(&c.Posts)
+	return &c
+}
+
+func (b *pollConfigStvScottishBuilder) Preload(rel builderWrapperI) *pollConfigStvScottishBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigStvScottishBuilder) OptionList() *pollConfigOptionBuilder {
+	return &pollConfigOptionBuilder{
+		builder: builder[pollConfigOptionBuilder, *pollConfigOptionBuilder, PollConfigOption]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "OptionIDs",
+			relField: "OptionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *pollConfigStvScottishBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigStvScottish(ids ...int) *pollConfigStvScottishBuilder {
+	return &pollConfigStvScottishBuilder{
+		builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
 // Projection has all fields from projection.
 type Projection struct {
 	ContentObjectID    string

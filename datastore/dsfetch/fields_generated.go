@@ -6746,6 +6746,42 @@ func (r *Fetch) PollConfigSelection_PollID(pollConfigSelectionID int) *ValueInt 
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) PollConfigStvScottish_ID(pollConfigStvScottishID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) PollConfigStvScottish_OptionIDs(pollConfigStvScottishID int) *ValueIntSlice {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "option_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) PollConfigStvScottish_PollID(pollConfigStvScottishID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "poll_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) PollConfigStvScottish_Posts(pollConfigStvScottishID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "posts")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
 func (r *Fetch) Poll_AllowInvalid(pollID int) *ValueBool {
 	key, err := dskey.FromParts("poll", pollID, "allow_invalid")
 	if err != nil {
