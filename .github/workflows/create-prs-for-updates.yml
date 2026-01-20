@@ -29,6 +29,5 @@ jobs:
             assignee: ostcar
           - repository: openslides-search-service
             assignee: bastianjoel
-          # Uncomment me once projector-service goes live
-          #- repository: openslides-projector-service
-          #  assignee: bastianjoel
+          - repository: openslides-projector-service
+            assignee: bastianjoel
