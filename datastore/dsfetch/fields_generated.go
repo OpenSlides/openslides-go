@@ -5576,6 +5576,15 @@ func (r *Fetch) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Motion_DiffVersion(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "diff_version")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_EditorIDs(motionID int) *ValueIntSlice {
 	key, err := dskey.FromParts("motion", motionID, "editor_ids")
 	if err != nil {
