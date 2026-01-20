@@ -891,6 +891,7 @@ var RestrictionModes = map[string]string{
 	"motion/change_recommendation_ids":                         "C",
 	"motion/comment_ids":                                       "C",
 	"motion/created":                                           "C",
+	"motion/diff_version":                                      "C",
 	"motion/identical_motion_ids":                              "C",
 	"motion/last_modified":                                     "C",
 	"motion/lead_motion_id":                                    "C",
