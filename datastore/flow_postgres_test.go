@@ -2,101 +2,137 @@ package datastore_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/OpenSlides/openslides-go/datastore"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
-	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/pgtest"
 	"github.com/OpenSlides/openslides-go/environment"
-	"github.com/jackc/pgx/v5"
-	"github.com/ory/dockertest/v3"
 )
 
-func TestSourcePostgresGetSomeData(t *testing.T) {
+func TestFlowPostgres(t *testing.T) {
+	ctx := t.Context()
+
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("Postgres Test")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	tp, err := newTestPostgres(ctx)
+	tp, err := pgtest.NewPostgresTest(ctx)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
 	defer tp.Close()
 
 	for _, tt := range []struct {
-		name   string            // Name of the test
-		data   string            // Data inserted into postgres in yaml format
+		name   string // Name of the test
+		insert string
 		expect map[string][]byte // expected data. Uses a get request on all keys of the expect map
 	}{
 		{
 			"Same fqid",
-			`---
-			user/1:
-				username: hugo
-				first_name: Hugo
-			`,
+			``,
 			map[string][]byte{
-				"user/1/username":   []byte(`"hugo"`),
-				"user/1/first_name": []byte(`"Hugo"`),
+				"theme/1/name": []byte(`"standard theme"`),
 			},
 		},
 		{
 			"different fqid",
-			`---
-			user/1:
-				username: hugo
-				first_name: Hugo
-
-			motion/42:
-				title: antrag
-				text: beschluss
+			`
+			INSERT INTO "user" (id, username, first_name) values (42,'hugo', 'Hugo');
 			`,
 			map[string][]byte{
-				"user/1/username":   []byte(`"hugo"`),
-				"user/1/first_name": []byte(`"Hugo"`),
-				"motion/42/title":   []byte(`"antrag"`),
-				"motion/42/text":    []byte(`"beschluss"`),
+				"user/42/username":   []byte(`"hugo"`),
+				"user/42/first_name": []byte(`"Hugo"`),
+				"theme/1/name":       []byte(`"standard theme"`),
 			},
 		},
 		{
 			"Empty Data",
-			`---
-			user/1:
-				username: hugo
+			``,
+			map[string][]byte{
+				"motion/2/title": nil,
+			},
+		},
+		{
+			"Empty Data on id list",
+			`
+			INSERT INTO "user" (id, username) values (10,'hugo');
 			`,
 			map[string][]byte{
-				"user/1/username": []byte(`"hugo"`),
-				"motion/2/title":  nil,
+				"user/10/meeting_user_ids": nil,
+			},
+		},
+		{
+			"Decimal",
+			`
+			INSERT INTO "user" (id, username, default_vote_weight) values (15,'hugo', 1.5);
+			`,
+			map[string][]byte{
+				"user/15/default_vote_weight": []byte(`"1.500000"`),
+			},
+		},
+		{
+			"Boolean",
+			`UPDATE organization SET enable_electronic_voting=true WHERE id = 1`,
+			map[string][]byte{
+				"organization/1/enable_electronic_voting": []byte(`true`),
+			},
+		},
+		{
+			"Timestamp",
+			`INSERT INTO "user" (username, gender_id, last_login) VALUES ('tom', 1, '1999-01-08');`,
+			map[string][]byte{
+				"user/1/last_login": []byte(`915753600`),
+			},
+		},
+		{
+			"Float",
+			`INSERT INTO "projector_countdown" (title, countdown_time, meeting_id) VALUES ('test countdown', 7.5, 1);`,
+			map[string][]byte{
+				"projector_countdown/1/countdown_time": []byte(`7.5`),
+			},
+		},
+		{
+			"String list",
+			`
+			INSERT INTO history_position DEFAULT VALUES;
+			INSERT INTO history_entry (entries, position_id) VALUES ('{"entry1","entry2"}', 1);
+			`,
+			map[string][]byte{
+				"history_entry/1/entries": []byte(`["entry1","entry2"]`),
 			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env), nil)
+			ctx := t.Context()
+			tp.Cleanup(t)
+
+			conn, err := tp.Conn(ctx)
 			if err != nil {
-				t.Fatalf("NewSource(): %v", err)
+				t.Fatalf("create connection: %v", err)
+			}
+			defer conn.Close(ctx)
+
+			if _, err := conn.Exec(ctx, tt.insert); err != nil {
+				t.Fatalf("adding example data: %v", pgtest.PrityPostgresError(err, tt.insert))
 			}
 
-			data := dsmock.YAMLData(tt.data)
-			if err := tp.addTestData(ctx, data); err != nil {
-				t.Fatalf("adding test data: %v", err)
+			flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+			if err != nil {
+				t.Fatalf("NewFlowPostgres(): %v", err)
 			}
-			defer tp.dropData(ctx)
+			defer flow.Close()
 
-			keys := make([]dskey.Key, 0, len(tt.data))
+			keys := make([]dskey.Key, 0, len(tt.expect))
 			for k := range tt.expect {
 				keys = append(keys, dskey.MustKey(k))
 			}
 
-			got, err := source.Get(ctx, keys...)
+			got, err := flow.Get(ctx, keys...)
 			if err != nil {
 				t.Fatalf("Get: %v", err)
 			}
@@ -113,6 +149,191 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 	}
 }
 
+func TestPostgresUpdate(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
+	tp, err := pgtest.NewPostgresTest(ctx)
+	if err != nil {
+		t.Fatalf("starting postgres: %v", err)
+	}
+	defer tp.Close()
+
+	conn, err := tp.Conn(ctx)
+	if err != nil {
+		t.Fatalf("create connection: %v", err)
+	}
+
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	if err != nil {
+		t.Fatalf("NewFlowPostgres(): %v", err)
+	}
+
+	keys := []dskey.Key{
+		dskey.MustKey("user/300/username"),
+		dskey.MustKey("theme/300/name"),
+	}
+
+	done := make(chan error)
+	// TODO: When update fails, this currently blocks for ever. Maybe use a
+	// timeout.
+	go flow.Update(ctx, func(m map[dskey.Key][]byte, err error) {
+		select {
+		case <-done:
+			// Only call update once.
+			return
+		default:
+		}
+
+		if err != nil {
+			done <- fmt.Errorf("from Update callback: %w", err)
+			return
+		}
+
+		if m[keys[0]] == nil {
+			done <- fmt.Errorf("key %s not found", keys[0])
+			return
+		}
+
+		if m[keys[1]] == nil {
+			done <- fmt.Errorf("key %s not found", keys[1])
+			return
+		}
+
+		done <- nil
+		return
+	})
+	// TODO: This test could be flaky.
+	time.Sleep(5 * time.Second) // TODO: How to do this without a sleep?
+	sql := `
+	INSERT INTO "user" (id, username) VALUES (300,'hugo');
+	INSERT INTO theme (id, name) VALUES (300,'standard theme');
+	`
+	if _, err := conn.Exec(ctx, sql); err != nil {
+		t.Fatalf("adding example data: %v", err)
+	}
+
+	if err := <-done; err != nil {
+		t.Errorf("Error: %v", err)
+	}
+}
+
+func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
+	tp, err := pgtest.NewPostgresTest(ctx)
+	if err != nil {
+		t.Fatalf("starting postgres: %v", err)
+	}
+	defer tp.Close()
+
+	conn, err := tp.Conn(ctx)
+	if err != nil {
+		t.Fatalf("create connection: %v", err)
+	}
+
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	if err != nil {
+		t.Fatalf("NewFlowPostgres(): %v", err)
+	}
+
+	keys := []dskey.Key{
+		dskey.MustKey("poll/300/title"),
+	}
+
+	done := make(chan error)
+	// TODO: When update fails, this currently blocks for ever. Maybe use a
+	// timeout.
+	go flow.Update(ctx, func(m map[dskey.Key][]byte, err error) {
+		select {
+		case <-done:
+			// Only call update once.
+			return
+		default:
+		}
+
+		if err != nil {
+			done <- fmt.Errorf("from Update callback: %w", err)
+			return
+		}
+
+		if m[keys[0]] == nil {
+			done <- fmt.Errorf("key %s not found", keys[0])
+			return
+		}
+
+		done <- nil
+		return
+	})
+	// TODO: This test could be flaky.
+	time.Sleep(5 * time.Second) // TODO: How to do this without a sleep?
+	sql := `
+    INSERT INTO assignment_t (
+        id,
+        title,
+        sequential_number,
+        meeting_id
+    ) VALUES (
+        123,
+        'Test Assignment',
+        1,
+        1
+    );
+
+    INSERT INTO list_of_speakers_t (
+        id,
+        sequential_number,
+        content_object_id,
+        meeting_id
+    ) VALUES (
+        456,
+        1,
+        'assignment/123',
+        1
+    );
+
+    INSERT INTO poll_t (
+        id,
+        title,
+        type,
+        backend,
+        pollmethod,
+        onehundred_percent_base,
+        sequential_number,
+        content_object_id,
+        meeting_id
+    ) VALUES (
+        300,
+        'My poll',
+        'named',
+        'fast',
+        'YNA',
+        'disabled',
+        1,
+        'assignment/123',
+        1
+    );
+`
+	if _, err := conn.Exec(ctx, sql); err != nil {
+		t.Fatalf("adding example data: %v", err)
+	}
+
+	if err := <-done; err != nil {
+		t.Errorf("Error: %v", err)
+	}
+}
+
 func TestBigQuery(t *testing.T) {
 	t.Parallel()
 
@@ -120,195 +341,49 @@ func TestBigQuery(t *testing.T) {
 		t.Skip("Postgres Test")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
-	tp, err := newTestPostgres(ctx)
+	tp, err := pgtest.NewPostgresTest(ctx)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
 	defer tp.Close()
 
-	source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env), nil)
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
 	}
 
+	conn, err := tp.Conn(ctx)
+	if err != nil {
+		t.Fatalf("create connection: %v", err)
+	}
+
 	count := 2_000
-
 	keys := make([]dskey.Key, count)
-	for i := 0; i < count; i++ {
-		keys[i], _ = dskey.FromParts("user", 1, fmt.Sprintf("f%d", i))
+	expected := make(map[dskey.Key][]byte)
+	for i := range count {
+		keys[i], _ = dskey.FromParts("user", i+2, "username")
+		expected[keys[i]] = []byte(`"hugo"`)
+
+		sql := fmt.Sprintf(`INSERT INTO "user" (id, username) values (%d, 'hugo');`, i+2)
+		if _, err := conn.Exec(ctx, sql); err != nil {
+			t.Fatalf("adding user %d: %v", i+2, err)
+		}
 	}
 
-	testData := make(map[dskey.Key][]byte)
-	for _, key := range keys {
-		testData[key] = []byte(fmt.Sprintf(`"%s"`, key.String()))
-	}
-
-	if err := tp.addTestData(ctx, testData); err != nil {
-		t.Fatalf("Writing test data: %v", err)
-	}
-
-	got, err := source.Get(ctx, keys...)
+	got, err := flow.Get(ctx, keys...)
 	if err != nil {
 		t.Errorf("Sending request with %d fields returns: %v", count, err)
 	}
 
-	if !reflect.DeepEqual(got, testData) {
-		t.Errorf("testdata is diffrent then the result: for key %s got('%s') expect ('%s')", keys[1600], got[keys[1600]], testData[keys[1600]])
-	}
-}
-
-type testPostgres struct {
-	dockerPool     *dockertest.Pool
-	dockerResource *dockertest.Resource
-
-	Env map[string]string
-
-	pgxConfig *pgx.ConnConfig
-}
-
-func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return nil, fmt.Errorf("connect to docker: %w", err)
+	if len(got) != len(expected) {
+		t.Errorf("len(got) == %d, len(expected) == %d", len(got), len(expected))
 	}
 
-	runOpts := dockertest.RunOptions{
-		Repository: "postgres",
-		Tag:        "13",
-		Env: []string{
-			"POSTGRES_USER=postgres",
-			"POSTGRES_PASSWORD=openslides",
-			"POSTGRES_DB=database",
-		},
-	}
-
-	resource, err := pool.RunWithOptions(&runOpts)
-	if err != nil {
-		return nil, fmt.Errorf("start postgres container: %w", err)
-	}
-
-	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf(`user=postgres password='openslides' host=localhost port=%s dbname=database`, port)
-	config, err := pgx.ParseConfig(addr)
-	if err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
-	}
-
-	tp = &testPostgres{
-		dockerPool:     pool,
-		dockerResource: resource,
-		pgxConfig:      config,
-
-		Env: map[string]string{
-			"DATABASE_HOST": "localhost",
-			"DATABASE_PORT": port,
-			"DATABASE_NAME": "database",
-			"DATABASE_USER": "postgres",
-		},
-	}
-
-	defer func() {
-		if err != nil {
-			if err := tp.Close(); err != nil {
-				log.Println("Closing postgres: %w", err)
-			}
-		}
-	}()
-
-	if err := tp.addSchema(ctx); err != nil {
-		return nil, fmt.Errorf("add schema: %w", err)
-	}
-
-	return tp, nil
-}
-
-func (tp *testPostgres) Close() error {
-	if err := tp.dockerPool.Purge(tp.dockerResource); err != nil {
-		return fmt.Errorf("purge postgres container: %w", err)
-	}
-	return nil
-}
-
-func (tp *testPostgres) conn(ctx context.Context) (*pgx.Conn, error) {
-	var conn *pgx.Conn
-
-	for {
-		var err error
-		conn, err = pgx.ConnectConfig(ctx, tp.pgxConfig)
-		if err == nil {
-			return conn, nil
-		}
-
-		select {
-		case <-time.After(200 * time.Millisecond):
-		case <-ctx.Done():
-			return nil, ctx.Err()
+	for key, value := range got {
+		if string(value) != string(expected[key]) {
+			t.Errorf("got[%s] == %s, expected %s", key, value, expected[key])
 		}
 	}
-}
-
-func (tp *testPostgres) addSchema(ctx context.Context) error {
-	// Schema from datastore-repo
-	schema := `
-	CREATE TABLE IF NOT EXISTS models (
-		fqid VARCHAR(48) PRIMARY KEY,
-		data JSONB NOT NULL,
-		deleted BOOLEAN NOT NULL
-	);`
-	conn, err := tp.conn(ctx)
-	if err != nil {
-		return fmt.Errorf("creating connection: %w", err)
-	}
-
-	if _, err := conn.Exec(ctx, schema); err != nil {
-		return fmt.Errorf("adding schema: %w", err)
-	}
-	return nil
-}
-
-func (tp *testPostgres) addTestData(ctx context.Context, data map[dskey.Key][]byte) error {
-	objects := make(map[string]map[string]json.RawMessage)
-	for k, v := range data {
-		fqid := k.FQID()
-		if _, ok := objects[fqid]; !ok {
-			objects[fqid] = make(map[string]json.RawMessage)
-		}
-		objects[fqid][k.Field()] = v
-	}
-
-	conn, err := tp.conn(ctx)
-	if err != nil {
-		return fmt.Errorf("creating connection: %w", err)
-	}
-
-	for fqid, data := range objects {
-		encoded, err := json.Marshal(data)
-		if err != nil {
-			return fmt.Errorf("encode %v: %v", data, err)
-		}
-
-		sql := fmt.Sprintf(`INSERT INTO models (fqid, data, deleted) VALUES ('%s', '%s', false);`, fqid, encoded)
-		if _, err := conn.Exec(ctx, sql); err != nil {
-			return fmt.Errorf("executing psql `%s`: %w", sql, err)
-		}
-	}
-
-	return nil
-}
-
-func (tp *testPostgres) dropData(ctx context.Context) error {
-	conn, err := tp.conn(ctx)
-	if err != nil {
-		return fmt.Errorf("creating connection: %w", err)
-	}
-
-	sql := `TRUNCATE models;`
-	if _, err := conn.Exec(ctx, sql); err != nil {
-		return fmt.Errorf("executing psql `%s`: %w", sql, err)
-	}
-
-	return nil
 }
