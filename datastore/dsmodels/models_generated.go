@@ -5439,54 +5439,56 @@ func (r *Fetch) Option(ids ...int) *optionBuilder {
 
 // Organization has all fields from organization.
 type Organization struct {
-	ActiveMeetingIDs              []int
-	ArchivedMeetingIDs            []int
-	CommitteeIDs                  []int
-	DefaultLanguage               string
-	Description                   string
-	DisableForwardWithAttachments bool
-	EnableAnonymous               bool
-	EnableChat                    bool
-	EnableElectronicVoting        bool
-	GenderIDs                     []int
-	ID                            int
-	LegalNotice                   string
-	LimitOfMeetings               int
-	LimitOfUsers                  int
-	LoginText                     string
-	MediafileIDs                  []int
-	Name                          string
-	OrganizationTagIDs            []int
-	PrivacyPolicy                 string
-	PublishedMediafileIDs         []int
-	RequireDuplicateFrom          bool
-	ResetPasswordVerboseErrors    bool
-	SamlAttrMapping               json.RawMessage
-	SamlEnabled                   bool
-	SamlLoginButtonText           string
-	SamlMetadataIDp               string
-	SamlMetadataSp                string
-	SamlPrivateKey                string
-	TemplateMeetingIDs            []int
-	ThemeID                       int
-	ThemeIDs                      []int
-	Url                           string
-	UserIDs                       []int
-	UsersEmailBody                string
-	UsersEmailReplyto             string
-	UsersEmailSender              string
-	UsersEmailSubject             string
-	ActiveMeetingList             []Meeting
-	ArchivedMeetingList           []Meeting
-	CommitteeList                 []Committee
-	GenderList                    []Gender
-	MediafileList                 []Mediafile
-	OrganizationTagList           []OrganizationTag
-	PublishedMediafileList        []Mediafile
-	TemplateMeetingList           []Meeting
-	Theme                         *Theme
-	ThemeList                     []Theme
-	UserList                      []User
+	ActiveMeetingIDs                        []int
+	ArchivedMeetingIDs                      []int
+	CommitteeIDs                            []int
+	DefaultLanguage                         string
+	Description                             string
+	DisableForwardWithAttachments           bool
+	EnableAnonymous                         bool
+	EnableChat                              bool
+	EnableElectronicVoting                  bool
+	GenderIDs                               []int
+	ID                                      int
+	LegalNotice                             string
+	LimitOfMeetings                         int
+	LimitOfUsers                            int
+	LoginText                               string
+	MediafileIDs                            []int
+	Name                                    string
+	OrganizationTagIDs                      []int
+	PrivacyPolicy                           string
+	PublishedMediafileIDs                   []int
+	RequireDuplicateFrom                    bool
+	ResetPasswordVerboseErrors              bool
+	RestrictEditForwardCommittees           bool
+	RestrictEditingSameLevelCommitteeAdmins bool
+	SamlAttrMapping                         json.RawMessage
+	SamlEnabled                             bool
+	SamlLoginButtonText                     string
+	SamlMetadataIDp                         string
+	SamlMetadataSp                          string
+	SamlPrivateKey                          string
+	TemplateMeetingIDs                      []int
+	ThemeID                                 int
+	ThemeIDs                                []int
+	Url                                     string
+	UserIDs                                 []int
+	UsersEmailBody                          string
+	UsersEmailReplyto                       string
+	UsersEmailSender                        string
+	UsersEmailSubject                       string
+	ActiveMeetingList                       []Meeting
+	ArchivedMeetingList                     []Meeting
+	CommitteeList                           []Committee
+	GenderList                              []Gender
+	MediafileList                           []Mediafile
+	OrganizationTagList                     []OrganizationTag
+	PublishedMediafileList                  []Mediafile
+	TemplateMeetingList                     []Meeting
+	Theme                                   *Theme
+	ThemeList                               []Theme
+	UserList                                []User
 }
 
 type organizationBuilder struct {
@@ -5517,6 +5519,8 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_PublishedMediafileIDs(id).Lazy(&c.PublishedMediafileIDs)
 	ds.Organization_RequireDuplicateFrom(id).Lazy(&c.RequireDuplicateFrom)
 	ds.Organization_ResetPasswordVerboseErrors(id).Lazy(&c.ResetPasswordVerboseErrors)
+	ds.Organization_RestrictEditForwardCommittees(id).Lazy(&c.RestrictEditForwardCommittees)
+	ds.Organization_RestrictEditingSameLevelCommitteeAdmins(id).Lazy(&c.RestrictEditingSameLevelCommitteeAdmins)
 	ds.Organization_SamlAttrMapping(id).Lazy(&c.SamlAttrMapping)
 	ds.Organization_SamlEnabled(id).Lazy(&c.SamlEnabled)
 	ds.Organization_SamlLoginButtonText(id).Lazy(&c.SamlLoginButtonText)
