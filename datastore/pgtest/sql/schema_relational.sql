@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '2ab51b5ebc2fc37f2202a887952b52a2'
+-- MODELS_YML_CHECKSUM = 'fab7972b3adb110c4ad6d6d7557a595c'
 
 
 -- Function and meta table definitions
@@ -937,6 +937,7 @@ CREATE TABLE organization_t (
     login_text text,
     reset_password_verbose_errors boolean,
     disable_forward_with_attachments boolean,
+    restrict_edit_forward_committees boolean,
     enable_electronic_voting boolean,
     enable_chat boolean,
     limit_of_meetings integer CONSTRAINT minimum_limit_of_meetings CHECK (limit_of_meetings >= 0) DEFAULT 0,
@@ -944,6 +945,7 @@ CREATE TABLE organization_t (
     default_language varchar(256) CONSTRAINT enum_organization_default_language CHECK (default_language IN ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr')) DEFAULT 'en',
     require_duplicate_from boolean,
     enable_anonymous boolean,
+    restrict_editing_same_level_committee_admins boolean,
     saml_enabled boolean,
     saml_login_button_text varchar(256) DEFAULT 'SAML login',
     saml_attr_mapping jsonb,
