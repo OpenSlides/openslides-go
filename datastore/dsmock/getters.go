@@ -3,6 +3,8 @@ package dsmock
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"sync"
 
@@ -86,6 +88,25 @@ func (s *Flow) Send(values map[dskey.Key][]byte) {
 	}
 	s.mu.Unlock()
 	s.ch <- values
+}
+
+// FlowNoUpdate is is a mock flow with the UpdateNoData function
+type FlowUpdateNoData struct {
+	*Flow
+}
+
+// NewFlow initializes a stub with Get and Update.
+func NewFlowNUpdateNoData(data map[dskey.Key][]byte, middlewares ...func(flow.Getter) flow.Getter) *FlowUpdateNoData {
+	flow := NewFlow(data, middlewares...)
+
+	return &FlowUpdateNoData{flow}
+}
+
+// UpdateNoData sends the keys to the underling flow.
+func (f *FlowUpdateNoData) UpdateNoData(ctx context.Context, updateFn func([]dskey.Key, error)) {
+	f.Flow.Update(ctx, func(m map[dskey.Key][]byte, err error) {
+		updateFn(slices.Collect(maps.Keys(m)), err)
+	})
 }
 
 // Middlewares returns a list of Getters that where used in
