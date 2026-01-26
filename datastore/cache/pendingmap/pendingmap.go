@@ -3,6 +3,7 @@ package pendingmap
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
@@ -221,6 +222,24 @@ func (pm *PendingMap) SetIfPendingOrExists(data map[dskey.Key][]byte) {
 			delete(pm.pending, key)
 		}
 	}
+}
+
+// FilterPendingOrExists filters the given keys for thows, how are pending or exist in the map.
+func (pm *PendingMap) FilterPendingOrExists(keys []dskey.Key) []dskey.Key {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	return slices.DeleteFunc(keys, func(k dskey.Key) bool {
+		if _, exists := pm.data[k]; exists {
+			return false
+		}
+
+		if _, isPending := pm.pending[k]; isPending {
+			return false
+		}
+
+		return true
+	})
 }
 
 // SetIfPending updates values but only if the key is pending.

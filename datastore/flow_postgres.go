@@ -246,8 +246,31 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(ctx, "LISTEN os_notify")
+	p.updateNoDataWithConn(ctx, conn, func(allKeys []dskey.Key, err error) {
+		values, err := getWithConn(ctx, conn.Conn(), allKeys...)
+		if err != nil {
+			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
+		}
+
+		updateFn(values, nil)
+	})
+}
+
+func (p *FlowPostgres) UpdateNoData(ctx context.Context, updateFn func([]dskey.Key, error)) {
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
+		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
+		return
+	}
+	defer conn.Release()
+
+	p.updateNoDataWithConn(ctx, conn, updateFn)
+}
+
+// UpdateNoData listens on pg notify to fetch updates but does not fetch data on
+// updates.
+func (p *FlowPostgres) updateNoDataWithConn(ctx context.Context, conn *pgxpool.Conn, updateFn func([]dskey.Key, error)) {
+	if _, err := conn.Exec(ctx, "LISTEN os_notify"); err != nil {
 		updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
 		return
 	}
@@ -298,12 +321,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			allKeys = append(allKeys, keys...)
 		}
 
-		values, err := getWithConn(ctx, conn.Conn(), allKeys...)
-		if err != nil {
-			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
-		}
-
-		updateFn(values, nil)
+		updateFn(allKeys, nil)
 	}
 }
 

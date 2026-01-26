@@ -195,12 +195,95 @@ func TestPostgresUpdate(t *testing.T) {
 			return
 		}
 
-		if m[keys[0]] == nil {
+		if _, ok := m[keys[0]]; !ok {
 			done <- fmt.Errorf("key %s not found", keys[0])
 			return
 		}
 
-		if m[keys[1]] == nil {
+		if _, ok := m[keys[1]]; !ok {
+			done <- fmt.Errorf("key %s not found", keys[1])
+			return
+		}
+
+		if string(m[keys[0]]) != `"hugo"` {
+			done <- fmt.Errorf("wrong value for %s, got %q expected %q", keys[0], string(m[keys[0]]), `"hugo"`)
+		}
+
+		if string(m[keys[1]]) != `"standard theme"` {
+			done <- fmt.Errorf("wrong value for %s, got %q expected %q", keys[1], string(m[keys[1]]), `"standard theme"`)
+		}
+
+		done <- nil
+		return
+	})
+	// TODO: This test could be flaky.
+	time.Sleep(5 * time.Second) // TODO: How to do this without a sleep?
+	sql := `
+	INSERT INTO "user" (id, username) VALUES (300,'hugo');
+	INSERT INTO theme (id, name) VALUES (300,'standard theme');
+	`
+	if _, err := conn.Exec(ctx, sql); err != nil {
+		t.Fatalf("adding example data: %v", err)
+	}
+
+	if err := <-done; err != nil {
+		t.Errorf("Error: %v", err)
+	}
+}
+
+func TestPostgresUpdateNoData(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
+	tp, err := pgtest.NewPostgresTest(ctx)
+	if err != nil {
+		t.Fatalf("starting postgres: %v", err)
+	}
+	defer tp.Close()
+
+	conn, err := tp.Conn(ctx)
+	if err != nil {
+		t.Fatalf("create connection: %v", err)
+	}
+
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	if err != nil {
+		t.Fatalf("NewFlowPostgres(): %v", err)
+	}
+
+	done := make(chan error)
+
+	// TODO: When update fails, this currently blocks for ever. Maybe use a
+	// timeout.
+	go flow.UpdateNoData(ctx, func(keys []dskey.Key, err error) {
+		select {
+		case <-done:
+			// Only call update once.
+			return
+		default:
+		}
+
+		if err != nil {
+			done <- fmt.Errorf("from Update callback: %w", err)
+			return
+		}
+
+		m := make(map[dskey.Key]struct{}, len(keys))
+		for _, key := range keys {
+			m[key] = struct{}{}
+		}
+
+		if _, ok := m[keys[0]]; !ok {
+			done <- fmt.Errorf("key %s not found", keys[0])
+			return
+		}
+
+		if _, ok := m[keys[1]]; !ok {
 			done <- fmt.Errorf("key %s not found", keys[1])
 			return
 		}
