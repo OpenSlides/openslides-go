@@ -1534,6 +1534,7 @@ type Meeting struct {
 	AssignmentPollDefaultGroupIDs                []int
 	AssignmentPollDefaultMethod                  string
 	AssignmentPollDefaultOnehundredPercentBase   string
+	AssignmentPollDefaultRequiredMajority        string
 	AssignmentPollDefaultType                    string
 	AssignmentPollEnableMaxVotesPerOption        bool
 	AssignmentPollSortPollResultByVotes          bool
@@ -1647,6 +1648,7 @@ type Meeting struct {
 	MotionPollDefaultGroupIDs                    []int
 	MotionPollDefaultMethod                      string
 	MotionPollDefaultOnehundredPercentBase       string
+	MotionPollDefaultRequiredMajority            string
 	MotionPollDefaultType                        string
 	MotionPollProjectionMaxColumns               int
 	MotionPollProjectionNameOrderFirst           string
@@ -1876,6 +1878,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_AssignmentPollDefaultGroupIDs(id).Lazy(&c.AssignmentPollDefaultGroupIDs)
 	ds.Meeting_AssignmentPollDefaultMethod(id).Lazy(&c.AssignmentPollDefaultMethod)
 	ds.Meeting_AssignmentPollDefaultOnehundredPercentBase(id).Lazy(&c.AssignmentPollDefaultOnehundredPercentBase)
+	ds.Meeting_AssignmentPollDefaultRequiredMajority(id).Lazy(&c.AssignmentPollDefaultRequiredMajority)
 	ds.Meeting_AssignmentPollDefaultType(id).Lazy(&c.AssignmentPollDefaultType)
 	ds.Meeting_AssignmentPollEnableMaxVotesPerOption(id).Lazy(&c.AssignmentPollEnableMaxVotesPerOption)
 	ds.Meeting_AssignmentPollSortPollResultByVotes(id).Lazy(&c.AssignmentPollSortPollResultByVotes)
@@ -1989,6 +1992,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionPollDefaultGroupIDs(id).Lazy(&c.MotionPollDefaultGroupIDs)
 	ds.Meeting_MotionPollDefaultMethod(id).Lazy(&c.MotionPollDefaultMethod)
 	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Lazy(&c.MotionPollDefaultOnehundredPercentBase)
+	ds.Meeting_MotionPollDefaultRequiredMajority(id).Lazy(&c.MotionPollDefaultRequiredMajority)
 	ds.Meeting_MotionPollDefaultType(id).Lazy(&c.MotionPollDefaultType)
 	ds.Meeting_MotionPollProjectionMaxColumns(id).Lazy(&c.MotionPollProjectionMaxColumns)
 	ds.Meeting_MotionPollProjectionNameOrderFirst(id).Lazy(&c.MotionPollProjectionNameOrderFirst)
@@ -5872,6 +5876,7 @@ type Poll struct {
 	OptionIDs             []int
 	Pollmethod            string
 	ProjectionIDs         []int
+	RequiredMajority      string
 	SequentialNumber      int
 	State                 string
 	Title                 string
@@ -5919,6 +5924,7 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.Poll_Pollmethod(id).Lazy(&c.Pollmethod)
 	ds.Poll_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Poll_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	ds.Poll_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.Poll_State(id).Lazy(&c.State)
 	ds.Poll_Title(id).Lazy(&c.Title)
