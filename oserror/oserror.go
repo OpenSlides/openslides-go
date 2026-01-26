@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+
+	"github.com/OpenSlides/openslides-go/oslog"
 )
 
 // Handle handles an error.
@@ -19,7 +20,7 @@ func Handle(err error) {
 		err = errAdmin
 	}
 
-	log.Printf("Error: %v", err)
+	oslog.Error("Error: %v", err)
 }
 
 // ContextDone returns true, if the given error contains a context.Canceled or
