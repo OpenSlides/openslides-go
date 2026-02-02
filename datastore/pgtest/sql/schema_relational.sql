@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'd6653826cc4577c311a9a9ad5668ac31'
+-- MODELS_YML_CHECKSUM = '9163d47c35714018ebeba7cd55b1f886'
 
 
 -- Function and meta table definitions
@@ -1411,72 +1411,96 @@ CREATE TABLE nm_chat_group_read_group_ids_group_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (chat_group_id, group_id)
 );
+CREATE INDEX ON nm_chat_group_read_group_ids_group_t (chat_group_id);
+CREATE INDEX ON nm_chat_group_read_group_ids_group_t (group_id);
 
 CREATE TABLE nm_chat_group_write_group_ids_group_t (
     chat_group_id integer NOT NULL REFERENCES chat_group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (chat_group_id, group_id)
 );
+CREATE INDEX ON nm_chat_group_write_group_ids_group_t (chat_group_id);
+CREATE INDEX ON nm_chat_group_write_group_ids_group_t (group_id);
 
 CREATE TABLE nm_committee_manager_ids_user_t (
     committee_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     user_id integer NOT NULL REFERENCES user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (committee_id, user_id)
 );
+CREATE INDEX ON nm_committee_manager_ids_user_t (committee_id);
+CREATE INDEX ON nm_committee_manager_ids_user_t (user_id);
 
 CREATE TABLE nm_committee_all_child_ids_committee_t (
     all_child_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     all_parent_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (all_child_id, all_parent_id)
 );
+CREATE INDEX ON nm_committee_all_child_ids_committee_t (all_child_id);
+CREATE INDEX ON nm_committee_all_child_ids_committee_t (all_parent_id);
 
 CREATE TABLE nm_committee_forward_to_committee_ids_committee_t (
     forward_to_committee_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     receive_forwardings_from_committee_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (forward_to_committee_id, receive_forwardings_from_committee_id)
 );
+CREATE INDEX ON nm_committee_forward_to_committee_ids_committee_t (forward_to_committee_id);
+CREATE INDEX ON nm_committee_forward_to_committee_ids_committee_t (receive_forwardings_from_committee_id);
 
 CREATE TABLE nm_group_meeting_user_ids_meeting_user_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     meeting_user_id integer NOT NULL REFERENCES meeting_user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, meeting_user_id)
 );
+CREATE INDEX ON nm_group_meeting_user_ids_meeting_user_t (group_id);
+CREATE INDEX ON nm_group_meeting_user_ids_meeting_user_t (meeting_user_id);
 
 CREATE TABLE nm_group_mmagi_meeting_mediafile_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     meeting_mediafile_id integer NOT NULL REFERENCES meeting_mediafile_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, meeting_mediafile_id)
 );
+CREATE INDEX ON nm_group_mmagi_meeting_mediafile_t (group_id);
+CREATE INDEX ON nm_group_mmagi_meeting_mediafile_t (meeting_mediafile_id);
 
 CREATE TABLE nm_group_mmiagi_meeting_mediafile_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     meeting_mediafile_id integer NOT NULL REFERENCES meeting_mediafile_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, meeting_mediafile_id)
 );
+CREATE INDEX ON nm_group_mmiagi_meeting_mediafile_t (group_id);
+CREATE INDEX ON nm_group_mmiagi_meeting_mediafile_t (meeting_mediafile_id);
 
 CREATE TABLE nm_group_read_comment_section_ids_motion_comment_section_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     motion_comment_section_id integer NOT NULL REFERENCES motion_comment_section_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, motion_comment_section_id)
 );
+CREATE INDEX ON nm_group_read_comment_section_ids_motion_comment_section_t (group_id);
+CREATE INDEX ON nm_group_read_comment_section_ids_motion_comment_section_t (motion_comment_section_id);
 
 CREATE TABLE nm_group_write_comment_section_ids_motion_comment_section_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     motion_comment_section_id integer NOT NULL REFERENCES motion_comment_section_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, motion_comment_section_id)
 );
+CREATE INDEX ON nm_group_write_comment_section_ids_motion_comment_section_t (group_id);
+CREATE INDEX ON nm_group_write_comment_section_ids_motion_comment_section_t (motion_comment_section_id);
 
 CREATE TABLE nm_group_poll_ids_poll_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     poll_id integer NOT NULL REFERENCES poll_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, poll_id)
 );
+CREATE INDEX ON nm_group_poll_ids_poll_t (group_id);
+CREATE INDEX ON nm_group_poll_ids_poll_t (poll_id);
 
 CREATE TABLE nm_meeting_present_user_ids_user_t (
     meeting_id integer NOT NULL REFERENCES meeting_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     user_id integer NOT NULL REFERENCES user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (meeting_id, user_id)
 );
+CREATE INDEX ON nm_meeting_present_user_ids_user_t (meeting_id);
+CREATE INDEX ON nm_meeting_present_user_ids_user_t (user_id);
 
 CREATE TABLE gm_meeting_mediafile_attachment_ids_t (
     meeting_mediafile_id integer NOT NULL REFERENCES meeting_mediafile_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1487,24 +1511,32 @@ CREATE TABLE gm_meeting_mediafile_attachment_ids_t (
     CONSTRAINT valid_attachment_id_part1 CHECK (split_part(attachment_id, '/', 1) IN ('motion', 'topic', 'assignment')),
     CONSTRAINT unique_$meeting_mediafile_id_$attachment_id UNIQUE (meeting_mediafile_id, attachment_id)
 );
+CREATE INDEX ON gm_meeting_mediafile_attachment_ids_t (meeting_mediafile_id);
+CREATE INDEX ON gm_meeting_mediafile_attachment_ids_t (attachment_id);
 
 CREATE TABLE nm_meeting_user_structure_level_ids_structure_level_t (
     meeting_user_id integer NOT NULL REFERENCES meeting_user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     structure_level_id integer NOT NULL REFERENCES structure_level_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (meeting_user_id, structure_level_id)
 );
+CREATE INDEX ON nm_meeting_user_structure_level_ids_structure_level_t (meeting_user_id);
+CREATE INDEX ON nm_meeting_user_structure_level_ids_structure_level_t (structure_level_id);
 
 CREATE TABLE nm_motion_all_derived_motion_ids_motion_t (
     all_derived_motion_id integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     all_origin_id integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (all_derived_motion_id, all_origin_id)
 );
+CREATE INDEX ON nm_motion_all_derived_motion_ids_motion_t (all_derived_motion_id);
+CREATE INDEX ON nm_motion_all_derived_motion_ids_motion_t (all_origin_id);
 
 CREATE TABLE nm_motion_identical_motion_ids_motion_t (
     identical_motion_id_1 integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     identical_motion_id_2 integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (identical_motion_id_1, identical_motion_id_2)
 );
+CREATE INDEX ON nm_motion_identical_motion_ids_motion_t (identical_motion_id_1);
+CREATE INDEX ON nm_motion_identical_motion_ids_motion_t (identical_motion_id_2);
 
 CREATE TABLE gm_motion_state_extension_reference_ids_t (
     motion_id integer NOT NULL REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1513,6 +1545,8 @@ CREATE TABLE gm_motion_state_extension_reference_ids_t (
     CONSTRAINT valid_state_extension_reference_id_part1 CHECK (split_part(state_extension_reference_id, '/', 1) IN ('motion')),
     CONSTRAINT unique_$motion_id_$state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
 );
+CREATE INDEX ON gm_motion_state_extension_reference_ids_t (motion_id);
+CREATE INDEX ON gm_motion_state_extension_reference_ids_t (state_extension_reference_id);
 
 CREATE TABLE gm_motion_recommendation_extension_reference_ids_t (
     motion_id integer NOT NULL REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1521,12 +1555,16 @@ CREATE TABLE gm_motion_recommendation_extension_reference_ids_t (
     CONSTRAINT valid_recommendation_extension_reference_id_part1 CHECK (split_part(recommendation_extension_reference_id, '/', 1) IN ('motion')),
     CONSTRAINT unique_$motion_id_$recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
 );
+CREATE INDEX ON gm_motion_recommendation_extension_reference_ids_t (motion_id);
+CREATE INDEX ON gm_motion_recommendation_extension_reference_ids_t (recommendation_extension_reference_id);
 
 CREATE TABLE nm_motion_state_next_state_ids_motion_state_t (
     next_state_id integer NOT NULL REFERENCES motion_state_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     previous_state_id integer NOT NULL REFERENCES motion_state_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (next_state_id, previous_state_id)
 );
+CREATE INDEX ON nm_motion_state_next_state_ids_motion_state_t (next_state_id);
+CREATE INDEX ON nm_motion_state_next_state_ids_motion_state_t (previous_state_id);
 
 CREATE TABLE gm_organization_tag_tagged_ids_t (
     organization_tag_id integer NOT NULL REFERENCES organization_tag_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1536,12 +1574,16 @@ CREATE TABLE gm_organization_tag_tagged_ids_t (
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('committee', 'meeting')),
     CONSTRAINT unique_$organization_tag_id_$tagged_id UNIQUE (organization_tag_id, tagged_id)
 );
+CREATE INDEX ON gm_organization_tag_tagged_ids_t (organization_tag_id);
+CREATE INDEX ON gm_organization_tag_tagged_ids_t (tagged_id);
 
 CREATE TABLE nm_poll_voted_ids_user_t (
     poll_id integer NOT NULL REFERENCES poll_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     user_id integer NOT NULL REFERENCES user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (poll_id, user_id)
 );
+CREATE INDEX ON nm_poll_voted_ids_user_t (poll_id);
+CREATE INDEX ON nm_poll_voted_ids_user_t (user_id);
 
 CREATE TABLE gm_tag_tagged_ids_t (
     tag_id integer NOT NULL REFERENCES tag_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1552,6 +1594,8 @@ CREATE TABLE gm_tag_tagged_ids_t (
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('agenda_item', 'assignment', 'motion')),
     CONSTRAINT unique_$tag_id_$tagged_id UNIQUE (tag_id, tagged_id)
 );
+CREATE INDEX ON gm_tag_tagged_ids_t (tag_id);
+CREATE INDEX ON gm_tag_tagged_ids_t (tagged_id);
 
 
 -- View definitions
@@ -1600,7 +1644,6 @@ CREATE VIEW "committee" AS SELECT *,
     SELECT mu.user_id
     FROM meeting_t AS m
     INNER JOIN meeting_user_t AS mu ON mu.meeting_id = m.id
-    INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
     WHERE m.committee_id = c.id
 
     UNION
@@ -1724,7 +1767,6 @@ CREATE VIEW "meeting" AS SELECT *,
 (
   SELECT array_agg(DISTINCT mu.user_id ORDER BY mu.user_id)
   FROM meeting_user_t mu
-  INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
   WHERE mu.meeting_id = m.id
 ) AS user_ids
 ,
@@ -1984,15 +2026,15 @@ FROM topic_t t;
 CREATE VIEW "user" AS SELECT *,
 (select array_agg(n.meeting_id ORDER BY n.meeting_id) from nm_meeting_present_user_ids_user_t n where n.user_id = u.id) as is_present_in_meeting_ids,
 (
-  SELECT array_agg(DISTINCT committee_id ORDER BY committee_id)
+  SELECT array_remove(array_agg(DISTINCT committee_id ORDER BY committee_id),NULL)
   FROM (
     -- Select committee_ids from meetings the user is part of
     SELECT m.committee_id
-    FROM meeting_user_t AS mu
-    INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
-    INNER JOIN meeting_t AS m ON m.id = mu.meeting_id
-    WHERE mu.user_id = u.id
-
+    FROM user_t u
+        INNER JOIN meeting_user_t mu ON u.id = mu.user_id
+        INNER JOIN meeting_t m ON mu.meeting_id = m.id
+    WHERE u.id = u.id
+    
     UNION
 
     -- Select committee_ids from committee managers
@@ -2003,9 +2045,10 @@ CREATE VIEW "user" AS SELECT *,
     UNION
 
     -- Select home_committee_id from user
-    SELECT u.home_committee_id
-    WHERE u.home_committee_id IS NOT NULL
-  ) _
+    SELECT home_committee_id
+    FROM user_t
+    WHERE home_committee_id IS NOT NULL
+  ) AS committee_id
 ) AS committee_ids
 ,
 (select array_agg(n.committee_id ORDER BY n.committee_id) from nm_committee_manager_ids_user_t n where n.user_id = u.id) as committee_management_ids,
@@ -2020,14 +2063,13 @@ CREATE VIEW "user" AS SELECT *,
 (
   SELECT array_agg(DISTINCT mu.meeting_id ORDER BY mu.meeting_id)
   FROM meeting_user_t mu
-  INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
   WHERE mu.user_id = u.id
 ) AS meeting_ids
 
 FROM user_t u;
 
 comment on column "user".committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
-comment on column "user".meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
+comment on column "user".meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user.';
 
 CREATE VIEW "vote" AS SELECT * FROM vote_t v;
 
@@ -2035,222 +2077,396 @@ CREATE VIEW "vote" AS SELECT * FROM vote_t v;
 
 -- Alter table relations
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_motion_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_motion_block_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_assignment_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_topic_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(parent_id) REFERENCES agenda_item_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (parent_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (meeting_id);
 
 ALTER TABLE assignment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_t (meeting_id);
 
 ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_candidate_t (assignment_id);
 ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_candidate_t (meeting_user_id);
 ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_candidate_t (meeting_id);
 
 ALTER TABLE chat_group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_group_t (meeting_id);
 
 ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_message_t (meeting_user_id);
 ALTER TABLE chat_message_t ADD FOREIGN KEY(chat_group_id) REFERENCES chat_group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_message_t (chat_group_id);
 ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_message_t (meeting_id);
 
 ALTER TABLE committee_t ADD FOREIGN KEY(default_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON committee_t (default_meeting_id);
 ALTER TABLE committee_t ADD FOREIGN KEY(parent_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON committee_t (parent_id);
 
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_motion_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_motion_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_assignment_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_assignment_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_topic_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_topic_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (meeting_id);
 
 ALTER TABLE history_entry_t ADD FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (model_id_user_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (model_id_motion_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(model_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (model_id_assignment_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(position_id) REFERENCES history_position_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (position_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (meeting_id);
 
 ALTER TABLE history_position_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_position_t (user_id);
 
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_motion_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_motion_block_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_assignment_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_topic_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_meeting_mediafile_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_meeting_mediafile_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (meeting_id);
 
 ALTER TABLE mediafile_t ADD FOREIGN KEY(published_to_meetings_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (published_to_meetings_in_organization_id);
 ALTER TABLE mediafile_t ADD FOREIGN KEY(parent_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (parent_id);
 ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (owner_id_meeting_id);
 ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (owner_id_organization_id);
 
 ALTER TABLE meeting_t ADD FOREIGN KEY(is_active_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (is_active_in_organization_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(is_archived_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (is_archived_in_organization_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(template_for_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (template_for_organization_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (motions_default_workflow_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_amendment_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (motions_default_amendment_workflow_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_main_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_projector_main_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_header_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_projector_header_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_web_header_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_web_header_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_l_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_header_l_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_r_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_header_r_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_l_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_footer_l_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_r_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_footer_r_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_ballot_paper_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_ballot_paper_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_regular_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_regular_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_italic_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_italic_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_bold_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_italic_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_bold_italic_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_monospace_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_monospace_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_chyron_speaker_name_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_chyron_speaker_name_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h1_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_projector_h1_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h2_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_projector_h2_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(committee_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (committee_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(reference_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (reference_projector_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(list_of_speakers_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (list_of_speakers_countdown_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(poll_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (poll_countdown_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(default_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (default_group_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(admin_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (admin_group_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(anonymous_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (anonymous_group_id);
 
 ALTER TABLE meeting_mediafile_t ADD FOREIGN KEY(mediafile_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_mediafile_t (mediafile_id);
 ALTER TABLE meeting_mediafile_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_mediafile_t (meeting_id);
 
 ALTER TABLE meeting_user_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_user_t (user_id);
 ALTER TABLE meeting_user_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_user_t (meeting_id);
 ALTER TABLE meeting_user_t ADD FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_user_t (vote_delegated_to_id);
 
 ALTER TABLE motion_t ADD FOREIGN KEY(lead_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (lead_motion_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(sort_parent_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (sort_parent_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(origin_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (origin_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(origin_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (origin_meeting_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (state_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(recommendation_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (recommendation_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(category_id) REFERENCES motion_category_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (category_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (block_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (meeting_id);
 
 ALTER TABLE motion_block_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_block_t (meeting_id);
 
 ALTER TABLE motion_category_t ADD FOREIGN KEY(parent_id) REFERENCES motion_category_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_category_t (parent_id);
 ALTER TABLE motion_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_category_t (meeting_id);
 
 ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_change_recommendation_t (motion_id);
 ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_change_recommendation_t (meeting_id);
 
 ALTER TABLE motion_comment_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_t (motion_id);
 ALTER TABLE motion_comment_t ADD FOREIGN KEY(section_id) REFERENCES motion_comment_section_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_t (section_id);
 ALTER TABLE motion_comment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_t (meeting_id);
 
 ALTER TABLE motion_comment_section_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_section_t (meeting_id);
 
 ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_editor_t (meeting_user_id);
 ALTER TABLE motion_editor_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_editor_t (motion_id);
 ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_editor_t (meeting_id);
 
 ALTER TABLE motion_state_t ADD FOREIGN KEY(submitter_withdraw_state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_state_t (submitter_withdraw_state_id);
 ALTER TABLE motion_state_t ADD FOREIGN KEY(workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_state_t (workflow_id);
 ALTER TABLE motion_state_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_state_t (meeting_id);
 
 ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_submitter_t (meeting_user_id);
 ALTER TABLE motion_submitter_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_submitter_t (motion_id);
 ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_submitter_t (meeting_id);
 
 ALTER TABLE motion_supporter_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_supporter_t (meeting_user_id);
 ALTER TABLE motion_supporter_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_supporter_t (motion_id);
 ALTER TABLE motion_supporter_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_supporter_t (meeting_id);
 
 ALTER TABLE motion_workflow_t ADD FOREIGN KEY(first_state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_workflow_t (first_state_id);
 ALTER TABLE motion_workflow_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_workflow_t (meeting_id);
 
 ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_working_group_speaker_t (meeting_user_id);
 ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_working_group_speaker_t (motion_id);
 ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_working_group_speaker_t (meeting_id);
 
 ALTER TABLE option_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON option_t (poll_id);
 ALTER TABLE option_t ADD FOREIGN KEY(used_as_global_option_in_poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON option_t (used_as_global_option_in_poll_id);
 ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON option_t (content_object_id_motion_id);
 ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON option_t (content_object_id_user_id);
 ALTER TABLE option_t ADD FOREIGN KEY(content_object_id_poll_candidate_list_id) REFERENCES poll_candidate_list_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON option_t (content_object_id_poll_candidate_list_id);
 ALTER TABLE option_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON option_t (meeting_id);
 
 ALTER TABLE organization_t ADD FOREIGN KEY(theme_id) REFERENCES theme_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON organization_t (theme_id);
 
 ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON personal_note_t (meeting_user_id);
 ALTER TABLE personal_note_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON personal_note_t (content_object_id_motion_id);
 ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON personal_note_t (meeting_id);
 
 ALTER TABLE point_of_order_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON point_of_order_category_t (meeting_id);
 
 ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (content_object_id_motion_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (content_object_id_assignment_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (content_object_id_topic_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(global_option_id) REFERENCES option_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (global_option_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (meeting_id);
 
 ALTER TABLE poll_candidate_t ADD FOREIGN KEY(poll_candidate_list_id) REFERENCES poll_candidate_list_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_candidate_t (poll_candidate_list_id);
 ALTER TABLE poll_candidate_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_candidate_t (user_id);
 ALTER TABLE poll_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_candidate_t (meeting_id);
 
 ALTER TABLE poll_candidate_list_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_candidate_list_t (meeting_id);
 
 ALTER TABLE projection_t ADD FOREIGN KEY(current_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (current_projector_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(preview_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (preview_projector_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(history_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (history_projector_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_meeting_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_motion_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_meeting_mediafile_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_meeting_mediafile_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_list_of_speakers_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_motion_block_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_assignment_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_agenda_item_id) REFERENCES agenda_item_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_agenda_item_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_topic_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_poll_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_message_id) REFERENCES projector_message_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_projector_message_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_projector_countdown_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (meeting_id);
 
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_agenda_item_list_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_agenda_item_list_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_topic_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_topic_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_list_of_speakers_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_list_of_speakers_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_current_los_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_current_los_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_motion_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_amendment_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_amendment_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_block_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_motion_block_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_assignment_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_assignment_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_mediafile_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_mediafile_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_message_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_message_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_countdown_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_countdown_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_assignment_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_assignment_poll_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_motion_poll_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_poll_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (meeting_id);
 
 ALTER TABLE projector_countdown_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_countdown_t (meeting_id);
 
 ALTER TABLE projector_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_message_t (meeting_id);
 
 ALTER TABLE speaker_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (list_of_speakers_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(structure_level_list_of_speakers_id) REFERENCES structure_level_list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (structure_level_list_of_speakers_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (meeting_user_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(point_of_order_category_id) REFERENCES point_of_order_category_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (point_of_order_category_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (meeting_id);
 
 ALTER TABLE structure_level_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_t (meeting_id);
 
 ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(structure_level_id) REFERENCES structure_level_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_list_of_speakers_t (structure_level_id);
 ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_list_of_speakers_t (list_of_speakers_id);
 ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_list_of_speakers_t (meeting_id);
 
 ALTER TABLE tag_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON tag_t (meeting_id);
 
 ALTER TABLE topic_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON topic_t (meeting_id);
 
 ALTER TABLE user_t ADD FOREIGN KEY(gender_id) REFERENCES gender_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON user_t (gender_id);
 ALTER TABLE user_t ADD FOREIGN KEY(home_committee_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON user_t (home_committee_id);
 
 ALTER TABLE vote_t ADD FOREIGN KEY(option_id) REFERENCES option_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON vote_t (option_id);
 ALTER TABLE vote_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON vote_t (user_id);
 ALTER TABLE vote_t ADD FOREIGN KEY(delegated_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON vote_t (delegated_user_id);
 ALTER TABLE vote_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON vote_t (meeting_id);
 
 
 
