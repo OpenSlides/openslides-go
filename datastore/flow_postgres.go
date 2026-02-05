@@ -92,14 +92,24 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	collectionIDs := make(map[string][]int)
 	collectionFields := make(map[string][]string)
-	for _, key := range keys {
-		if !slices.Contains(collectionIDs[key.Collection()], key.ID()) {
-			collectionIDs[key.Collection()] = append(collectionIDs[key.Collection()], key.ID())
-		}
 
-		if key.Field() != "id" && !slices.Contains(collectionFields[key.Collection()], key.Field()) {
-			collectionFields[key.Collection()] = append(collectionFields[key.Collection()], key.Field())
+	for _, key := range keys {
+		collection := key.Collection()
+		collectionIDs[collection] = append(collectionIDs[collection], key.ID())
+
+		if field := key.Field(); field != "id" {
+			collectionFields[collection] = append(collectionFields[collection], field)
 		}
+	}
+
+	for collection := range collectionIDs {
+		slices.Sort(collectionIDs[collection])
+		collectionIDs[collection] = slices.Compact(collectionIDs[collection])
+	}
+
+	for collection := range collectionFields {
+		slices.Sort(collectionFields[collection])
+		collectionFields[collection] = slices.Compact(collectionFields[collection])
 	}
 
 	keyValues := make(map[dskey.Key][]byte, len(keys))
@@ -125,51 +135,58 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 			collection,
 		)
 
-		rows, err := conn.Query(ctx, sql, ids)
-		if err != nil {
-			return nil, fmt.Errorf("sending query `%s`: %w", sql, err)
-		}
+		const batchSize = 5000
+		for i := 0; i < len(ids); i += batchSize {
+			end := min(i+batchSize, len(ids))
+			batch := ids[i:end]
 
-		err = forEachRow(rows, func(row pgx.CollectableRow) error {
-			values := row.RawValues()
-
-			if row.FieldDescriptions()[0].Name != "id" {
-				return fmt.Errorf("invalid row for collection %s, expect firts value to be the id. Got %s", collection, row.FieldDescriptions()[0].Name)
-			}
-			id, err := strconv.Atoi(string(values[0]))
+			rows, err := conn.Query(ctx, sql, batch)
 			if err != nil {
-				return fmt.Errorf("invalid id %s: %w", string(values[0]), err)
+				return nil, fmt.Errorf("sending query `%s`: %w", sql, err)
 			}
 
-			idKey, err := dskey.FromParts(collection, id, "id")
+			fieldDescription := rows.FieldDescriptions()
+			if fieldDescription[0].Name != "id" {
+				return nil, fmt.Errorf("invalid row for collection %s, expect first value to be the id. Got %s", collection, fieldDescription[0].Name)
+			}
+
+			err = forEachRow(rows, func(row pgx.CollectableRow) error {
+				values := row.RawValues()
+
+				id, err := strconv.Atoi(string(values[0]))
+				if err != nil {
+					return fmt.Errorf("invalid id %s: %w", string(values[0]), err)
+				}
+
+				idKey, err := dskey.FromParts(collection, id, "id")
+				if err != nil {
+					return fmt.Errorf("invalid id-key for id %d: %w", id, err)
+				}
+				keyValues[idKey] = []byte(strconv.Itoa(id))
+
+				for i, value := range values {
+					field := fieldDescription[i].Name
+					key, err := dskey.FromParts(collection, id, field)
+					if err != nil {
+						return fmt.Errorf("invalid key on field %d: %w", i, err)
+					}
+
+					keyValues[key] = nil
+					if value == nil {
+						continue
+					}
+
+					keyValues[key], err = convertValue(value, fieldDescription[i].DataTypeOID)
+					if err != nil {
+						return fmt.Errorf("convert value for field %s/%s: %w", collection, field, err)
+					}
+				}
+
+				return nil
+			})
 			if err != nil {
-				return fmt.Errorf("invalid id-key for id %d: %w", id, err)
+				return nil, fmt.Errorf("parse collection %s: %w", collection, err)
 			}
-			keyValues[idKey] = []byte(strconv.Itoa(id))
-
-			for i, value := range values {
-				field := row.FieldDescriptions()[i].Name
-				key, err := dskey.FromParts(collection, id, field)
-				if err != nil {
-					return fmt.Errorf("invalid key on field %d: %w", i, err)
-				}
-
-				keyValues[key] = nil
-				if value == nil {
-					continue
-				}
-
-				converted, err := convertValue(value, row.FieldDescriptions()[i].DataTypeOID)
-				if err != nil {
-					return fmt.Errorf("convert value for field %s/%s: %w", collection, field, err)
-				}
-				keyValues[key] = bytes.Clone(converted)
-			}
-
-			return nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("parse collection %s: %w", collection, err)
 		}
 	}
 
@@ -203,12 +220,14 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 		return json.Marshal(string(value))
 
 	case PSQLTypeInt, PSQLTypeJSON, PSQLTypeFloat:
-		return value, nil
+		return bytes.Clone(value), nil
 
 	case PSQLTypeIntList:
-		value[0] = '['
-		value[len(value)-1] = ']'
-		return value, nil
+		result := make([]byte, len(value))
+		copy(result, value)
+		result[0] = '['
+		result[len(result)-1] = ']'
+		return result, nil
 
 	case PSQLTypeBool:
 		if string(value) == "t" {
@@ -217,15 +236,14 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 		return []byte("false"), nil
 
 	case PSQLTypeDecimal:
-		return fmt.Appendf([]byte{}, `"%s"`, value), nil
+		return fmt.Appendf(nil, `"%s"`, value), nil
 
 	case PSQLTypeTimestamp:
 		timeValue, err := time.Parse("2006-01-02 15:04:05-07", string(value))
 		if err != nil {
 			return nil, fmt.Errorf("parsing time %s: %w", value, err)
 		}
-
-		return []byte(strconv.Itoa(int(timeValue.Unix()))), nil
+		return strconv.AppendInt(nil, timeValue.Unix(), 10), nil
 
 	case PSQLTypeVarCharList, PSQLTypeTextList:
 		strValue := strings.Trim(string(value), "{}")
