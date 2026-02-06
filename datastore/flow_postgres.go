@@ -12,6 +12,7 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -112,6 +113,10 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 		collectionFields[collection] = slices.Compact(collectionFields[collection])
 	}
 
+	if len(keys) > 1000 {
+		oslog.Debug("Fetching %d keys from postgres", len(keys))
+	}
+
 	keyValues := make(map[dskey.Key][]byte, len(keys))
 	for collection, ids := range collectionIDs {
 		fields := []string{"id"}
@@ -139,6 +144,10 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 		for i := 0; i < len(ids); i += batchSize {
 			end := min(i+batchSize, len(ids))
 			batch := ids[i:end]
+
+			if len(keys) > 1000 {
+				oslog.Debug("Fetching collection %s, ids %d to %d", collection, i, end)
+			}
 
 			rows, err := conn.Query(ctx, sql, batch)
 			if err != nil {
@@ -262,6 +271,8 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
 		return
 	}
+	oslog.Debug("Created connection to message bus")
+	defer oslog.Debug("Released connection to message bus")
 	defer conn.Release()
 
 	_, err = conn.Exec(ctx, "LISTEN os_notify")
@@ -276,6 +287,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
 			return
 		}
+		oslog.Debug("Got message from message bus: %v", notification.Payload)
 
 		var payload struct {
 			XACTID int `json:"xactId"`
