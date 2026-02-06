@@ -10,6 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/cache"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
@@ -36,7 +37,7 @@ func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T)
 	ctx := context.Background()
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(``),
-		dsmock.NewCounter,
+		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
 	)
 	counter := flow.Middlewares()[0].(*dsmock.Counter)
 	myKey := dskey.MustKey("user/1/username")
@@ -69,7 +70,7 @@ func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
 		dsmock.Stub(dsmock.YAMLData(`---
 		user/1/username: value
 		`)),
-		dsmock.NewCounter,
+		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
 	)
 	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
@@ -171,7 +172,7 @@ func TestCache_Update_values_not_in_the_cache_do_not_update_the_cache(t *testing
 		user/1/username: value
 		user/2/username: value
 		`),
-		dsmock.NewCounter,
+		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
 	)
 	myKey1 := dskey.MustKey("user/1/username")
 	myKey2 := dskey.MustKey("user/2/username")
