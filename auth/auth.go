@@ -158,7 +158,6 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer, pool ...*pg
 }
 
 // Authenticate uses the headers from the given request to get the user id. The
-// returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	if a.fake {
 		return r.Context(), nil
@@ -180,10 +179,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return nil, &authError{"invalid session", nil}
 	}
 
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
+	ctx, cancelCtx := context.WithCancelCause(a.AuthenticatedContext(ctx, p.UserID))
 
 	go func() {
-		defer cancelCtx()
+		defer cancelCtx(nil)
 
 		var sessionIDs []string
 		var err error
@@ -194,6 +193,8 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 			}
 
 			if slices.Contains(sessionIDs, p.SessionID) {
+				// Cancel with LogoutError to signal server-initiated logout
+				cancelCtx(LogoutError{SessionID: p.SessionID})
 				return
 			}
 		}
@@ -405,4 +406,14 @@ type payload struct {
 	jwt.StandardClaims
 	UserID    int    `json:"userId"`
 	SessionID string `json:"sessionId"`
+}
+
+// LogoutError indicates that a session was terminated due to logout.
+// This error is used as the cause when cancelling a context due to backchannel logout.
+type LogoutError struct {
+	SessionID string
+}
+
+func (e LogoutError) Error() string {
+	return "session logged out"
 }
