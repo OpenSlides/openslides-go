@@ -3,6 +3,7 @@ package auth
 type authError struct {
 	msg     string
 	wrapped error
+	status  int
 }
 
 func (authError) Type() string {
@@ -18,5 +19,8 @@ func (a authError) Unwrap() error {
 }
 
 func (a authError) StatusCode() int {
+	if a.status != 0 {
+		return a.status
+	}
 	return 403
 }
