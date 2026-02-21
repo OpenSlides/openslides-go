@@ -1,5 +1,7 @@
 // Package fastjson provides some function for hast json decoding for special
 // types.
+//
+// The decoding does not validate the input. Only use this for trusted sources.
 package fastjson
 
 import (

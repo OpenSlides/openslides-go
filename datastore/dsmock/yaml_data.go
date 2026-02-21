@@ -19,7 +19,7 @@ import (
 func YAMLData(input string) map[dskey.Key][]byte {
 	input = strings.ReplaceAll(input, "\t", "  ")
 
-	var db map[string]interface{}
+	var db map[string]any
 	if err := yaml.Unmarshal([]byte(input), &db); err != nil {
 		panic(err)
 	}
@@ -29,7 +29,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 		parts := strings.Split(dbKey, "/")
 		switch len(parts) {
 		case 1:
-			map1, ok := dbValue.(map[string]interface{})
+			map1, ok := dbValue.(map[string]any)
 			if !ok {
 				panic(fmt.Errorf("invalid type in db key %s: %T", dbKey, dbValue))
 			}
@@ -38,9 +38,9 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				if err != nil {
 					panic(fmt.Errorf("invalid id type: got %T expected int", rawID))
 				}
-				field, ok := rawObject.(map[string]interface{})
+				field, ok := rawObject.(map[string]any)
 				if !ok {
-					panic(fmt.Errorf("invalid object type: got %T, expected map[string]interface{}", rawObject))
+					panic(fmt.Errorf("invalid object type: got %T, expected map[string]any", rawObject))
 				}
 
 				for fieldName, fieldValue := range field {
@@ -65,7 +65,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 			}
 
 		case 2:
-			field, ok := dbValue.(map[string]interface{})
+			field, ok := dbValue.(map[string]any)
 			if !ok {
 				panic(fmt.Errorf("invalid object type: got %T, expected map[string]interface{}", dbValue))
 			}

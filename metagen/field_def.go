@@ -1,4 +1,4 @@
-// Code generated with models.yml DO NOT EDIT.
+// Code generated from meta collections. DO NOT EDIT.
 package metagen
 
 // RelatoinFields is a map from are all (single) relation fields to the fields,
@@ -290,6 +290,7 @@ var RelationListFields = map[string]string{
 	"meeting/tag_ids":                                          "tag/meeting_id",
 	"meeting/topic_ids":                                        "topic/meeting_id",
 	"meeting/topic_poll_default_group_ids":                     "group/used_as_topic_poll_default_id",
+	"meeting/user_ids":                                         "user/meeting_ids",
 	"meeting/vote_ids":                                         "vote/meeting_id",
 	"meeting_mediafile/access_group_ids":                       "group/meeting_mediafile_access_group_ids",
 	"meeting_mediafile/inherited_access_group_ids":             "group/meeting_mediafile_inherited_access_group_ids",
@@ -373,6 +374,7 @@ var RelationListFields = map[string]string{
 	"user/history_entry_ids":                                   "history_entry/model_id",
 	"user/history_position_ids":                                "history_position/user_id",
 	"user/is_present_in_meeting_ids":                           "meeting/present_user_ids",
+	"user/meeting_ids":                                         "meeting/user_ids",
 	"user/meeting_user_ids":                                    "meeting_user/user_id",
 	"user/option_ids":                                          "option/content_object_id",
 	"user/poll_candidate_ids":                                  "poll_candidate/user_id",
@@ -1085,7 +1087,6 @@ var RestrictionModes = map[string]string{
 	"organization/users_email_replyto":                          "A",
 	"organization/users_email_sender":                           "A",
 	"organization/users_email_subject":                          "A",
-	"organization/vote_decrypt_public_main_key":                 "A",
 	"organization/archived_meeting_ids":                         "B",
 	"organization/committee_ids":                                "B",
 	"organization/enable_electronic_voting":                     "B",
@@ -1124,8 +1125,6 @@ var RestrictionModes = map[string]string{
 	// poll
 	"poll/backend":                 "A",
 	"poll/content_object_id":       "A",
-	"poll/crypt_key":               "A",
-	"poll/crypt_signature":         "A",
 	"poll/description":             "A",
 	"poll/entitled_group_ids":      "A",
 	"poll/entitled_users_at_stop":  "A",
@@ -1149,8 +1148,6 @@ var RestrictionModes = map[string]string{
 	"poll/title":                   "A",
 	"poll/type":                    "A",
 	"poll/voted_ids":               "A",
-	"poll/votes_raw":               "B",
-	"poll/votes_signature":         "B",
 	"poll/votesinvalid":            "B",
 	"poll/votesvalid":              "B",
 	"poll/live_votes":              "C",

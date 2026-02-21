@@ -15,7 +15,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-go/models"
+	"github.com/OpenSlides/openslides-go/collection"
 )
 
 //go:embed value.go.tmpl
@@ -34,9 +34,9 @@ func main() {
 }
 
 func run(w io.Writer) error {
-	fromYml, err := parseModelsYml()
+	fromYml, err := collection.Collections("../../meta/")
 	if err != nil {
-		return fmt.Errorf("parse models.yml: %w", err)
+		return fmt.Errorf("parse collections: %w", err)
 	}
 
 	buf := new(bytes.Buffer)
@@ -140,7 +140,7 @@ func zeroValue(t string) string {
 	return "unknown type " + t
 }
 
-func genFieldMethods(buf *bytes.Buffer, fromYML map[string]models.Model) error {
+func genFieldMethods(buf *bytes.Buffer, fromYML map[string]collection.Collection) error {
 	fields, err := toFields(fromYML)
 	if err != nil {
 		return fmt.Errorf("generate field definitions: %w", err)
@@ -160,24 +160,20 @@ func genFieldMethods(buf *bytes.Buffer, fromYML map[string]models.Model) error {
 	return nil
 }
 
-func openModelYML() (io.ReadCloser, error) {
-	return os.Open("../../meta/models.yml")
-}
-
-// toFields returns all fields from the models.yml with there go-type as string.
-func toFields(raw map[string]models.Model) ([]field, error) {
+// toFields returns all fields all collections with there go-type as string.
+func toFields(raw map[string]collection.Collection) ([]field, error) {
 	var fields []field
 	for collectionName, collection := range raw {
-		for fieldName, modelField := range collection.Fields {
+		for fieldName, collectionField := range collection.Fields {
 			f := field{}
 			f.GoName = goName(collectionName) + "_" + goName(fieldName)
-			f.ValueType = valueType(modelField.Type, modelField.Required)
+			f.ValueType = valueType(collectionField.Type, collectionField.Required)
 			f.Collection = firstLower(goName(collectionName))
 			f.CollectionName = collectionName
 			f.FieldName = fieldName
-			f.Required = modelField.Required
+			f.Required = collectionField.Required
 
-			if modelField.Type == "relation" || modelField.Type == "generic-relation" {
+			if collectionField.Type == "relation" || collectionField.Type == "generic-relation" {
 				f.SingleRelation = true
 			}
 
@@ -185,27 +181,11 @@ func toFields(raw map[string]models.Model) ([]field, error) {
 		}
 	}
 
-	// TODO: fix models-to-go to return fields in input order.
 	sort.Slice(fields, func(i, j int) bool {
 		return fields[i].GoName < fields[j].GoName
 	})
 
 	return fields, nil
-}
-
-func parseModelsYml() (map[string]models.Model, error) {
-	r, err := openModelYML()
-	if err != nil {
-		return nil, fmt.Errorf("open models.yml: %v", err)
-	}
-	defer r.Close()
-
-	inData, err := models.Unmarshal(r)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling models.yml: %w", err)
-	}
-
-	return inData, nil
 }
 
 type field struct {
@@ -239,16 +219,16 @@ func firstLower(s string) string {
 	return strings.ToLower(string(s[0])) + s[1:]
 }
 
-func valueType(modelsType string, required bool) string {
-	if !required && modelsType == "relation" {
+func valueType(collectionType string, required bool) string {
+	if !required && collectionType == "relation" {
 		return "ValueMaybeInt"
 	}
 
-	if !required && modelsType == "generic-relation" {
+	if !required && collectionType == "generic-relation" {
 		return "ValueMaybeString"
 	}
 
-	switch modelsType {
+	switch collectionType {
 	case "number", "relation", "timestamp":
 		return "ValueInt"
 
@@ -274,6 +254,6 @@ func valueType(modelsType string, required bool) string {
 		return "ValueStringSlice"
 
 	default:
-		panic(fmt.Sprintf("Unknown type %q", modelsType))
+		panic(fmt.Sprintf("Unknown type %q", collectionType))
 	}
 }
