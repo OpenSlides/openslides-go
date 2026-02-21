@@ -95,7 +95,7 @@ type FlowUpdateNoData struct {
 	*Flow
 }
 
-// NewFlow initializes a stub with Get and Update.
+// NewFlowNUpdateNoData initializes a stub with Get and Update.
 func NewFlowNUpdateNoData(data map[dskey.Key][]byte, middlewares ...func(flow.Getter) flow.Getter) *FlowUpdateNoData {
 	flow := NewFlow(data, middlewares...)
 
