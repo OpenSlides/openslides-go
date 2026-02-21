@@ -223,6 +223,117 @@ func TestPostgresUpdate(t *testing.T) {
 	}
 }
 
+func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
+	tp, err := pgtest.NewPostgresTest(ctx)
+	if err != nil {
+		t.Fatalf("starting postgres: %v", err)
+	}
+	defer tp.Close()
+
+	conn, err := tp.Conn(ctx)
+	if err != nil {
+		t.Fatalf("create connection: %v", err)
+	}
+
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	if err != nil {
+		t.Fatalf("NewFlowPostgres(): %v", err)
+	}
+
+	keys := []dskey.Key{
+		dskey.MustKey("poll/300/title"),
+	}
+
+	done := make(chan error)
+	// TODO: When update fails, this currently blocks for ever. Maybe use a
+	// timeout.
+	go flow.Update(ctx, func(m map[dskey.Key][]byte, err error) {
+		select {
+		case <-done:
+			// Only call update once.
+			return
+		default:
+		}
+
+		if err != nil {
+			done <- fmt.Errorf("from Update callback: %w", err)
+			return
+		}
+
+		if m[keys[0]] == nil {
+			done <- fmt.Errorf("key %s not found", keys[0])
+			return
+		}
+
+		done <- nil
+		return
+	})
+	// TODO: This test could be flaky.
+	time.Sleep(5 * time.Second) // TODO: How to do this without a sleep?
+	sql := `
+    INSERT INTO assignment_t (
+        id,
+        title,
+        sequential_number,
+        meeting_id
+    ) VALUES (
+        123,
+        'Test Assignment',
+        1,
+        1
+    );
+
+    INSERT INTO list_of_speakers_t (
+        id,
+        sequential_number,
+        content_object_id,
+        meeting_id
+    ) VALUES (
+        456,
+        1,
+        'assignment/123',
+        1
+    );
+
+    INSERT INTO poll_t (
+        id,
+        title,
+        type,
+        backend,
+        pollmethod,
+        onehundred_percent_base,
+        sequential_number,
+        content_object_id,
+        meeting_id
+    ) VALUES (
+        300,
+        'My poll',
+        'named',
+        'fast',
+        'YNA',
+        'disabled',
+        1,
+        'assignment/123',
+        1
+    );
+`
+	if _, err := conn.Exec(ctx, sql); err != nil {
+		t.Fatalf("adding example data: %v", err)
+	}
+
+	if err := <-done; err != nil {
+		t.Errorf("Error: %v", err)
+	}
+}
+
 func TestBigQuery(t *testing.T) {
 	t.Parallel()
 
