@@ -90,7 +90,7 @@ func (s *Flow) Send(values map[dskey.Key][]byte) {
 	s.ch <- values
 }
 
-// FlowNoUpdate is is a mock flow with the UpdateNoData function
+// FlowUpdateNoData is is a mock flow with the UpdateNoData function.
 type FlowUpdateNoData struct {
 	*Flow
 }
