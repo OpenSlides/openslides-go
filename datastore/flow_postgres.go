@@ -117,18 +117,6 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 		fields := []string{"id"}
 		fields = append(fields, collectionFields[collection]...)
 
-		// TODO: Remove me, if the new vote service and projector service are merged
-		switch collection {
-		case "poll":
-			fields = slices.DeleteFunc(fields, func(s string) bool {
-				return s == "live_votes"
-			})
-		case "projection":
-			fields = slices.DeleteFunc(fields, func(s string) bool {
-				return s == "content"
-			})
-		}
-
 		sql := fmt.Sprintf(
 			`SELECT %s FROM "%s" WHERE id = ANY ($1) `,
 			strings.Join(fields, ","),
