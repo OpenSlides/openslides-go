@@ -2306,7 +2306,7 @@ func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
@@ -6251,6 +6251,24 @@ func (r *Fetch) Organization_ResetPasswordVerboseErrors(organizationID int) *Val
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Organization_RestrictEditForwardCommittees(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "restrict_edit_forward_committees")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_RestrictEditingSameLevelCommitteeAdmins(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "restrict_editing_same_level_committee_admins")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Organization_SamlAttrMapping(organizationID int) *ValueJSON {
 	key, err := dskey.FromParts("organization", organizationID, "saml_attr_mapping")
 	if err != nil {
@@ -6746,6 +6764,42 @@ func (r *Fetch) PollConfigSelection_PollID(pollConfigSelectionID int) *ValueInt 
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) PollConfigStvScottish_ID(pollConfigStvScottishID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) PollConfigStvScottish_OptionIDs(pollConfigStvScottishID int) *ValueIntSlice {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "option_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) PollConfigStvScottish_PollID(pollConfigStvScottishID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "poll_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) PollConfigStvScottish_Posts(pollConfigStvScottishID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_stv_scottish", pollConfigStvScottishID, "posts")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
 func (r *Fetch) Poll_AllowInvalid(pollID int) *ValueBool {
 	key, err := dskey.FromParts("poll", pollID, "allow_invalid")
 	if err != nil {
@@ -6773,13 +6827,13 @@ func (r *Fetch) Poll_BallotIDs(pollID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_ConfigID(pollID int) *ValueString {
+func (r *Fetch) Poll_ConfigID(pollID int) *ValueMaybeString {
 	key, err := dskey.FromParts("poll", pollID, "config_id")
 	if err != nil {
-		return &ValueString{err: err}
+		return &ValueMaybeString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueMaybeString{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {

@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'b3abfb9e566aebc0ac740c5536365ea8'
+-- MODELS_YML_CHECKSUM = 'c9d3c87f20a7178b1f223ddf5909af25'
 
 
 -- Function and meta table definitions
@@ -56,7 +56,7 @@ BEGIN
     operation_var := LOWER(TG_OP);
     fqid_var :=  escaped_table_name || '/' || NEW.id;
     IF (TG_OP = 'DELETE') THEN
-        fqid_var = escaped_table_name || '/' || OLD.id;
+        fqid_var := escaped_table_name || '/' || OLD.id;
     END IF;
 
     INSERT INTO os_notify_log_t (operation, fqid, xact_id, timestamp)
@@ -77,7 +77,7 @@ DECLARE
     value_1 integer;
     value_2 integer;
 BEGIN
-    base_column_name = TG_ARGV[0];
+    base_column_name := TG_ARGV[0];
     value_1 := hstore(NEW) -> (base_column_name || '_1');
     value_2 := hstore(NEW) -> (base_column_name || '_2');
 
@@ -95,7 +95,7 @@ DECLARE
     payload TEXT;
     body_content_text TEXT;
 BEGIN
-    -- Running the trigger for the first time in a transaction creates the table and after commiting the transaction the table is dropped.
+    -- Running the trigger for the first time in a transaction creates the table and after committing the transaction the table is dropped.
     -- Every next run of the trigger in this transaction raises a notice that the table exists. Setting the log_min_messages to notice increases the noise because of such messages.
     CREATE LOCAL TEMPORARY TABLE
     IF NOT EXISTS tbl_notify_counter_tx_once (
@@ -158,88 +158,183 @@ CREATE TABLE os_notify_log_t (
     CONSTRAINT unique_fqid_xact_id_operation UNIQUE (operation,fqid,xact_id)
 );
 
-CREATE FUNCTION check_not_null_for_1_1() RETURNS trigger as $not_null_trigger$
--- usage with 3 parameters IN TRIGGER DEFINITION:
--- table_name: relation to check, usually a view
--- column_name: field to check, usually a field in a view
--- foreign_key: field name of triggered table, that will be used to SELECT
--- the values to check the not null. Can be empty on INSERT as then unused.
+CREATE TABLE version (
+    migration_index INTEGER PRIMARY KEY,
+    migration_state TEXT,
+    replace_tables JSONB
+);
+
+CREATE OR REPLACE FUNCTION prevent_writes() RETURNS trigger AS $read_only_trigger$
+BEGIN
+    RAISE EXCEPTION 'Table % is currently read-only.', TG_TABLE_NAME;
+END;
+$read_only_trigger$ LANGUAGE plpgsql;
+
+CREATE FUNCTION check_not_null_for_1_1() RETURNS trigger AS $not_null_trigger$
+-- Parameters required for all operation types
+--   0. own_collection – name of the view on which the trigger is defined
+--   1. own_column – column in `own_table` referencing
+--      `foreign_table`
+--
+-- Parameter needed for extended error message generation for 'UPDATE' and
+-- 'DELETE' (can be empty on INSERT)
+--   2. foreign_collection – name of collection of the triggered table that
+--      will be used to SELECT
+--   3. foreign_column – column in the foreign table referencing
+--      `own_table`
 DECLARE
-    table_name TEXT := TG_ARGV[0];
-    column_name TEXT := TG_ARGV[1];
-    foreign_key TEXT := TG_ARGV[2];
+    -- Parameters from TRIGGER DEFINITION
+    -- Always required
+    own_collection TEXT := TG_ARGV[0];
+    own_column TEXT := TG_ARGV[1];
+
+    -- Only for TG_OP in ('UPDATE', 'DELETE')
+    foreign_collection TEXT := TG_ARGV[2];
+    foreign_column TEXT := TG_ARGV[3];
+
+    -- Calculated parameters
+    own_id INTEGER;
     foreign_id INTEGER;
     counted INTEGER;
     error_message TEXT;
 BEGIN
     IF (TG_OP = 'INSERT') THEN
         -- in case of INSERT the view is checked on itself so the own id is applicable
-        foreign_id := NEW.id;
-    ELSIF TG_OP IN ('UPDATE', 'DELETE') THEN
-        foreign_id := hstore(OLD) -> foreign_key;
-        EXECUTE format('SELECT 1 FROM %I WHERE "id" = %L', table_name, foreign_id) INTO counted;
+        own_id := NEW.id;
+    ELSE
+        own_id := hstore(OLD) -> foreign_column;
+        EXECUTE format('SELECT 1 FROM %I WHERE "id" = %L', own_collection, own_id) INTO counted;
         IF (counted IS NULL) THEN
             -- if the earlier referenced row was deleted (in the same transaction) we can quit.
             RETURN NULL;
         END IF;
     END IF;
 
-    IF (foreign_id IS NOT NULL) THEN
-        EXECUTE format('SELECT %I FROM %I WHERE id = %s', column_name, table_name, foreign_id) INTO counted;
-        IF (counted is NULL) THEN
-            error_message := format('Trigger %s: NOT NULL CONSTRAINT VIOLATED for %s/%s/%s', TG_NAME, table_name, foreign_id, column_name);
-            IF TG_OP IN ('UPDATE', 'DELETE') THEN
-                error_message := error_message || format(' from relationship before %s/%s', OLD.id, foreign_key);
-            END IF;
-            RAISE EXCEPTION '%', error_message;
+    EXECUTE format('SELECT %I FROM %I WHERE id = %L', own_column, own_collection, own_id) INTO counted;
+    IF (counted is NULL) THEN
+        error_message := format('Trigger %s: NOT NULL CONSTRAINT VIOLATED for %s/%s/%s', TG_NAME, own_collection, own_id, own_column);
+        IF TG_OP IN ('UPDATE', 'DELETE') THEN
+            foreign_id := OLD.id;
+            error_message := error_message || format(' from relationship before %s/%s/%s', foreign_collection, foreign_id, foreign_column);
         END IF;
+        RAISE EXCEPTION '%', error_message;
     END IF;
     RETURN NULL;  -- AFTER TRIGGER needs no return
 END;
 $not_null_trigger$ language plpgsql;
 
-CREATE FUNCTION check_not_null_for_relation_lists() RETURNS trigger as $not_null_trigger$
--- usage with 3 parameters IN TRIGGER DEFINITION:
--- table_name: relation to check, usually a view
--- column_name: field to check, usually a field in a view
--- foreign_key: field name of triggered table, that will be used to SELECT
--- the values to check the not null. Can be empty on INSERT as then unused.
+CREATE FUNCTION check_not_null_for_1_n() RETURNS trigger AS $not_null_trigger$
+-- Parameters required for all operation types
+--   0. own_table – name of the table on which the trigger is defined
+--   1. own_column – column in `own_table` referencing
+--      `foreign_table`
+--   2. foreign_table – name of the triggered table, that will be used to SELECT
+--   3. foreign_column – column in the foreign table referencing
+--      `own_table`
 DECLARE
-    table_name TEXT := TG_ARGV[0];
-    column_name TEXT := TG_ARGV[1];
-    foreign_key TEXT := TG_ARGV[2];
+    -- Parameters from TRIGGER DEFINITION
+    -- Always required
+    own_table TEXT := TG_ARGV[0];
+    own_column TEXT := TG_ARGV[1];
+    foreign_table TEXT := TG_ARGV[2];
+    foreign_column TEXT := TG_ARGV[3];
+
+    -- Calculated parameters
+    own_collection TEXT;
+    foreign_collection TEXT;
+    own_id INTEGER;
     foreign_id INTEGER;
     counted INTEGER;
     error_message TEXT;
 BEGIN
     IF (TG_OP = 'INSERT') THEN
         -- in case of INSERT the view is checked on itself so the own id is applicable
-        foreign_id := NEW.id;
-    ELSIF TG_OP IN ('UPDATE', 'DELETE') THEN
-        foreign_id := hstore(OLD) -> foreign_key;
-        EXECUTE format('SELECT 1 FROM %I WHERE "id" = %L', table_name, foreign_id) INTO counted;
+        own_id := NEW.id;
+    ELSE
+        own_id := hstore(OLD) -> foreign_column;
+        EXECUTE format('SELECT 1 FROM %I WHERE "id" = %L', own_table, own_id) INTO counted;
         IF (counted IS NULL) THEN
             -- if the earlier referenced row was deleted (in the same transaction) we can quit.
             RETURN NULL;
         END IF;
     END IF;
 
-    IF (foreign_id IS NOT NULL) THEN
-        EXECUTE format('SELECT array_length(%I, 1) FROM %I WHERE id = %s', column_name, table_name, foreign_id) INTO counted;
-        IF (counted is NULL) THEN
-            error_message := format('Trigger %s: NOT NULL CONSTRAINT VIOLATED for %s/%s/%s', TG_NAME, table_name, foreign_id, column_name);
-            IF TG_OP IN ('UPDATE', 'DELETE') THEN
-                error_message := error_message || format(' from relationship before %s/%s', OLD.id, foreign_key);
-            END IF;
-            RAISE EXCEPTION '%', error_message;
+    EXECUTE format('SELECT 1 FROM %I WHERE %I = %L', foreign_table, foreign_column, own_id) INTO counted;
+    IF (counted is NULL) THEN
+        own_collection := SUBSTRING(own_table FOR LENGTH(own_table) - 2);
+        error_message := format('Trigger %s: NOT NULL CONSTRAINT VIOLATED for %s/%s/%s', TG_NAME, own_collection, own_id, own_column);
+        IF TG_OP IN ('UPDATE', 'DELETE') THEN
+            foreign_collection := SUBSTRING(foreign_table FOR LENGTH(foreign_table) - 2);
+            foreign_id := OLD.id;
+            error_message := error_message || format(' from relationship before %s/%s/%s', foreign_collection, foreign_id, foreign_column);
         END IF;
+        RAISE EXCEPTION '%', error_message;
     END IF;
     RETURN NULL;  -- AFTER TRIGGER needs no return
 END;
 $not_null_trigger$ language plpgsql;
 
+CREATE FUNCTION check_not_null_for_n_m() RETURNS trigger AS $not_null_trigger$
+-- Parameters required for both INSERT and DELETE operations
+--   0. intermediate_table_name – name of the n:m table
+--   1. own_table – name of the table on which the trigger is defined
+--   2. own_column – column in `own_table` referencing
+--      `foreign_collection`
+--   3. intermediate_table_own_key – column in the n:m table referencing
+--      `own_table`
+--
+-- Parameters needed for extended error message generation for 'DELETE'
+-- (can be empty on INSERT)
+--   4. intermediate_table_foreign_key – column in the n:m table referencing
+--      the foreign table
+--   5. foreign_collection – name of the collection of the foreign table
+--   6. foreign_column – column in the foreign table referencing
+--      `own_collection`
+DECLARE
+    -- Parameters from TRIGGER DEFINITION
+    -- Always required
+    intermediate_table_name TEXT := TG_ARGV[0];
+    own_table TEXT := TG_ARGV[1];
+    own_column TEXT := TG_ARGV[2];
+    intermediate_table_own_key TEXT := TG_ARGV[3];
 
--- Type definitions
+    -- Only for TG_OP = 'DELETE'
+    intermediate_table_foreign_key TEXT := TG_ARGV[4];
+    foreign_collection TEXT := TG_ARGV[5];
+    foreign_column TEXT := TG_ARGV[6];
+
+    -- Calculated parameters
+    own_collection TEXT;
+    own_id INTEGER;
+    foreign_id INTEGER;
+    counted INTEGER;
+    error_message TEXT;
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        -- in case of INSERT the view is checked on itself so the own id is applicable
+        own_id := NEW.id;
+    ELSE
+        own_id := hstore(OLD) -> intermediate_table_own_key;
+        EXECUTE format('SELECT 1 FROM %I WHERE "id" = %L', own_table, own_id) INTO counted;
+        IF (counted IS NULL) THEN
+            -- if the earlier referenced row was deleted (in the same transaction) we can quit.
+            RETURN NULL;
+        END IF;
+    END IF;
+
+    EXECUTE format('SELECT 1 FROM %I WHERE %I = %L', intermediate_table_name, intermediate_table_own_key, own_id) INTO counted;
+    IF (counted is NULL) THEN
+        own_collection := SUBSTRING(own_table FOR LENGTH(own_table) - 2);
+        error_message := format('Trigger %s: NOT NULL CONSTRAINT VIOLATED for %s/%s/%s', TG_NAME, own_collection, own_id, own_column);
+        IF (TG_OP = 'DELETE') THEN
+            foreign_id := hstore(OLD) -> intermediate_table_foreign_key;
+            error_message := error_message || format(' from relationship before %s/%s/%s', foreign_collection, foreign_id, foreign_column);
+        END IF;
+        RAISE EXCEPTION '%', error_message;
+    END IF;
+    RETURN NULL;  -- AFTER TRIGGER needs no return
+END;
+$not_null_trigger$ language plpgsql;
 
 
 -- Table definitions
@@ -484,7 +579,7 @@ CREATE TABLE meeting_t (
     external_id varchar(256),
     welcome_title varchar(256) DEFAULT 'Welcome to OpenSlides',
     welcome_text text DEFAULT 'Space for your welcome text.',
-    name varchar(100) NOT NULL DEFAULT 'OpenSlides',
+    name varchar(200) NOT NULL DEFAULT 'OpenSlides',
     is_active_in_organization_id integer,
     is_archived_in_organization_id integer,
     description varchar(100),
@@ -921,6 +1016,7 @@ CREATE TABLE organization_t (
     login_text text,
     reset_password_verbose_errors boolean,
     disable_forward_with_attachments boolean,
+    restrict_edit_forward_committees boolean,
     enable_electronic_voting boolean,
     enable_chat boolean,
     limit_of_meetings integer CONSTRAINT minimum_limit_of_meetings CHECK (limit_of_meetings >= 0) DEFAULT 0,
@@ -928,6 +1024,7 @@ CREATE TABLE organization_t (
     default_language varchar(256) CONSTRAINT enum_organization_default_language CHECK (default_language IN ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr')) DEFAULT 'en',
     require_duplicate_from boolean,
     enable_anonymous boolean,
+    restrict_editing_same_level_committee_admins boolean,
     saml_enabled boolean,
     saml_login_button_text varchar(256) DEFAULT 'SAML login',
     saml_attr_mapping jsonb,
@@ -994,12 +1091,13 @@ CREATE TABLE point_of_order_category_t (
 CREATE TABLE poll_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     title varchar(256) NOT NULL,
-    config_id varchar(100) NOT NULL,
+    config_id varchar(100),
     config_id_poll_config_approval_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_approval' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     config_id_poll_config_selection_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_selection' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     config_id_poll_config_rating_score_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_rating_score' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     config_id_poll_config_rating_approval_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_rating_approval' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_config_id_part1 CHECK (split_part(config_id, '/', 1) IN ('poll_config_approval','poll_config_selection','poll_config_rating_score','poll_config_rating_approval')),
+    config_id_poll_config_stv_scottish_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_stv_scottish' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    CONSTRAINT valid_config_id_part1 CHECK (split_part(config_id, '/', 1) IN ('poll_config_approval','poll_config_selection','poll_config_rating_score','poll_config_rating_approval','poll_config_stv_scottish')),
     visibility varchar(256) NOT NULL CONSTRAINT enum_poll_visibility CHECK (visibility IN ('manually', 'named', 'open', 'secret')),
     state varchar(256) CONSTRAINT enum_poll_state CHECK (state IN ('created', 'started', 'finished')) DEFAULT 'created',
     result text,
@@ -1041,7 +1139,8 @@ CREATE TABLE poll_config_option_t (
     poll_config_id_poll_config_selection_id integer GENERATED ALWAYS AS (CASE WHEN split_part(poll_config_id, '/', 1) = 'poll_config_selection' THEN cast(split_part(poll_config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     poll_config_id_poll_config_rating_score_id integer GENERATED ALWAYS AS (CASE WHEN split_part(poll_config_id, '/', 1) = 'poll_config_rating_score' THEN cast(split_part(poll_config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     poll_config_id_poll_config_rating_approval_id integer GENERATED ALWAYS AS (CASE WHEN split_part(poll_config_id, '/', 1) = 'poll_config_rating_approval' THEN cast(split_part(poll_config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_poll_config_id_part1 CHECK (split_part(poll_config_id, '/', 1) IN ('poll_config_approval','poll_config_selection','poll_config_rating_score','poll_config_rating_approval')),
+    poll_config_id_poll_config_stv_scottish_id integer GENERATED ALWAYS AS (CASE WHEN split_part(poll_config_id, '/', 1) = 'poll_config_stv_scottish' THEN cast(split_part(poll_config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    CONSTRAINT valid_poll_config_id_part1 CHECK (split_part(poll_config_id, '/', 1) IN ('poll_config_approval','poll_config_selection','poll_config_rating_score','poll_config_rating_approval','poll_config_stv_scottish')),
     weight integer,
     text varchar(256),
     meeting_user_id integer
@@ -1080,6 +1179,15 @@ CREATE TABLE poll_config_selection_t (
     max_options_amount integer DEFAULT 0,
     min_options_amount integer DEFAULT 0,
     allow_nota boolean DEFAULT False
+);
+
+
+
+
+CREATE TABLE poll_config_stv_scottish_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    poll_id integer NOT NULL UNIQUE,
+    posts integer CONSTRAINT minimum_posts CHECK (posts >= 1) DEFAULT 1
 );
 
 
@@ -1351,75 +1459,98 @@ CREATE TABLE nm_chat_group_read_group_ids_group_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (chat_group_id, group_id)
 );
+CREATE INDEX ON nm_chat_group_read_group_ids_group_t (chat_group_id);
+CREATE INDEX ON nm_chat_group_read_group_ids_group_t (group_id);
 
 CREATE TABLE nm_chat_group_write_group_ids_group_t (
     chat_group_id integer NOT NULL REFERENCES chat_group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (chat_group_id, group_id)
 );
+CREATE INDEX ON nm_chat_group_write_group_ids_group_t (chat_group_id);
+CREATE INDEX ON nm_chat_group_write_group_ids_group_t (group_id);
 
 CREATE TABLE nm_committee_manager_ids_user_t (
     committee_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     user_id integer NOT NULL REFERENCES user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (committee_id, user_id)
 );
+CREATE INDEX ON nm_committee_manager_ids_user_t (committee_id);
+CREATE INDEX ON nm_committee_manager_ids_user_t (user_id);
 
 CREATE TABLE nm_committee_all_child_ids_committee_t (
     all_child_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     all_parent_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (all_child_id, all_parent_id)
 );
+CREATE INDEX ON nm_committee_all_child_ids_committee_t (all_child_id);
+CREATE INDEX ON nm_committee_all_child_ids_committee_t (all_parent_id);
 
 CREATE TABLE nm_committee_forward_to_committee_ids_committee_t (
     forward_to_committee_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     receive_forwardings_from_committee_id integer NOT NULL REFERENCES committee_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (forward_to_committee_id, receive_forwardings_from_committee_id)
 );
+CREATE INDEX ON nm_committee_forward_to_committee_ids_committee_t (forward_to_committee_id);
+CREATE INDEX ON nm_committee_forward_to_committee_ids_committee_t (receive_forwardings_from_committee_id);
 
 CREATE TABLE nm_group_meeting_user_ids_meeting_user_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     meeting_user_id integer NOT NULL REFERENCES meeting_user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, meeting_user_id)
 );
+CREATE INDEX ON nm_group_meeting_user_ids_meeting_user_t (group_id);
+CREATE INDEX ON nm_group_meeting_user_ids_meeting_user_t (meeting_user_id);
 
 CREATE TABLE nm_group_mmagi_meeting_mediafile_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     meeting_mediafile_id integer NOT NULL REFERENCES meeting_mediafile_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, meeting_mediafile_id)
 );
+CREATE INDEX ON nm_group_mmagi_meeting_mediafile_t (group_id);
+CREATE INDEX ON nm_group_mmagi_meeting_mediafile_t (meeting_mediafile_id);
 
 CREATE TABLE nm_group_mmiagi_meeting_mediafile_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     meeting_mediafile_id integer NOT NULL REFERENCES meeting_mediafile_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, meeting_mediafile_id)
 );
+CREATE INDEX ON nm_group_mmiagi_meeting_mediafile_t (group_id);
+CREATE INDEX ON nm_group_mmiagi_meeting_mediafile_t (meeting_mediafile_id);
 
 CREATE TABLE nm_group_read_comment_section_ids_motion_comment_section_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     motion_comment_section_id integer NOT NULL REFERENCES motion_comment_section_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, motion_comment_section_id)
 );
+CREATE INDEX ON nm_group_read_comment_section_ids_motion_comment_section_t (group_id);
+CREATE INDEX ON nm_group_read_comment_section_ids_motion_comment_section_t (motion_comment_section_id);
 
 CREATE TABLE nm_group_write_comment_section_ids_motion_comment_section_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     motion_comment_section_id integer NOT NULL REFERENCES motion_comment_section_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, motion_comment_section_id)
 );
+CREATE INDEX ON nm_group_write_comment_section_ids_motion_comment_section_t (group_id);
+CREATE INDEX ON nm_group_write_comment_section_ids_motion_comment_section_t (motion_comment_section_id);
 
 CREATE TABLE nm_group_poll_ids_poll_t (
     group_id integer NOT NULL REFERENCES group_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     poll_id integer NOT NULL REFERENCES poll_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (group_id, poll_id)
 );
+CREATE INDEX ON nm_group_poll_ids_poll_t (group_id);
+CREATE INDEX ON nm_group_poll_ids_poll_t (poll_id);
 
 CREATE TABLE nm_meeting_present_user_ids_user_t (
     meeting_id integer NOT NULL REFERENCES meeting_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     user_id integer NOT NULL REFERENCES user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (meeting_id, user_id)
 );
+CREATE INDEX ON nm_meeting_present_user_ids_user_t (meeting_id);
+CREATE INDEX ON nm_meeting_present_user_ids_user_t (user_id);
 
 CREATE TABLE gm_meeting_mediafile_attachment_ids_t (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     meeting_mediafile_id integer NOT NULL REFERENCES meeting_mediafile_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     attachment_id varchar(100) NOT NULL,
     attachment_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'motion' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1428,57 +1559,70 @@ CREATE TABLE gm_meeting_mediafile_attachment_ids_t (
     CONSTRAINT valid_attachment_id_part1 CHECK (split_part(attachment_id, '/', 1) IN ('motion', 'topic', 'assignment')),
     CONSTRAINT unique_$meeting_mediafile_id_$attachment_id UNIQUE (meeting_mediafile_id, attachment_id)
 );
+CREATE INDEX ON gm_meeting_mediafile_attachment_ids_t (meeting_mediafile_id);
+CREATE INDEX ON gm_meeting_mediafile_attachment_ids_t (attachment_id);
 
 CREATE TABLE nm_meeting_user_poll_voted_ids_poll_t (
     meeting_user_id integer NOT NULL REFERENCES meeting_user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     poll_id integer NOT NULL REFERENCES poll_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (meeting_user_id, poll_id)
 );
+CREATE INDEX ON nm_meeting_user_poll_voted_ids_poll_t (meeting_user_id);
+CREATE INDEX ON nm_meeting_user_poll_voted_ids_poll_t (poll_id);
 
 CREATE TABLE nm_meeting_user_structure_level_ids_structure_level_t (
     meeting_user_id integer NOT NULL REFERENCES meeting_user_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     structure_level_id integer NOT NULL REFERENCES structure_level_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (meeting_user_id, structure_level_id)
 );
+CREATE INDEX ON nm_meeting_user_structure_level_ids_structure_level_t (meeting_user_id);
+CREATE INDEX ON nm_meeting_user_structure_level_ids_structure_level_t (structure_level_id);
 
 CREATE TABLE nm_motion_all_derived_motion_ids_motion_t (
     all_derived_motion_id integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     all_origin_id integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (all_derived_motion_id, all_origin_id)
 );
+CREATE INDEX ON nm_motion_all_derived_motion_ids_motion_t (all_derived_motion_id);
+CREATE INDEX ON nm_motion_all_derived_motion_ids_motion_t (all_origin_id);
 
 CREATE TABLE nm_motion_identical_motion_ids_motion_t (
     identical_motion_id_1 integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     identical_motion_id_2 integer NOT NULL REFERENCES motion_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (identical_motion_id_1, identical_motion_id_2)
 );
+CREATE INDEX ON nm_motion_identical_motion_ids_motion_t (identical_motion_id_1);
+CREATE INDEX ON nm_motion_identical_motion_ids_motion_t (identical_motion_id_2);
 
 CREATE TABLE gm_motion_state_extension_reference_ids_t (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     motion_id integer NOT NULL REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     state_extension_reference_id varchar(100) NOT NULL,
     state_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(state_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(state_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_state_extension_reference_id_part1 CHECK (split_part(state_extension_reference_id, '/', 1) IN ('motion')),
     CONSTRAINT unique_$motion_id_$state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
 );
+CREATE INDEX ON gm_motion_state_extension_reference_ids_t (motion_id);
+CREATE INDEX ON gm_motion_state_extension_reference_ids_t (state_extension_reference_id);
 
 CREATE TABLE gm_motion_recommendation_extension_reference_ids_t (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     motion_id integer NOT NULL REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     recommendation_extension_reference_id varchar(100) NOT NULL,
     recommendation_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(recommendation_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(recommendation_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_recommendation_extension_reference_id_part1 CHECK (split_part(recommendation_extension_reference_id, '/', 1) IN ('motion')),
     CONSTRAINT unique_$motion_id_$recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
 );
+CREATE INDEX ON gm_motion_recommendation_extension_reference_ids_t (motion_id);
+CREATE INDEX ON gm_motion_recommendation_extension_reference_ids_t (recommendation_extension_reference_id);
 
 CREATE TABLE nm_motion_state_next_state_ids_motion_state_t (
     next_state_id integer NOT NULL REFERENCES motion_state_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     previous_state_id integer NOT NULL REFERENCES motion_state_t (id) ON DELETE CASCADE INITIALLY DEFERRED,
     PRIMARY KEY (next_state_id, previous_state_id)
 );
+CREATE INDEX ON nm_motion_state_next_state_ids_motion_state_t (next_state_id);
+CREATE INDEX ON nm_motion_state_next_state_ids_motion_state_t (previous_state_id);
 
 CREATE TABLE gm_organization_tag_tagged_ids_t (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     organization_tag_id integer NOT NULL REFERENCES organization_tag_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     tagged_id varchar(100) NOT NULL,
     tagged_id_committee_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'committee' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES committee_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1486,9 +1630,10 @@ CREATE TABLE gm_organization_tag_tagged_ids_t (
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('committee', 'meeting')),
     CONSTRAINT unique_$organization_tag_id_$tagged_id UNIQUE (organization_tag_id, tagged_id)
 );
+CREATE INDEX ON gm_organization_tag_tagged_ids_t (organization_tag_id);
+CREATE INDEX ON gm_organization_tag_tagged_ids_t (tagged_id);
 
 CREATE TABLE gm_tag_tagged_ids_t (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     tag_id integer NOT NULL REFERENCES tag_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     tagged_id varchar(100) NOT NULL,
     tagged_id_agenda_item_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'agenda_item' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED REFERENCES agenda_item_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
@@ -1497,6 +1642,8 @@ CREATE TABLE gm_tag_tagged_ids_t (
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('agenda_item', 'assignment', 'motion')),
     CONSTRAINT unique_$tag_id_$tagged_id UNIQUE (tag_id, tagged_id)
 );
+CREATE INDEX ON gm_tag_tagged_ids_t (tag_id);
+CREATE INDEX ON gm_tag_tagged_ids_t (tagged_id);
 
 
 -- View definitions
@@ -1548,7 +1695,6 @@ CREATE VIEW "committee" AS SELECT *,
     SELECT mu.user_id
     FROM meeting_t AS m
     INNER JOIN meeting_user_t AS mu ON mu.meeting_id = m.id
-    INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
     WHERE m.committee_id = c.id
 
     UNION
@@ -1668,7 +1814,6 @@ CREATE VIEW "meeting" AS SELECT *,
 (
   SELECT array_agg(DISTINCT mu.user_id ORDER BY mu.user_id)
   FROM meeting_user_t mu
-  INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
   WHERE mu.meeting_id = m.id
 ) AS user_ids
 ,
@@ -1881,6 +2026,11 @@ CREATE VIEW "poll_config_selection" AS SELECT *,
 FROM poll_config_selection_t p;
 
 
+CREATE VIEW "poll_config_stv_scottish" AS SELECT *,
+(select array_agg(pc.id ORDER BY pc.id) from poll_config_option_t pc where pc.poll_config_id_poll_config_stv_scottish_id = p.id) as option_ids
+FROM poll_config_stv_scottish_t p;
+
+
 CREATE VIEW "projection" AS SELECT * FROM projection_t p;
 
 
@@ -1940,12 +2090,11 @@ FROM topic_t t;
 CREATE VIEW "user" AS SELECT *,
 (select array_agg(n.meeting_id ORDER BY n.meeting_id) from nm_meeting_present_user_ids_user_t n where n.user_id = u.id) as is_present_in_meeting_ids,
 (
-  SELECT array_agg(DISTINCT committee_id ORDER BY committee_id)
+  SELECT array_agg(DISTINCT ci.committee_id ORDER BY ci.committee_id)
   FROM (
     -- Select committee_ids from meetings the user is part of
     SELECT m.committee_id
     FROM meeting_user_t AS mu
-    INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
     INNER JOIN meeting_t AS m ON m.id = mu.meeting_id
     WHERE mu.user_id = u.id
 
@@ -1959,9 +2108,10 @@ CREATE VIEW "user" AS SELECT *,
     UNION
 
     -- Select home_committee_id from user
-    SELECT u.home_committee_id
-    WHERE u.home_committee_id IS NOT NULL
-  ) _
+    SELECT u_hc.home_committee_id
+    FROM user_t u_hc
+    WHERE u_hc.home_committee_id IS NOT NULL AND u_hc.id = u.id
+  ) AS ci
 ) AS committee_ids
 ,
 (select array_agg(n.committee_id ORDER BY n.committee_id) from nm_committee_manager_ids_user_t n where n.user_id = u.id) as committee_management_ids,
@@ -1971,237 +2121,418 @@ CREATE VIEW "user" AS SELECT *,
 (
   SELECT array_agg(DISTINCT mu.meeting_id ORDER BY mu.meeting_id)
   FROM meeting_user_t mu
-  INNER JOIN nm_group_meeting_user_ids_meeting_user_t AS gmu ON mu.id = gmu.meeting_user_id
   WHERE mu.user_id = u.id
 ) AS meeting_ids
 
 FROM user_t u;
 
 comment on column "user".committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
-comment on column "user".meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
+comment on column "user".meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user.';
 
 
 -- Alter table relations
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_motion_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_motion_block_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_assignment_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (content_object_id_topic_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(parent_id) REFERENCES agenda_item_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (parent_id);
 ALTER TABLE agenda_item_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON agenda_item_t (meeting_id);
 
 ALTER TABLE assignment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_t (meeting_id);
 
 ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_candidate_t (assignment_id);
 ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_candidate_t (meeting_user_id);
 ALTER TABLE assignment_candidate_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON assignment_candidate_t (meeting_id);
 
 ALTER TABLE ballot_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON ballot_t (poll_id);
 ALTER TABLE ballot_t ADD FOREIGN KEY(acting_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON ballot_t (acting_meeting_user_id);
 ALTER TABLE ballot_t ADD FOREIGN KEY(represented_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON ballot_t (represented_meeting_user_id);
 
 ALTER TABLE chat_group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_group_t (meeting_id);
 
 ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_message_t (meeting_user_id);
 ALTER TABLE chat_message_t ADD FOREIGN KEY(chat_group_id) REFERENCES chat_group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_message_t (chat_group_id);
 ALTER TABLE chat_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON chat_message_t (meeting_id);
 
 ALTER TABLE committee_t ADD FOREIGN KEY(default_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON committee_t (default_meeting_id);
 ALTER TABLE committee_t ADD FOREIGN KEY(parent_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON committee_t (parent_id);
 
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_motion_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_motion_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_assignment_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_assignment_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_topic_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_topic_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(used_as_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (used_as_poll_default_id);
 ALTER TABLE group_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON group_t (meeting_id);
 
 ALTER TABLE history_entry_t ADD FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (model_id_user_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (model_id_motion_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(model_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (model_id_assignment_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(position_id) REFERENCES history_position_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (position_id);
 ALTER TABLE history_entry_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_entry_t (meeting_id);
 
 ALTER TABLE history_position_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON history_position_t (user_id);
 
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_motion_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_motion_block_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_assignment_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_topic_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(content_object_id_meeting_mediafile_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (content_object_id_meeting_mediafile_id);
 ALTER TABLE list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON list_of_speakers_t (meeting_id);
 
 ALTER TABLE mediafile_t ADD FOREIGN KEY(published_to_meetings_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (published_to_meetings_in_organization_id);
 ALTER TABLE mediafile_t ADD FOREIGN KEY(parent_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (parent_id);
 ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (owner_id_meeting_id);
 ALTER TABLE mediafile_t ADD FOREIGN KEY(owner_id_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON mediafile_t (owner_id_organization_id);
 
 ALTER TABLE meeting_t ADD FOREIGN KEY(is_active_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (is_active_in_organization_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(is_archived_in_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (is_archived_in_organization_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(template_for_organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (template_for_organization_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (motions_default_workflow_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(motions_default_amendment_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (motions_default_amendment_workflow_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_main_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_projector_main_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_projector_header_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_projector_header_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_web_header_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_web_header_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_l_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_header_l_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_header_r_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_header_r_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_l_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_footer_l_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_footer_r_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_footer_r_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(logo_pdf_ballot_paper_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (logo_pdf_ballot_paper_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_regular_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_regular_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_italic_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_italic_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_bold_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_bold_italic_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_bold_italic_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_monospace_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_monospace_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_chyron_speaker_name_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_chyron_speaker_name_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h1_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_projector_h1_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(font_projector_h2_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (font_projector_h2_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(committee_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (committee_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(reference_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (reference_projector_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(list_of_speakers_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (list_of_speakers_countdown_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(poll_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (poll_countdown_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(default_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (default_group_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(admin_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (admin_group_id);
 ALTER TABLE meeting_t ADD FOREIGN KEY(anonymous_group_id) REFERENCES group_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_t (anonymous_group_id);
 
 ALTER TABLE meeting_mediafile_t ADD FOREIGN KEY(mediafile_id) REFERENCES mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_mediafile_t (mediafile_id);
 ALTER TABLE meeting_mediafile_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_mediafile_t (meeting_id);
 
 ALTER TABLE meeting_user_t ADD FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_user_t (user_id);
 ALTER TABLE meeting_user_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_user_t (meeting_id);
 ALTER TABLE meeting_user_t ADD FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON meeting_user_t (vote_delegated_to_id);
 
 ALTER TABLE motion_t ADD FOREIGN KEY(lead_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (lead_motion_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(sort_parent_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (sort_parent_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(origin_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (origin_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(origin_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (origin_meeting_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (state_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(recommendation_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (recommendation_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(category_id) REFERENCES motion_category_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (category_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (block_id);
 ALTER TABLE motion_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_t (meeting_id);
 
 ALTER TABLE motion_block_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_block_t (meeting_id);
 
 ALTER TABLE motion_category_t ADD FOREIGN KEY(parent_id) REFERENCES motion_category_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_category_t (parent_id);
 ALTER TABLE motion_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_category_t (meeting_id);
 
 ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_change_recommendation_t (motion_id);
 ALTER TABLE motion_change_recommendation_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_change_recommendation_t (meeting_id);
 
 ALTER TABLE motion_comment_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_t (motion_id);
 ALTER TABLE motion_comment_t ADD FOREIGN KEY(section_id) REFERENCES motion_comment_section_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_t (section_id);
 ALTER TABLE motion_comment_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_t (meeting_id);
 
 ALTER TABLE motion_comment_section_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_comment_section_t (meeting_id);
 
 ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_editor_t (meeting_user_id);
 ALTER TABLE motion_editor_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_editor_t (motion_id);
 ALTER TABLE motion_editor_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_editor_t (meeting_id);
 
 ALTER TABLE motion_state_t ADD FOREIGN KEY(submitter_withdraw_state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_state_t (submitter_withdraw_state_id);
 ALTER TABLE motion_state_t ADD FOREIGN KEY(workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_state_t (workflow_id);
 ALTER TABLE motion_state_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_state_t (meeting_id);
 
 ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_submitter_t (meeting_user_id);
 ALTER TABLE motion_submitter_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_submitter_t (motion_id);
 ALTER TABLE motion_submitter_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_submitter_t (meeting_id);
 
 ALTER TABLE motion_supporter_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_supporter_t (meeting_user_id);
 ALTER TABLE motion_supporter_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_supporter_t (motion_id);
 ALTER TABLE motion_supporter_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_supporter_t (meeting_id);
 
 ALTER TABLE motion_workflow_t ADD FOREIGN KEY(first_state_id) REFERENCES motion_state_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_workflow_t (first_state_id);
 ALTER TABLE motion_workflow_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_workflow_t (meeting_id);
 
 ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_working_group_speaker_t (meeting_user_id);
 ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_working_group_speaker_t (motion_id);
 ALTER TABLE motion_working_group_speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON motion_working_group_speaker_t (meeting_id);
 
 ALTER TABLE organization_t ADD FOREIGN KEY(theme_id) REFERENCES theme_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON organization_t (theme_id);
 
 ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON personal_note_t (meeting_user_id);
 ALTER TABLE personal_note_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON personal_note_t (content_object_id_motion_id);
 ALTER TABLE personal_note_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON personal_note_t (meeting_id);
 
 ALTER TABLE point_of_order_category_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON point_of_order_category_t (meeting_id);
 
 ALTER TABLE poll_t ADD FOREIGN KEY(config_id_poll_config_approval_id) REFERENCES poll_config_approval_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (config_id_poll_config_approval_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(config_id_poll_config_selection_id) REFERENCES poll_config_selection_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (config_id_poll_config_selection_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(config_id_poll_config_rating_score_id) REFERENCES poll_config_rating_score_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (config_id_poll_config_rating_score_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(config_id_poll_config_rating_approval_id) REFERENCES poll_config_rating_approval_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (config_id_poll_config_rating_approval_id);
+ALTER TABLE poll_t ADD FOREIGN KEY(config_id_poll_config_stv_scottish_id) REFERENCES poll_config_stv_scottish_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (config_id_poll_config_stv_scottish_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (content_object_id_motion_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (content_object_id_assignment_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (content_object_id_topic_id);
 ALTER TABLE poll_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_t (meeting_id);
 
 ALTER TABLE poll_config_approval_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_approval_t (poll_id);
 
 ALTER TABLE poll_config_option_t ADD FOREIGN KEY(poll_config_id_poll_config_approval_id) REFERENCES poll_config_approval_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_option_t (poll_config_id_poll_config_approval_id);
 ALTER TABLE poll_config_option_t ADD FOREIGN KEY(poll_config_id_poll_config_selection_id) REFERENCES poll_config_selection_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_option_t (poll_config_id_poll_config_selection_id);
 ALTER TABLE poll_config_option_t ADD FOREIGN KEY(poll_config_id_poll_config_rating_score_id) REFERENCES poll_config_rating_score_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_option_t (poll_config_id_poll_config_rating_score_id);
 ALTER TABLE poll_config_option_t ADD FOREIGN KEY(poll_config_id_poll_config_rating_approval_id) REFERENCES poll_config_rating_approval_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_option_t (poll_config_id_poll_config_rating_approval_id);
+ALTER TABLE poll_config_option_t ADD FOREIGN KEY(poll_config_id_poll_config_stv_scottish_id) REFERENCES poll_config_stv_scottish_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_option_t (poll_config_id_poll_config_stv_scottish_id);
 ALTER TABLE poll_config_option_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_option_t (meeting_user_id);
 
 ALTER TABLE poll_config_rating_approval_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_rating_approval_t (poll_id);
 
 ALTER TABLE poll_config_rating_score_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_rating_score_t (poll_id);
 
 ALTER TABLE poll_config_selection_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_selection_t (poll_id);
+
+ALTER TABLE poll_config_stv_scottish_t ADD FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON poll_config_stv_scottish_t (poll_id);
 
 ALTER TABLE projection_t ADD FOREIGN KEY(current_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (current_projector_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(preview_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (preview_projector_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(history_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (history_projector_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_meeting_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_motion_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_meeting_mediafile_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_meeting_mediafile_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_list_of_speakers_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_motion_block_id) REFERENCES motion_block_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_motion_block_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_assignment_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_agenda_item_id) REFERENCES agenda_item_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_agenda_item_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_topic_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_poll_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_message_id) REFERENCES projector_message_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_projector_message_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(content_object_id_projector_countdown_id) REFERENCES projector_countdown_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (content_object_id_projector_countdown_id);
 ALTER TABLE projection_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projection_t (meeting_id);
 
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_agenda_item_list_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_agenda_item_list_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_topic_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_topic_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_list_of_speakers_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_list_of_speakers_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_current_los_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_current_los_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_motion_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_amendment_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_amendment_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_block_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_motion_block_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_assignment_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_assignment_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_mediafile_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_mediafile_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_message_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_message_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_countdown_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_countdown_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_assignment_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_assignment_poll_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_motion_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_motion_poll_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(used_as_default_projector_for_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (used_as_default_projector_for_poll_in_meeting_id);
 ALTER TABLE projector_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_t (meeting_id);
 
 ALTER TABLE projector_countdown_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_countdown_t (meeting_id);
 
 ALTER TABLE projector_message_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON projector_message_t (meeting_id);
 
 ALTER TABLE speaker_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (list_of_speakers_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(structure_level_list_of_speakers_id) REFERENCES structure_level_list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (structure_level_list_of_speakers_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (meeting_user_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(point_of_order_category_id) REFERENCES point_of_order_category_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (point_of_order_category_id);
 ALTER TABLE speaker_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON speaker_t (meeting_id);
 
 ALTER TABLE structure_level_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_t (meeting_id);
 
 ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(structure_level_id) REFERENCES structure_level_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_list_of_speakers_t (structure_level_id);
 ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(list_of_speakers_id) REFERENCES list_of_speakers_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_list_of_speakers_t (list_of_speakers_id);
 ALTER TABLE structure_level_list_of_speakers_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON structure_level_list_of_speakers_t (meeting_id);
 
 ALTER TABLE tag_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON tag_t (meeting_id);
 
 ALTER TABLE topic_t ADD FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON topic_t (meeting_id);
 
 ALTER TABLE user_t ADD FOREIGN KEY(gender_id) REFERENCES gender_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON user_t (gender_id);
 ALTER TABLE user_t ADD FOREIGN KEY(home_committee_id) REFERENCES committee_t(id) INITIALLY DEFERRED;
+CREATE INDEX ON user_t (home_committee_id);
 
 
 
@@ -2262,156 +2593,168 @@ FOR EACH ROW EXECUTE FUNCTION generate_sequence('topic_t', 'sequential_number', 
 
 -- definition trigger not null for assignment.list_of_speakers_id against list_of_speakers.content_object_id_assignment_id
 CREATE CONSTRAINT TRIGGER tr_i_assignment_list_of_speakers_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('assignment', 'list_of_speakers_id', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('assignment', 'list_of_speakers_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_assignment_list_of_speakers_id AFTER UPDATE OF content_object_id_assignment_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('assignment', 'list_of_speakers_id', 'content_object_id_assignment_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('assignment', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_assignment_id');
 
 
 -- definition trigger not null for motion.list_of_speakers_id against list_of_speakers.content_object_id_motion_id
 CREATE CONSTRAINT TRIGGER tr_i_motion_list_of_speakers_id AFTER INSERT ON motion_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion', 'list_of_speakers_id', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion', 'list_of_speakers_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_motion_list_of_speakers_id AFTER UPDATE OF content_object_id_motion_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion', 'list_of_speakers_id', 'content_object_id_motion_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_motion_id');
 
 
 -- definition trigger not null for motion_block.list_of_speakers_id against list_of_speakers.content_object_id_motion_block_id
 CREATE CONSTRAINT TRIGGER tr_i_motion_block_list_of_speakers_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_motion_block_list_of_speakers_id AFTER UPDATE OF content_object_id_motion_block_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id', 'content_object_id_motion_block_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_motion_block_id');
 
 
 -- definition trigger not null for topic.agenda_item_id against agenda_item.content_object_id_topic_id
 CREATE CONSTRAINT TRIGGER tr_i_topic_agenda_item_id AFTER INSERT ON topic_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'agenda_item_id', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'agenda_item_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_topic_agenda_item_id AFTER UPDATE OF content_object_id_topic_id OR DELETE ON agenda_item_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'agenda_item_id', 'content_object_id_topic_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'agenda_item_id', 'agenda_item', 'content_object_id_topic_id');
 
 -- definition trigger not null for topic.list_of_speakers_id against list_of_speakers.content_object_id_topic_id
 CREATE CONSTRAINT TRIGGER tr_i_topic_list_of_speakers_id AFTER INSERT ON topic_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_id', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_topic_list_of_speakers_id AFTER UPDATE OF content_object_id_topic_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_id', 'content_object_id_topic_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_topic_id');
 
 
 
--- Create triggers checking foreign_id not null for relation-lists
+-- Create triggers checking foreign_id not null for 1:n relationships
 
--- definition trigger not null for meeting.default_projector_agenda_item_list_ids against projector_t.used_as_default_projector_for_agenda_item_list_in_meeting_id
+-- definition trigger not null for meeting.default_projector_agenda_item_list_ids against projector.used_as_default_projector_for_agenda_item_list_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_agenda_item_list_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_agenda_item_list_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_agenda_item_list_ids', 'projector_t', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_agenda_item_list_ids AFTER UPDATE OF used_as_default_projector_for_agenda_item_list_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_agenda_item_list_ids', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_agenda_item_list_ids', 'projector_t', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_topic_ids against projector_t.used_as_default_projector_for_topic_in_meeting_id
+-- definition trigger not null for meeting.default_projector_topic_ids against projector.used_as_default_projector_for_topic_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_topic_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_topic_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_topic_ids', 'projector_t', 'used_as_default_projector_for_topic_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_topic_ids AFTER UPDATE OF used_as_default_projector_for_topic_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_topic_ids', 'used_as_default_projector_for_topic_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_topic_ids', 'projector_t', 'used_as_default_projector_for_topic_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_list_of_speakers_ids against projector_t.used_as_default_projector_for_list_of_speakers_in_meeting_id
+-- definition trigger not null for meeting.default_projector_list_of_speakers_ids against projector.used_as_default_projector_for_list_of_speakers_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_list_of_speakers_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_list_of_speakers_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_list_of_speakers_ids', 'projector_t', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_list_of_speakers_ids AFTER UPDATE OF used_as_default_projector_for_list_of_speakers_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_list_of_speakers_ids', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_list_of_speakers_ids', 'projector_t', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_current_los_ids against projector_t.used_as_default_projector_for_current_los_in_meeting_id
+-- definition trigger not null for meeting.default_projector_current_los_ids against projector.used_as_default_projector_for_current_los_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_current_los_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_current_los_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_current_los_ids', 'projector_t', 'used_as_default_projector_for_current_los_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_current_los_ids AFTER UPDATE OF used_as_default_projector_for_current_los_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_current_los_ids', 'used_as_default_projector_for_current_los_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_current_los_ids', 'projector_t', 'used_as_default_projector_for_current_los_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_motion_ids against projector_t.used_as_default_projector_for_motion_in_meeting_id
+-- definition trigger not null for meeting.default_projector_motion_ids against projector.used_as_default_projector_for_motion_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_ids', 'projector_t', 'used_as_default_projector_for_motion_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_ids AFTER UPDATE OF used_as_default_projector_for_motion_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_ids', 'used_as_default_projector_for_motion_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_ids', 'projector_t', 'used_as_default_projector_for_motion_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_amendment_ids against projector_t.used_as_default_projector_for_amendment_in_meeting_id
+-- definition trigger not null for meeting.default_projector_amendment_ids against projector.used_as_default_projector_for_amendment_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_amendment_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_amendment_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_amendment_ids', 'projector_t', 'used_as_default_projector_for_amendment_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_amendment_ids AFTER UPDATE OF used_as_default_projector_for_amendment_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_amendment_ids', 'used_as_default_projector_for_amendment_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_amendment_ids', 'projector_t', 'used_as_default_projector_for_amendment_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_motion_block_ids against projector_t.used_as_default_projector_for_motion_block_in_meeting_id
+-- definition trigger not null for meeting.default_projector_motion_block_ids against projector.used_as_default_projector_for_motion_block_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_block_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_block_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_block_ids', 'projector_t', 'used_as_default_projector_for_motion_block_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_block_ids AFTER UPDATE OF used_as_default_projector_for_motion_block_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_block_ids', 'used_as_default_projector_for_motion_block_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_block_ids', 'projector_t', 'used_as_default_projector_for_motion_block_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_assignment_ids against projector_t.used_as_default_projector_for_assignment_in_meeting_id
+-- definition trigger not null for meeting.default_projector_assignment_ids against projector.used_as_default_projector_for_assignment_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_assignment_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_ids', 'projector_t', 'used_as_default_projector_for_assignment_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_assignment_ids AFTER UPDATE OF used_as_default_projector_for_assignment_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_ids', 'used_as_default_projector_for_assignment_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_ids', 'projector_t', 'used_as_default_projector_for_assignment_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_mediafile_ids against projector_t.used_as_default_projector_for_mediafile_in_meeting_id
+-- definition trigger not null for meeting.default_projector_mediafile_ids against projector.used_as_default_projector_for_mediafile_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_mediafile_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_mediafile_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_mediafile_ids', 'projector_t', 'used_as_default_projector_for_mediafile_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_mediafile_ids AFTER UPDATE OF used_as_default_projector_for_mediafile_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_mediafile_ids', 'used_as_default_projector_for_mediafile_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_mediafile_ids', 'projector_t', 'used_as_default_projector_for_mediafile_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_message_ids against projector_t.used_as_default_projector_for_message_in_meeting_id
+-- definition trigger not null for meeting.default_projector_message_ids against projector.used_as_default_projector_for_message_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_message_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_message_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_message_ids', 'projector_t', 'used_as_default_projector_for_message_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_message_ids AFTER UPDATE OF used_as_default_projector_for_message_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_message_ids', 'used_as_default_projector_for_message_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_message_ids', 'projector_t', 'used_as_default_projector_for_message_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_countdown_ids against projector_t.used_as_default_projector_for_countdown_in_meeting_id
+-- definition trigger not null for meeting.default_projector_countdown_ids against projector.used_as_default_projector_for_countdown_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_countdown_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_countdown_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_countdown_ids', 'projector_t', 'used_as_default_projector_for_countdown_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_countdown_ids AFTER UPDATE OF used_as_default_projector_for_countdown_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_countdown_ids', 'used_as_default_projector_for_countdown_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_countdown_ids', 'projector_t', 'used_as_default_projector_for_countdown_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_assignment_poll_ids against projector_t.used_as_default_projector_for_assignment_poll_in_meeting_id
+-- definition trigger not null for meeting.default_projector_assignment_poll_ids against projector.used_as_default_projector_for_assignment_poll_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_assignment_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_poll_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_poll_ids', 'projector_t', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_assignment_poll_ids AFTER UPDATE OF used_as_default_projector_for_assignment_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_assignment_poll_ids', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_poll_ids', 'projector_t', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_motion_poll_ids against projector_t.used_as_default_projector_for_motion_poll_in_meeting_id
+-- definition trigger not null for meeting.default_projector_motion_poll_ids against projector.used_as_default_projector_for_motion_poll_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_poll_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_poll_ids', 'projector_t', 'used_as_default_projector_for_motion_poll_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_poll_ids AFTER UPDATE OF used_as_default_projector_for_motion_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_motion_poll_ids', 'used_as_default_projector_for_motion_poll_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_poll_ids', 'projector_t', 'used_as_default_projector_for_motion_poll_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_poll_ids against projector_t.used_as_default_projector_for_poll_in_meeting_id
+-- definition trigger not null for meeting.default_projector_poll_ids against projector.used_as_default_projector_for_poll_in_meeting_id
 CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_poll_ids', '');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_poll_ids', 'projector_t', 'used_as_default_projector_for_poll_in_meeting_id');
 
 CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_poll_ids AFTER UPDATE OF used_as_default_projector_for_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_relation_lists('meeting', 'default_projector_poll_ids', 'used_as_default_projector_for_poll_in_meeting_id');
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_poll_ids', 'projector_t', 'used_as_default_projector_for_poll_in_meeting_id');
+
+
+
+
+-- Create triggers checking foreign_ids not null for n:m relationships
+
+-- definition trigger not null for meeting_user.group_ids against group.meeting_user_ids through nm_group_meeting_user_ids_meeting_user_t
+CREATE CONSTRAINT TRIGGER tr_i_meeting_user_group_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_n_m('nm_group_meeting_user_ids_meeting_user_t', 'meeting_user_t', 'group_ids', 'meeting_user_id');
+
+CREATE CONSTRAINT TRIGGER tr_d_meeting_user_group_ids AFTER DELETE ON nm_group_meeting_user_ids_meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_n_m('nm_group_meeting_user_ids_meeting_user_t', 'meeting_user_t', 'group_ids', 'meeting_user_id', 'group_id', 'group', 'meeting_user_ids');
 
 
 
@@ -3000,6 +3343,9 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_rating_sc
 CREATE TRIGGER tr_log_poll_config_rating_approval_config_id_poll_config_rating_approval_id AFTER INSERT OR UPDATE OF config_id_poll_config_rating_approval_id OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_rating_approval','config_id_poll_config_rating_approval_id');
 
+CREATE TRIGGER tr_log_poll_config_stv_scottish_config_id_poll_config_stv_scottish_id AFTER INSERT OR UPDATE OF config_id_poll_config_stv_scottish_id OR DELETE ON poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_stv_scottish','config_id_poll_config_stv_scottish_id');
+
 CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id');
 
@@ -3036,6 +3382,9 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_rating_sc
 
 CREATE TRIGGER tr_log_poll_config_rating_approval_poll_config_id_poll_config_rating_approval_id AFTER INSERT OR UPDATE OF poll_config_id_poll_config_rating_approval_id OR DELETE ON poll_config_option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_rating_approval','poll_config_id_poll_config_rating_approval_id');
+
+CREATE TRIGGER tr_log_poll_config_stv_scottish_poll_config_id_poll_config_stv_scottish_id AFTER INSERT OR UPDATE OF poll_config_id_poll_config_stv_scottish_id OR DELETE ON poll_config_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_stv_scottish','poll_config_id_poll_config_stv_scottish_id');
 CREATE TRIGGER tr_log_poll_config_option_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_config_option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id');
 
@@ -3061,6 +3410,14 @@ CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELET
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 CREATE TRIGGER tr_log_poll_config_selection_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_config_selection_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id');
+
+CREATE TRIGGER tr_log_poll_config_stv_scottish AFTER INSERT OR UPDATE OR DELETE ON poll_config_stv_scottish_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_stv_scottish');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_stv_scottish_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_config_stv_scottish_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_config_stv_scottish_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id');
 
 CREATE TRIGGER tr_log_projection AFTER INSERT OR UPDATE OR DELETE ON projection_t
@@ -3309,7 +3666,7 @@ SQL nt:nGt => committee/organization_tag_ids:-> organization_tag/tagged_ids
 
 SQL nr:1r => gender/user_ids:-> user/gender_id
 
-SQL nt:nt => group/meeting_user_ids:-> meeting_user/group_ids
+SQL nt:ntR => group/meeting_user_ids:-> meeting_user/group_ids
 SQL 1t:1rR => group/default_group_for_meeting_id:-> meeting/default_group_id
 SQL 1t:1r => group/admin_group_for_meeting_id:-> meeting/admin_group_id
 SQL 1t:1r => group/anonymous_group_for_meeting_id:-> meeting/anonymous_group_id
@@ -3473,7 +3830,7 @@ SQL nr:1r => meeting_user/poll_option_ids:-> poll_config_option/meeting_user_id
 SQL nt:1r => meeting_user/acting_ballot_ids:-> ballot/acting_meeting_user_id
 SQL nt:1r => meeting_user/represented_ballot_ids:-> ballot/represented_meeting_user_id
 SQL nt:1r => meeting_user/chat_message_ids:-> chat_message/meeting_user_id
-SQL nt:nt => meeting_user/group_ids:-> group/meeting_user_ids
+SQL ntR:nt => meeting_user/group_ids:-> group/meeting_user_ids
 SQL nt:nt => meeting_user/structure_level_ids:-> structure_level/meeting_user_ids
 
 FIELD 1r:nt => motion/lead_motion_id:-> motion/amendment_ids
@@ -3586,7 +3943,7 @@ FIELD 1rR:nt => personal_note/meeting_id:-> meeting/personal_note_ids
 FIELD 1rR:nt => point_of_order_category/meeting_id:-> meeting/point_of_order_category_ids
 SQL nt:1r => point_of_order_category/speaker_ids:-> speaker/point_of_order_category_id
 
-FIELD 1GrR:1rR,1rR,1rR,1rR => poll/config_id:-> poll_config_approval/poll_id,poll_config_selection/poll_id,poll_config_rating_score/poll_id,poll_config_rating_approval/poll_id
+FIELD 1Gr:1rR,1rR,1rR,1rR,1rR => poll/config_id:-> poll_config_approval/poll_id,poll_config_selection/poll_id,poll_config_rating_score/poll_id,poll_config_rating_approval/poll_id,poll_config_stv_scottish/poll_id
 FIELD 1GrR:nt,nt,nt => poll/content_object_id:-> motion/poll_ids,assignment/poll_ids,topic/poll_ids
 SQL nr:1rR => poll/ballot_ids:-> ballot/poll_id
 SQL nt:nt => poll/voted_ids:-> meeting_user/poll_voted_ids
@@ -3594,20 +3951,23 @@ SQL nt:nt => poll/entitled_group_ids:-> group/poll_ids
 SQL nt:1GrR => poll/projection_ids:-> projection/content_object_id
 FIELD 1rR:nr => poll/meeting_id:-> meeting/poll_ids
 
-FIELD 1rR:1GrR => poll_config_approval/poll_id:-> poll/config_id
+FIELD 1rR:1Gr => poll_config_approval/poll_id:-> poll/config_id
 SQL nt:1GrR => poll_config_approval/option_ids:-> poll_config_option/poll_config_id
 
-FIELD 1GrR:nt,nt,nt,nt => poll_config_option/poll_config_id:-> poll_config_approval/option_ids,poll_config_selection/option_ids,poll_config_rating_score/option_ids,poll_config_rating_approval/option_ids
+FIELD 1GrR:nt,nt,nt,nt,nt => poll_config_option/poll_config_id:-> poll_config_approval/option_ids,poll_config_selection/option_ids,poll_config_rating_score/option_ids,poll_config_rating_approval/option_ids,poll_config_stv_scottish/option_ids
 FIELD 1r:nr => poll_config_option/meeting_user_id:-> meeting_user/poll_option_ids
 
-FIELD 1rR:1GrR => poll_config_rating_approval/poll_id:-> poll/config_id
+FIELD 1rR:1Gr => poll_config_rating_approval/poll_id:-> poll/config_id
 SQL nt:1GrR => poll_config_rating_approval/option_ids:-> poll_config_option/poll_config_id
 
-FIELD 1rR:1GrR => poll_config_rating_score/poll_id:-> poll/config_id
+FIELD 1rR:1Gr => poll_config_rating_score/poll_id:-> poll/config_id
 SQL nt:1GrR => poll_config_rating_score/option_ids:-> poll_config_option/poll_config_id
 
-FIELD 1rR:1GrR => poll_config_selection/poll_id:-> poll/config_id
+FIELD 1rR:1Gr => poll_config_selection/poll_id:-> poll/config_id
 SQL nt:1GrR => poll_config_selection/option_ids:-> poll_config_option/poll_config_id
+
+FIELD 1rR:1Gr => poll_config_stv_scottish/poll_id:-> poll/config_id
+SQL nt:1GrR => poll_config_stv_scottish/option_ids:-> poll_config_option/poll_config_id
 
 FIELD 1r:nt => projection/current_projector_id:-> projector/current_projection_ids
 FIELD 1r:nt => projection/preview_projector_id:-> projector/preview_projection_ids

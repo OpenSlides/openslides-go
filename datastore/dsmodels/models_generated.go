@@ -5405,54 +5405,56 @@ func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeaker
 
 // Organization has all fields from organization.
 type Organization struct {
-	ActiveMeetingIDs              []int
-	ArchivedMeetingIDs            []int
-	CommitteeIDs                  []int
-	DefaultLanguage               string
-	Description                   string
-	DisableForwardWithAttachments bool
-	EnableAnonymous               bool
-	EnableChat                    bool
-	EnableElectronicVoting        bool
-	GenderIDs                     []int
-	ID                            int
-	LegalNotice                   string
-	LimitOfMeetings               int
-	LimitOfUsers                  int
-	LoginText                     string
-	MediafileIDs                  []int
-	Name                          string
-	OrganizationTagIDs            []int
-	PrivacyPolicy                 string
-	PublishedMediafileIDs         []int
-	RequireDuplicateFrom          bool
-	ResetPasswordVerboseErrors    bool
-	SamlAttrMapping               json.RawMessage
-	SamlEnabled                   bool
-	SamlLoginButtonText           string
-	SamlMetadataIDp               string
-	SamlMetadataSp                string
-	SamlPrivateKey                string
-	TemplateMeetingIDs            []int
-	ThemeID                       int
-	ThemeIDs                      []int
-	Url                           string
-	UserIDs                       []int
-	UsersEmailBody                string
-	UsersEmailReplyto             string
-	UsersEmailSender              string
-	UsersEmailSubject             string
-	ActiveMeetingList             []Meeting
-	ArchivedMeetingList           []Meeting
-	CommitteeList                 []Committee
-	GenderList                    []Gender
-	MediafileList                 []Mediafile
-	OrganizationTagList           []OrganizationTag
-	PublishedMediafileList        []Mediafile
-	TemplateMeetingList           []Meeting
-	Theme                         *Theme
-	ThemeList                     []Theme
-	UserList                      []User
+	ActiveMeetingIDs                        []int
+	ArchivedMeetingIDs                      []int
+	CommitteeIDs                            []int
+	DefaultLanguage                         string
+	Description                             string
+	DisableForwardWithAttachments           bool
+	EnableAnonymous                         bool
+	EnableChat                              bool
+	EnableElectronicVoting                  bool
+	GenderIDs                               []int
+	ID                                      int
+	LegalNotice                             string
+	LimitOfMeetings                         int
+	LimitOfUsers                            int
+	LoginText                               string
+	MediafileIDs                            []int
+	Name                                    string
+	OrganizationTagIDs                      []int
+	PrivacyPolicy                           string
+	PublishedMediafileIDs                   []int
+	RequireDuplicateFrom                    bool
+	ResetPasswordVerboseErrors              bool
+	RestrictEditForwardCommittees           bool
+	RestrictEditingSameLevelCommitteeAdmins bool
+	SamlAttrMapping                         json.RawMessage
+	SamlEnabled                             bool
+	SamlLoginButtonText                     string
+	SamlMetadataIDp                         string
+	SamlMetadataSp                          string
+	SamlPrivateKey                          string
+	TemplateMeetingIDs                      []int
+	ThemeID                                 int
+	ThemeIDs                                []int
+	Url                                     string
+	UserIDs                                 []int
+	UsersEmailBody                          string
+	UsersEmailReplyto                       string
+	UsersEmailSender                        string
+	UsersEmailSubject                       string
+	ActiveMeetingList                       []Meeting
+	ArchivedMeetingList                     []Meeting
+	CommitteeList                           []Committee
+	GenderList                              []Gender
+	MediafileList                           []Mediafile
+	OrganizationTagList                     []OrganizationTag
+	PublishedMediafileList                  []Mediafile
+	TemplateMeetingList                     []Meeting
+	Theme                                   *Theme
+	ThemeList                               []Theme
+	UserList                                []User
 }
 
 type organizationBuilder struct {
@@ -5483,6 +5485,8 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_PublishedMediafileIDs(id).Lazy(&c.PublishedMediafileIDs)
 	ds.Organization_RequireDuplicateFrom(id).Lazy(&c.RequireDuplicateFrom)
 	ds.Organization_ResetPasswordVerboseErrors(id).Lazy(&c.ResetPasswordVerboseErrors)
+	ds.Organization_RestrictEditForwardCommittees(id).Lazy(&c.RestrictEditForwardCommittees)
+	ds.Organization_RestrictEditingSameLevelCommitteeAdmins(id).Lazy(&c.RestrictEditingSameLevelCommitteeAdmins)
 	ds.Organization_SamlAttrMapping(id).Lazy(&c.SamlAttrMapping)
 	ds.Organization_SamlEnabled(id).Lazy(&c.SamlEnabled)
 	ds.Organization_SamlLoginButtonText(id).Lazy(&c.SamlLoginButtonText)
@@ -5825,7 +5829,7 @@ type Poll struct {
 	AllowInvalid      bool
 	AllowVoteSplit    bool
 	BallotIDs         []int
-	ConfigID          string
+	ConfigID          dsfetch.Maybe[string]
 	ContentObjectID   string
 	EntitledGroupIDs  []int
 	ID                int
@@ -6242,6 +6246,66 @@ func (b *pollConfigSelectionBuilder) Poll() *pollBuilder {
 func (r *Fetch) PollConfigSelection(ids ...int) *pollConfigSelectionBuilder {
 	return &pollConfigSelectionBuilder{
 		builder: builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollConfigStvScottish has all fields from poll_config_stv_scottish.
+type PollConfigStvScottish struct {
+	ID         int
+	OptionIDs  []int
+	PollID     int
+	Posts      int
+	OptionList []PollConfigOption
+	Poll       *Poll
+}
+
+type pollConfigStvScottishBuilder struct {
+	builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]
+}
+
+func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, id int) *PollConfigStvScottish {
+	c := PollConfigStvScottish{}
+	ds.PollConfigStvScottish_ID(id).Lazy(&c.ID)
+	ds.PollConfigStvScottish_OptionIDs(id).Lazy(&c.OptionIDs)
+	ds.PollConfigStvScottish_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigStvScottish_Posts(id).Lazy(&c.Posts)
+	return &c
+}
+
+func (b *pollConfigStvScottishBuilder) Preload(rel builderWrapperI) *pollConfigStvScottishBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigStvScottishBuilder) OptionList() *pollConfigOptionBuilder {
+	return &pollConfigOptionBuilder{
+		builder: builder[pollConfigOptionBuilder, *pollConfigOptionBuilder, PollConfigOption]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "OptionIDs",
+			relField: "OptionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *pollConfigStvScottishBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigStvScottish(ids ...int) *pollConfigStvScottishBuilder {
+	return &pollConfigStvScottishBuilder{
+		builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]{
 			ids:   ids,
 			fetch: r,
 		},
