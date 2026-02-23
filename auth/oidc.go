@@ -13,10 +13,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// OIDCValidator validates Keycloak/OIDC tokens via JWKS
-type OIDCValidator struct {
+// oidcValidator validates Keycloak/OIDC tokens via JWKS
+type oidcValidator struct {
 	issuerURL string
 	clientID  string
 	jwksURL   string
@@ -26,11 +27,11 @@ type OIDCValidator struct {
 	expiresAt time.Time
 }
 
-// NewOIDCValidator creates a new OIDC token validator
+// newOIDCValidator creates a new OIDC token validator
 // issuerURL is used for validating the token's issuer claim (external URL)
 // internalIssuerURL is used for fetching JWKS (can be internal/docker network URL)
-func NewOIDCValidator(issuerURL, internalIssuerURL, clientID string) *OIDCValidator {
-	return &OIDCValidator{
+func newOIDCValidator(issuerURL, internalIssuerURL, clientID string) *oidcValidator {
+	return &oidcValidator{
 		issuerURL: issuerURL,
 		clientID:  clientID,
 		jwksURL:   internalIssuerURL + "/protocol/openid-connect/certs",
@@ -38,8 +39,8 @@ func NewOIDCValidator(issuerURL, internalIssuerURL, clientID string) *OIDCValida
 	}
 }
 
-// OIDCClaims represents Keycloak token claims
-type OIDCClaims struct {
+// oidcClaims represents Keycloak token claims
+type oidcClaims struct {
 	jwt.RegisteredClaims
 	KeycloakID      string `json:"sub"`
 	SessionID       string `json:"sid"` // Keycloak session ID
@@ -49,9 +50,9 @@ type OIDCClaims struct {
 }
 
 // ValidateToken validates a Keycloak JWT token and returns claims
-func (v *OIDCValidator) ValidateToken(ctx context.Context, tokenString string) (*OIDCClaims, error) {
+func (v *oidcValidator) ValidateToken(ctx context.Context, tokenString string) (*oidcClaims, error) {
 	// 1. Parse token without validation to get kid
-	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &OIDCClaims{})
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &oidcClaims{})
 	if err != nil {
 		return nil, fmt.Errorf("parsing token: %w", err)
 	}
@@ -68,7 +69,7 @@ func (v *OIDCValidator) ValidateToken(ctx context.Context, tokenString string) (
 	}
 
 	// 3. Validate token with public key
-	claims := &OIDCClaims{}
+	claims := &oidcClaims{}
 	token, err = jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -97,7 +98,7 @@ func (v *OIDCValidator) ValidateToken(ctx context.Context, tokenString string) (
 
 // verifyAudience checks if the clientID is in the token's audience or authorized party (azp)
 // Keycloak typically puts the client ID in azp rather than aud for access tokens
-func (v *OIDCValidator) verifyAudience(claims *OIDCClaims) bool {
+func (v *oidcValidator) verifyAudience(claims *oidcClaims) bool {
 	// Check azp claim (Keycloak's authorized party)
 	if claims.AuthorizedParty == v.clientID {
 		return true
@@ -112,7 +113,7 @@ func (v *OIDCValidator) verifyAudience(claims *OIDCClaims) bool {
 }
 
 // getKey returns the RSA public key for the given kid, fetching from JWKS if needed
-func (v *OIDCValidator) getKey(ctx context.Context, kid string) (*rsa.PublicKey, error) {
+func (v *oidcValidator) getKey(ctx context.Context, kid string) (*rsa.PublicKey, error) {
 	v.mu.RLock()
 	if key, ok := v.keys[kid]; ok && time.Now().Before(v.expiresAt) {
 		v.mu.RUnlock()
@@ -125,7 +126,7 @@ func (v *OIDCValidator) getKey(ctx context.Context, kid string) (*rsa.PublicKey,
 }
 
 // fetchJWKS fetches the JWKS from the issuer and caches the keys
-func (v *OIDCValidator) fetchJWKS(ctx context.Context, kid string) (*rsa.PublicKey, error) {
+func (v *oidcValidator) fetchJWKS(ctx context.Context, kid string) (*rsa.PublicKey, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
@@ -201,4 +202,27 @@ func parseRSAPublicKey(nStr, eStr string) (*rsa.PublicKey, error) {
 	e := int(new(big.Int).SetBytes(eBytes).Int64())
 
 	return &rsa.PublicKey{N: n, E: e}, nil
+}
+
+// userLookup provides user ID lookup by keycloak_id
+type userLookup struct {
+	pool *pgxpool.Pool
+}
+
+// newUserLookup creates a UserLookup with the given connection pool
+func newUserLookup(pool *pgxpool.Pool) *userLookup {
+	return &userLookup{pool: pool}
+}
+
+// GetUserIDByKeycloakID returns the OpenSlides user ID for the given keycloak_id
+func (l *userLookup) GetUserIDByKeycloakID(ctx context.Context, keycloakID string) (int, error) {
+	var userID int
+	err := l.pool.QueryRow(ctx,
+		"SELECT id FROM user_t WHERE keycloak_id = $1 AND is_active = true",
+		keycloakID,
+	).Scan(&userID)
+	if err != nil {
+		return 0, fmt.Errorf("user lookup by keycloak_id: %w", err)
+	}
+	return userID, nil
 }

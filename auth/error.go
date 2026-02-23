@@ -3,7 +3,6 @@ package auth
 type authError struct {
 	msg     string
 	wrapped error
-	status  int
 }
 
 func (authError) Type() string {
@@ -19,8 +18,19 @@ func (a authError) Unwrap() error {
 }
 
 func (a authError) StatusCode() int {
-	if a.status != 0 {
-		return a.status
-	}
 	return 403
+}
+
+// LogoutError indicates that a session was terminated due to logout.
+//
+// This error is used as the cause when cancelling a context due to backchannel
+// logout.
+type LogoutError struct{}
+
+func (LogoutError) Type() string {
+	return "auth-logout"
+}
+
+func (e LogoutError) Error() string {
+	return "session logged out"
 }

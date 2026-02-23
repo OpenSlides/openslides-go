@@ -1,4 +1,4 @@
-package auth_test
+package auth
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OpenSlides/openslides-go/auth"
 	"github.com/OpenSlides/openslides-go/auth/authtest"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -43,7 +42,7 @@ func TestOIDCValidator(t *testing.T) {
 	issuerURL := jwksServer.URL
 	clientID := "test-client"
 
-	validator := auth.NewOIDCValidator(issuerURL, clientID)
+	validator := newOIDCValidator(issuerURL, issuerURL, clientID)
 
 	t.Run("ValidToken", func(t *testing.T) {
 		token := createTestOIDCToken(t, privateKey, issuerURL, clientID, "keycloak-user-123")
@@ -142,7 +141,7 @@ func TestOIDCValidatorKeyCache(t *testing.T) {
 	}))
 	defer jwksServer.Close()
 
-	validator := auth.NewOIDCValidator(jwksServer.URL, "test-client")
+	validator := newOIDCValidator(jwksServer.URL, jwksServer.URL, "test-client")
 
 	// Validate multiple tokens - should only fetch JWKS once
 	for i := 0; i < 5; i++ {
@@ -166,7 +165,7 @@ func TestOIDCTestServer(t *testing.T) {
 	}
 	defer ots.Close()
 
-	validator := auth.NewOIDCValidator(ots.IssuerURL, ots.ClientID)
+	validator := newOIDCValidator(ots.IssuerURL, ots.IssuerURL, ots.ClientID)
 
 	t.Run("CreateToken", func(t *testing.T) {
 		token, err := ots.CreateToken("user-123")
