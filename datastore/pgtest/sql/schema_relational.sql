@@ -1392,6 +1392,7 @@ CREATE TABLE user_t (
     username varchar(256) NOT NULL,
     member_number varchar(256),
     saml_id varchar(256) CONSTRAINT minlength_saml_id CHECK (char_length(saml_id) >= 1),
+    keycloak_id varchar(256) CONSTRAINT minlength_keycloak_id CHECK (char_length(keycloak_id) >= 1),
     pronoun varchar(32),
     title varchar(256),
     first_name varchar(256),
@@ -1416,6 +1417,7 @@ CREATE TABLE user_t (
 
 
 comment on column user_t.saml_id is 'unique-key from IdP for SAML login';
+comment on column user_t.keycloak_id is 'unique-key from Keycloak for OIDC login';
 comment on column user_t.organization_management_level is 'Hierarchical permission level for the whole organization.';
 
 
