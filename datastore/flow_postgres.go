@@ -19,6 +19,7 @@ import (
 //go:generate  sh -c "go run genfields/main.go > field_def.go"
 
 var (
+	envPostgresWaitTimeout  = environment.NewVariable("DATABASE_WAIT_TIMEOUT", "30", "Postgres wait for available timeout.")
 	envPostgresHost         = environment.NewVariable("DATABASE_HOST", "localhost", "Postgres Host.")
 	envPostgresPort         = environment.NewVariable("DATABASE_PORT", "5432", "Postgres Post.")
 	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
@@ -55,6 +56,15 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		encodePostgresConfig(envPostgresPort.Value(lookup)),
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
 	)
+
+	waitTimeout, err := strconv.Atoi(envPostgresWaitTimeout.Value(lookup))
+	if err != nil {
+		waitTimeout = 30
+	}
+
+	if err := waitForPostgres(addr, time.Duration(waitTimeout)*time.Second); err != nil {
+		panic(err)
+	}
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
@@ -323,6 +333,31 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		updateFn(values, nil)
 	}
+}
+
+func waitForPostgres(dsn string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+
+	var lastErr error
+	for time.Now().Before(deadline) {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+		db, err := pgx.Connect(ctx, dsn)
+		if err == nil {
+			err = db.Ping(ctx)
+			_ = db.Close(ctx)
+		}
+
+		cancel()
+
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	return fmt.Errorf("postgres not reachable within %s (last error: %v)", timeout, lastErr)
 }
 
 func createKeyList(collection string, id int) ([]dskey.Key, error) {
