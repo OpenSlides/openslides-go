@@ -40,23 +40,28 @@ func encodePostgresConfig(s string) string {
 	return s
 }
 
-// NewFlowPostgres initializes a SourcePostgres.
-func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
+func postgresDSN(lookup environment.Environmenter) (string, error) {
 	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
 	if err != nil {
-		return nil, fmt.Errorf("reading postgres password: %w", err)
+		return "", fmt.Errorf("reading postgres password: %w", err)
 	}
 
-	addr := fmt.Sprintf(
+	return fmt.Sprintf(
 		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
 		encodePostgresConfig(envPostgresUser.Value(lookup)),
 		encodePostgresConfig(password),
 		encodePostgresConfig(envPostgresHost.Value(lookup)),
 		encodePostgresConfig(envPostgresPort.Value(lookup)),
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
-	)
+	), nil
+}
 
-	waitForPostgres(addr)
+// NewFlowPostgres initializes a SourcePostgres.
+func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
+	addr, err := postgresDSN(lookup)
+	if err != nil {
+		return nil, fmt.Errorf("reading postgres password: %w", err)
+	}
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
@@ -327,13 +332,18 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 }
 
-func waitForPostgres(dsn string) {
+// WaitPostgresAvailable blocks until postgres db is availabe
+func WaitPostgresAvailable(lookup environment.Environmenter) error {
+	addr, err := postgresDSN(lookup)
+	if err != nil {
+		return fmt.Errorf("reading postgres password: %w", err)
+	}
+
 	var conn *pgx.Conn
-	var err error
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
-		conn, err = pgx.Connect(ctx, dsn)
+		conn, err = pgx.Connect(ctx, addr)
 		if err == nil {
 			err = conn.Ping(ctx)
 			_ = conn.Close(ctx)
@@ -341,7 +351,7 @@ func waitForPostgres(dsn string) {
 
 		cancel()
 		if err == nil {
-			return
+			return nil
 		}
 
 		time.Sleep(1 * time.Second)
