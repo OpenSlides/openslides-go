@@ -56,6 +56,8 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
 	)
 
+	waitForPostgres(addr)
+
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
@@ -322,6 +324,27 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		updateFn(values, nil)
+	}
+}
+
+func waitForPostgres(dsn string) {
+	var conn *pgx.Conn
+	var err error
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+		conn, err = pgx.Connect(ctx, dsn)
+		if err == nil {
+			err = conn.Ping(ctx)
+			_ = conn.Close(ctx)
+		}
+
+		cancel()
+		if err == nil {
+			return
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 }
 
