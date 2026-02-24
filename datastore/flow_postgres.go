@@ -56,9 +56,7 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
 	)
 
-	if err := waitForPostgres(addr); err != nil {
-		panic(err)
-	}
+	waitForPostgres(addr)
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
@@ -329,7 +327,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 }
 
-func waitForPostgres(dsn string) error {
+func waitForPostgres(dsn string) {
 	var conn *pgx.Conn
 	var err error
 	for {
@@ -343,7 +341,7 @@ func waitForPostgres(dsn string) error {
 
 		cancel()
 		if err == nil {
-			return nil
+			return
 		}
 
 		time.Sleep(1 * time.Second)
