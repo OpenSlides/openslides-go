@@ -106,6 +106,17 @@ func TestFlowPostgres(t *testing.T) {
 				"history_entry/1/entries": []byte(`["entry1","entry2"]`),
 			},
 		},
+
+		{
+			"String list empty",
+			`
+			INSERT INTO history_position DEFAULT VALUES;
+			INSERT INTO history_entry (entries, position_id) VALUES ('{}', 1);
+			`,
+			map[string][]byte{
+				"history_entry/1/entries": []byte(`[]`),
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()

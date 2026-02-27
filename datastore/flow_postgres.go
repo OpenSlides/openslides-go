@@ -254,6 +254,9 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 
 	case PSQLTypeVarCharList, PSQLTypeTextList:
 		strValue := strings.Trim(string(value), "{}")
+		if strValue == "" {
+			return []byte("[]"), nil
+		}
 		strArray := strings.Split(strValue, ",")
 		return json.Marshal(strArray)
 
