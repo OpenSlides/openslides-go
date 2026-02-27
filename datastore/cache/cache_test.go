@@ -1,7 +1,6 @@
 package cache_test
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	myKey := dskey.MustKey("user/1/username")
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 	user/1/username: value
@@ -34,7 +33,7 @@ func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
 }
 
 func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(``),
 		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
@@ -64,7 +63,7 @@ func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T)
 }
 
 func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	flow := dsmock.NewFlow(
 		dsmock.Stub(dsmock.YAMLData(`---
@@ -90,7 +89,7 @@ func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
 }
 
 func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_finished(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	wait := make(chan error)
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
@@ -141,7 +140,7 @@ func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_fin
 }
 
 func TestCache_Get_gets_an_error_from_flow_does_not_effect_a_second_call_to_Get(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	waiter := make(chan error, 1)
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
@@ -164,8 +163,7 @@ func TestCache_Get_gets_an_error_from_flow_does_not_effect_a_second_call_to_Get(
 }
 
 func TestCache_Update_values_not_in_the_cache_do_not_update_the_cache(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
@@ -208,8 +206,7 @@ func TestCache_Update_values_not_in_the_cache_do_not_update_the_cache(t *testing
 }
 
 func TestCache_Get_a_value_when_in_parallel_it_is_updated(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	waiter := make(chan error, 1)
 
@@ -264,7 +261,7 @@ func converted(data map[dskey.Key][]byte) map[string]string {
 }
 
 func TestCache_flow_returns_null_should_return_nil(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
@@ -282,5 +279,54 @@ func TestCache_flow_returns_null_should_return_nil(t *testing.T) {
 	expect := map[dskey.Key][]byte{myKey: nil}
 	if !reflect.DeepEqual(got, expect) {
 		t.Errorf("Got %v, expected %v", got, expect)
+	}
+}
+
+func TestCache_UpdateWithNoData(t *testing.T) {
+	ctx := t.Context()
+
+	flow := dsmock.NewFlowNUpdateNoData(
+		dsmock.YAMLData(`---
+		user/1/username: value
+		user/2/username: value
+		`),
+		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
+	)
+	counter := flow.Middlewares()[0].(*dsmock.Counter)
+	myKey1 := dskey.MustKey("user/1/username")
+	myKey2 := dskey.MustKey("user/2/username")
+	c := cache.New(flow)
+
+	// Calls update in background.
+	go c.Update(ctx, nil)
+
+	// Puts myKey1 in the cache
+	if _, err := c.Get(ctx, myKey1); err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	counter.Reset()
+
+	// Send an update on key1 and key2. key1 is in the cache. key2 should be ignored.
+	flow.Send(map[dskey.Key][]byte{
+		myKey1: []byte("new_value for k1"),
+		myKey2: []byte("new_value for k2"),
+	})
+
+	expect := [][]dskey.Key{
+		{myKey1},
+	}
+
+	// Make sure only key1 was requested by update
+	if got := counter.Requests(); !reflect.DeepEqual(got, expect) {
+		t.Errorf("Got %v, expect %v", got, expect)
+	}
+
+	got, err := c.Get(ctx, myKey1)
+	if err != nil {
+		t.Fatalf("Error: Get keys from cache: %v", err)
+	}
+
+	if string(got[myKey1]) != "new_value for k1" {
+		t.Errorf("On key1: Got %v, expected %v", got[myKey1], "new_value for k1")
 	}
 }
