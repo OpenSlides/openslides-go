@@ -43,7 +43,7 @@ func TestOIDCValidator(t *testing.T) {
 	issuerURL := jwksServer.URL
 	clientID := "test-client"
 
-	validator := auth.NewOIDCValidator(issuerURL, clientID)
+	validator := auth.NewOIDCValidator(issuerURL, issuerURL, clientID)
 
 	t.Run("ValidToken", func(t *testing.T) {
 		token := createTestOIDCToken(t, privateKey, issuerURL, clientID, "keycloak-user-123")
@@ -142,7 +142,7 @@ func TestOIDCValidatorKeyCache(t *testing.T) {
 	}))
 	defer jwksServer.Close()
 
-	validator := auth.NewOIDCValidator(jwksServer.URL, "test-client")
+	validator := auth.NewOIDCValidator(jwksServer.URL, jwksServer.URL, "test-client")
 
 	// Validate multiple tokens - should only fetch JWKS once
 	for i := 0; i < 5; i++ {
@@ -166,7 +166,7 @@ func TestOIDCTestServer(t *testing.T) {
 	}
 	defer ots.Close()
 
-	validator := auth.NewOIDCValidator(ots.IssuerURL, ots.ClientID)
+	validator := auth.NewOIDCValidator(ots.IssuerURL, ots.IssuerURL, ots.ClientID)
 
 	t.Run("CreateToken", func(t *testing.T) {
 		token, err := ots.CreateToken("user-123")
