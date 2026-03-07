@@ -5949,12 +5949,13 @@ func (r *Fetch) Poll(ids ...int) *pollBuilder {
 
 // PollConfigApproval has all fields from poll_config_approval.
 type PollConfigApproval struct {
-	AllowAbstain bool
-	ID           int
-	OptionIDs    []int
-	PollID       int
-	OptionList   []PollConfigOption
-	Poll         *Poll
+	AllowAbstain          bool
+	ID                    int
+	OnehundredPercentBase string
+	OptionIDs             []int
+	PollID                int
+	OptionList            []PollConfigOption
+	Poll                  *Poll
 }
 
 type pollConfigApprovalBuilder struct {
@@ -5965,6 +5966,7 @@ func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigApproval 
 	c := PollConfigApproval{}
 	ds.PollConfigApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigApproval_ID(id).Lazy(&c.ID)
+	ds.PollConfigApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigApproval_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.PollConfigApproval_PollID(id).Lazy(&c.PollID)
 	return &c
@@ -6058,14 +6060,15 @@ func (r *Fetch) PollConfigOption(ids ...int) *pollConfigOptionBuilder {
 
 // PollConfigRatingApproval has all fields from poll_config_rating_approval.
 type PollConfigRatingApproval struct {
-	AllowAbstain     bool
-	ID               int
-	MaxOptionsAmount int
-	MinOptionsAmount int
-	OptionIDs        []int
-	PollID           int
-	OptionList       []PollConfigOption
-	Poll             *Poll
+	AllowAbstain          bool
+	ID                    int
+	MaxOptionsAmount      int
+	MinOptionsAmount      int
+	OnehundredPercentBase string
+	OptionIDs             []int
+	PollID                int
+	OptionList            []PollConfigOption
+	Poll                  *Poll
 }
 
 type pollConfigRatingApprovalBuilder struct {
@@ -6078,6 +6081,7 @@ func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigRat
 	ds.PollConfigRatingApproval_ID(id).Lazy(&c.ID)
 	ds.PollConfigRatingApproval_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
 	ds.PollConfigRatingApproval_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
+	ds.PollConfigRatingApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingApproval_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.PollConfigRatingApproval_PollID(id).Lazy(&c.PollID)
 	return &c
@@ -6122,16 +6126,17 @@ func (r *Fetch) PollConfigRatingApproval(ids ...int) *pollConfigRatingApprovalBu
 
 // PollConfigRatingScore has all fields from poll_config_rating_score.
 type PollConfigRatingScore struct {
-	ID                int
-	MaxOptionsAmount  int
-	MaxVoteSum        int
-	MaxVotesPerOption int
-	MinOptionsAmount  int
-	MinVoteSum        int
-	OptionIDs         []int
-	PollID            int
-	OptionList        []PollConfigOption
-	Poll              *Poll
+	ID                    int
+	MaxOptionsAmount      int
+	MaxVoteSum            int
+	MaxVotesPerOption     int
+	MinOptionsAmount      int
+	MinVoteSum            int
+	OnehundredPercentBase string
+	OptionIDs             []int
+	PollID                int
+	OptionList            []PollConfigOption
+	Poll                  *Poll
 }
 
 type pollConfigRatingScoreBuilder struct {
@@ -6146,6 +6151,7 @@ func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, id int) *PollConfigRating
 	ds.PollConfigRatingScore_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
 	ds.PollConfigRatingScore_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
 	ds.PollConfigRatingScore_MinVoteSum(id).Lazy(&c.MinVoteSum)
+	ds.PollConfigRatingScore_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingScore_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.PollConfigRatingScore_PollID(id).Lazy(&c.PollID)
 	return &c
@@ -6190,14 +6196,16 @@ func (r *Fetch) PollConfigRatingScore(ids ...int) *pollConfigRatingScoreBuilder 
 
 // PollConfigSelection has all fields from poll_config_selection.
 type PollConfigSelection struct {
-	AllowNota        bool
-	ID               int
-	MaxOptionsAmount int
-	MinOptionsAmount int
-	OptionIDs        []int
-	PollID           int
-	OptionList       []PollConfigOption
-	Poll             *Poll
+	AllowNota             bool
+	ID                    int
+	MaxOptionsAmount      int
+	MinOptionsAmount      int
+	OnehundredPercentBase string
+	OptionIDs             []int
+	PollID                int
+	StrikeOut             bool
+	OptionList            []PollConfigOption
+	Poll                  *Poll
 }
 
 type pollConfigSelectionBuilder struct {
@@ -6210,8 +6218,10 @@ func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, id int) *PollConfigSelectio
 	ds.PollConfigSelection_ID(id).Lazy(&c.ID)
 	ds.PollConfigSelection_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
 	ds.PollConfigSelection_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
+	ds.PollConfigSelection_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigSelection_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.PollConfigSelection_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigSelection_StrikeOut(id).Lazy(&c.StrikeOut)
 	return &c
 }
 

@@ -6521,6 +6521,15 @@ func (r *Fetch) PollConfigApproval_ID(pollConfigApprovalID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) PollConfigApproval_OnehundredPercentBase(pollConfigApprovalID int) *ValueString {
+	key, err := dskey.FromParts("poll_config_approval", pollConfigApprovalID, "onehundred_percent_base")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) PollConfigApproval_OptionIDs(pollConfigApprovalID int) *ValueIntSlice {
 	key, err := dskey.FromParts("poll_config_approval", pollConfigApprovalID, "option_ids")
 	if err != nil {
@@ -6620,6 +6629,15 @@ func (r *Fetch) PollConfigRatingApproval_MinOptionsAmount(pollConfigRatingApprov
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) PollConfigRatingApproval_OnehundredPercentBase(pollConfigRatingApprovalID int) *ValueString {
+	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "onehundred_percent_base")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) PollConfigRatingApproval_OptionIDs(pollConfigRatingApprovalID int) *ValueIntSlice {
 	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "option_ids")
 	if err != nil {
@@ -6692,6 +6710,15 @@ func (r *Fetch) PollConfigRatingScore_MinVoteSum(pollConfigRatingScoreID int) *V
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) PollConfigRatingScore_OnehundredPercentBase(pollConfigRatingScoreID int) *ValueString {
+	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "onehundred_percent_base")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) PollConfigRatingScore_OptionIDs(pollConfigRatingScoreID int) *ValueIntSlice {
 	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "option_ids")
 	if err != nil {
@@ -6746,6 +6773,15 @@ func (r *Fetch) PollConfigSelection_MinOptionsAmount(pollConfigSelectionID int) 
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) PollConfigSelection_OnehundredPercentBase(pollConfigSelectionID int) *ValueString {
+	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "onehundred_percent_base")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) PollConfigSelection_OptionIDs(pollConfigSelectionID int) *ValueIntSlice {
 	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "option_ids")
 	if err != nil {
@@ -6762,6 +6798,15 @@ func (r *Fetch) PollConfigSelection_PollID(pollConfigSelectionID int) *ValueInt 
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) PollConfigSelection_StrikeOut(pollConfigSelectionID int) *ValueBool {
+	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "strike_out")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) PollConfigStvScottish_ID(pollConfigStvScottishID int) *ValueInt {

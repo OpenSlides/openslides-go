@@ -1131,10 +1131,11 @@ var RestrictionModes = map[string]string{
 	"poll/voted_ids":          "B",
 
 	// poll_config_approval
-	"poll_config_approval/allow_abstain": "A",
-	"poll_config_approval/id":            "A",
-	"poll_config_approval/option_ids":    "A",
-	"poll_config_approval/poll_id":       "A",
+	"poll_config_approval/allow_abstain":           "A",
+	"poll_config_approval/id":                      "A",
+	"poll_config_approval/onehundred_percent_base": "A",
+	"poll_config_approval/option_ids":              "A",
+	"poll_config_approval/poll_id":                 "A",
 
 	// poll_config_option
 	"poll_config_option/id":              "A",
@@ -1144,30 +1145,34 @@ var RestrictionModes = map[string]string{
 	"poll_config_option/weight":          "A",
 
 	// poll_config_rating_approval
-	"poll_config_rating_approval/allow_abstain":      "A",
-	"poll_config_rating_approval/id":                 "A",
-	"poll_config_rating_approval/max_options_amount": "A",
-	"poll_config_rating_approval/min_options_amount": "A",
-	"poll_config_rating_approval/option_ids":         "A",
-	"poll_config_rating_approval/poll_id":            "A",
+	"poll_config_rating_approval/allow_abstain":           "A",
+	"poll_config_rating_approval/id":                      "A",
+	"poll_config_rating_approval/max_options_amount":      "A",
+	"poll_config_rating_approval/min_options_amount":      "A",
+	"poll_config_rating_approval/onehundred_percent_base": "A",
+	"poll_config_rating_approval/option_ids":              "A",
+	"poll_config_rating_approval/poll_id":                 "A",
 
 	// poll_config_rating_score
-	"poll_config_rating_score/id":                   "A",
-	"poll_config_rating_score/max_options_amount":   "A",
-	"poll_config_rating_score/max_vote_sum":         "A",
-	"poll_config_rating_score/max_votes_per_option": "A",
-	"poll_config_rating_score/min_options_amount":   "A",
-	"poll_config_rating_score/min_vote_sum":         "A",
-	"poll_config_rating_score/option_ids":           "A",
-	"poll_config_rating_score/poll_id":              "A",
+	"poll_config_rating_score/id":                      "A",
+	"poll_config_rating_score/max_options_amount":      "A",
+	"poll_config_rating_score/max_vote_sum":            "A",
+	"poll_config_rating_score/max_votes_per_option":    "A",
+	"poll_config_rating_score/min_options_amount":      "A",
+	"poll_config_rating_score/min_vote_sum":            "A",
+	"poll_config_rating_score/onehundred_percent_base": "A",
+	"poll_config_rating_score/option_ids":              "A",
+	"poll_config_rating_score/poll_id":                 "A",
 
 	// poll_config_selection
-	"poll_config_selection/allow_nota":         "A",
-	"poll_config_selection/id":                 "A",
-	"poll_config_selection/max_options_amount": "A",
-	"poll_config_selection/min_options_amount": "A",
-	"poll_config_selection/option_ids":         "A",
-	"poll_config_selection/poll_id":            "A",
+	"poll_config_selection/allow_nota":              "A",
+	"poll_config_selection/id":                      "A",
+	"poll_config_selection/max_options_amount":      "A",
+	"poll_config_selection/min_options_amount":      "A",
+	"poll_config_selection/onehundred_percent_base": "A",
+	"poll_config_selection/option_ids":              "A",
+	"poll_config_selection/poll_id":                 "A",
+	"poll_config_selection/strike_out":              "A",
 
 	// poll_config_stv_scottish
 	"poll_config_stv_scottish/id":         "A",
