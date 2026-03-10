@@ -24,43 +24,25 @@ var (
 	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
 	envPostgresUser         = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
 	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
+
+	envPostgresNotifyHost         = environment.NewVariable("DATABASE_NOTIFY_HOST", "DATABASE_HOST", "Postgres Host for notify.")
+	envPostgresNotifyPort         = environment.NewVariable("DATABASE_NOTIFY_PORT", "DATABASE_PORT", "Postgres Port for notify.")
+	envPostgresNotifyDatabase     = environment.NewVariable("DATABASE_NOTIFY_NAME", "DATABASE_NAME", "Postgres Database for notify.")
+	envPostgresNotifyUser         = environment.NewVariable("DATABASE_NOTIFY_USER", "DATABASE_USER", "Postgres User for notify.")
+	envPostgresNotifyPasswordFile = environment.NewVariable("DATABASE_NOTIFY_PASSWORD_FILE", "DATABASE_PASSWORD_FILE", "Postgres Password for notify.")
 )
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	Pool *pgxpool.Pool
-}
-
-// encodePostgresConfig encodes a string to be used in the postgres key value style.
-//
-// See: https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-func encodePostgresConfig(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, `'`, `\'`)
-	return s
-}
-
-func postgresDSN(lookup environment.Environmenter) (string, error) {
-	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
-	if err != nil {
-		return "", fmt.Errorf("reading postgres password: %w", err)
-	}
-
-	return fmt.Sprintf(
-		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
-		encodePostgresConfig(envPostgresUser.Value(lookup)),
-		encodePostgresConfig(password),
-		encodePostgresConfig(envPostgresHost.Value(lookup)),
-		encodePostgresConfig(envPostgresPort.Value(lookup)),
-		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
-	), nil
+	Pool         *pgxpool.Pool
+	notifyConfig *pgx.ConnConfig
 }
 
 // NewFlowPostgres initializes a SourcePostgres.
 func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 	addr, err := postgresDSN(lookup)
 	if err != nil {
-		return nil, fmt.Errorf("reading postgres password: %w", err)
+		return nil, fmt.Errorf("reading postgres dns: %w", err)
 	}
 
 	config, err := pgxpool.ParseConfig(addr)
@@ -75,7 +57,20 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	flow := FlowPostgres{Pool: pool}
+	notifyAddr, err := postgresDSNNotify(lookup)
+	if err != nil {
+		return nil, fmt.Errorf("reading postgres dns for notify: %w", err)
+	}
+
+	notifyConf, err := pgx.ParseConfig(notifyAddr)
+	if err != nil {
+		return nil, fmt.Errorf("generate config for notify: %w", err)
+	}
+
+	flow := FlowPostgres{
+		Pool:         pool,
+		notifyConfig: notifyConf,
+	}
 
 	return &flow, nil
 }
@@ -267,12 +262,12 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	conn, err := p.Pool.Acquire(ctx)
+	conn, err := pgx.ConnectConfig(ctx, p.notifyConfig)
 	if err != nil {
-		updateFn(nil, fmt.Errorf("acquire connection: %w", err))
+		updateFn(nil, fmt.Errorf("create connection to postgres: %w", err))
 		return
 	}
-	defer conn.Release()
+	defer conn.Close(context.Background())
 
 	_, err = conn.Exec(ctx, "LISTEN os_notify")
 	if err != nil {
@@ -281,7 +276,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 
 	for {
-		notification, err := conn.Conn().WaitForNotification(ctx)
+		notification, err := conn.WaitForNotification(ctx)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
 			return
@@ -297,7 +292,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		sql := `SELECT DISTINCT fqid FROM os_notify_log_t WHERE xact_id = $1::xid8;`
-		rows, err := conn.Conn().Query(ctx, sql, payload.XACTID)
+		rows, err := conn.Query(ctx, sql, payload.XACTID)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("query fqids for transaction %d: %w", payload.XACTID, err))
 			return
@@ -326,9 +321,10 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			allKeys = append(allKeys, keys...)
 		}
 
-		values, err := getWithConn(ctx, conn.Conn(), allKeys...)
+		values, err := p.Get(ctx, allKeys...)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
+			return
 		}
 
 		updateFn(values, nil)
@@ -407,4 +403,54 @@ func getCollectionNameAndID(keyStr string) (string, int, error) {
 	// Can be removed when this is merged:
 	// https://github.com/OpenSlides/openslides-meta/pull/240
 	return strings.TrimSuffix(keyStr[:idx1], "_t"), id, nil
+}
+
+// encodePostgresConfig encodes a string to be used in the postgres key value style.
+//
+// See: https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+func encodePostgresConfig(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return s
+}
+
+func postgresDSN(lookup environment.Environmenter) (string, error) {
+	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
+	if err != nil {
+		return "", fmt.Errorf("reading postgres password: %w", err)
+	}
+
+	return postgresConfigString(
+		encodePostgresConfig(envPostgresHost.Value(lookup)),
+		encodePostgresConfig(envPostgresPort.Value(lookup)),
+		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
+		encodePostgresConfig(envPostgresUser.Value(lookup)),
+		encodePostgresConfig(password),
+	), nil
+}
+
+func postgresDSNNotify(lookup environment.Environmenter) (string, error) {
+	password, err := environment.ReadSecretOr(lookup, envPostgresNotifyPasswordFile, envPostgresPasswordFile)
+	if err != nil {
+		return "", fmt.Errorf("reading postgres password: %w", err)
+	}
+
+	return postgresConfigString(
+		encodePostgresConfig(envPostgresNotifyHost.ValueOr(lookup, envPostgresHost)),
+		encodePostgresConfig(envPostgresNotifyPort.ValueOr(lookup, envPostgresPort)),
+		encodePostgresConfig(envPostgresNotifyDatabase.ValueOr(lookup, envPostgresDatabase)),
+		encodePostgresConfig(envPostgresNotifyUser.ValueOr(lookup, envPostgresUser)),
+		encodePostgresConfig(password),
+	), nil
+}
+
+func postgresConfigString(host, port, db, user, password string) string {
+	return fmt.Sprintf(
+		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
+		encodePostgresConfig(user),
+		encodePostgresConfig(password),
+		encodePostgresConfig(host),
+		encodePostgresConfig(port),
+		encodePostgresConfig(db),
+	)
 }
