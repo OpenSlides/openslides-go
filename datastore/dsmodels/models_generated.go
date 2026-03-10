@@ -1607,7 +1607,6 @@ type Meeting struct {
 	AssignmentPollAddCandidatesToListOfSpeakers  bool
 	AssignmentPollBallotPaperNumber              int
 	AssignmentPollBallotPaperSelection           string
-	AssignmentPollDefaultBackend                 string
 	AssignmentPollDefaultGroupIDs                []int
 	AssignmentPollDefaultMethod                  string
 	AssignmentPollDefaultOnehundredPercentBase   string
@@ -1720,9 +1719,8 @@ type Meeting struct {
 	MotionIDs                                    []int
 	MotionPollBallotPaperNumber                  int
 	MotionPollBallotPaperSelection               string
-	MotionPollDefaultBackend                     string
+	MotionPollDefaultAllowAbstain                bool
 	MotionPollDefaultGroupIDs                    []int
-	MotionPollDefaultMethod                      string
 	MotionPollDefaultOnehundredPercentBase       string
 	MotionPollDefaultType                        string
 	MotionPollProjectionMaxColumns               int
@@ -1943,7 +1941,6 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_AssignmentPollAddCandidatesToListOfSpeakers(id).Lazy(&c.AssignmentPollAddCandidatesToListOfSpeakers)
 	ds.Meeting_AssignmentPollBallotPaperNumber(id).Lazy(&c.AssignmentPollBallotPaperNumber)
 	ds.Meeting_AssignmentPollBallotPaperSelection(id).Lazy(&c.AssignmentPollBallotPaperSelection)
-	ds.Meeting_AssignmentPollDefaultBackend(id).Lazy(&c.AssignmentPollDefaultBackend)
 	ds.Meeting_AssignmentPollDefaultGroupIDs(id).Lazy(&c.AssignmentPollDefaultGroupIDs)
 	ds.Meeting_AssignmentPollDefaultMethod(id).Lazy(&c.AssignmentPollDefaultMethod)
 	ds.Meeting_AssignmentPollDefaultOnehundredPercentBase(id).Lazy(&c.AssignmentPollDefaultOnehundredPercentBase)
@@ -2056,9 +2053,8 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionIDs(id).Lazy(&c.MotionIDs)
 	ds.Meeting_MotionPollBallotPaperNumber(id).Lazy(&c.MotionPollBallotPaperNumber)
 	ds.Meeting_MotionPollBallotPaperSelection(id).Lazy(&c.MotionPollBallotPaperSelection)
-	ds.Meeting_MotionPollDefaultBackend(id).Lazy(&c.MotionPollDefaultBackend)
+	ds.Meeting_MotionPollDefaultAllowAbstain(id).Lazy(&c.MotionPollDefaultAllowAbstain)
 	ds.Meeting_MotionPollDefaultGroupIDs(id).Lazy(&c.MotionPollDefaultGroupIDs)
-	ds.Meeting_MotionPollDefaultMethod(id).Lazy(&c.MotionPollDefaultMethod)
 	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Lazy(&c.MotionPollDefaultOnehundredPercentBase)
 	ds.Meeting_MotionPollDefaultType(id).Lazy(&c.MotionPollDefaultType)
 	ds.Meeting_MotionPollProjectionMaxColumns(id).Lazy(&c.MotionPollProjectionMaxColumns)

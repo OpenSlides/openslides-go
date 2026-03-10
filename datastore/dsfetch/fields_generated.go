@@ -2687,15 +2687,6 @@ func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *Value
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueString {
-	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_backend")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
 func (r *Fetch) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_group_ids")
 	if err != nil {
@@ -3704,13 +3695,13 @@ func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueStri
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
-	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_backend")
+func (r *Fetch) Meeting_MotionPollDefaultAllowAbstain(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_allow_abstain")
 	if err != nil {
-		return &ValueString{err: err}
+		return &ValueBool{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
@@ -3720,15 +3711,6 @@ func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice 
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
-}
-
-func (r *Fetch) Meeting_MotionPollDefaultMethod(meetingID int) *ValueString {
-	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_method")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
