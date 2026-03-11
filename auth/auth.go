@@ -37,8 +37,8 @@ var (
 
 	// OIDC environment variables
 	envOIDCEnabled           = environment.NewVariable("OIDC_ENABLED", "false", "Enable OIDC authentication.")
-	envOIDCIssuerURL         = environment.NewVariable("OIDC_PROVIDER_URL", "", "Keycloak Realm URL (external) for issuer validation.")
-	envOIDCInternalIssuerURL = environment.NewVariable("OIDC_INTERNAL_PROVIDER_URL", "", "Keycloak Realm URL (internal) for JWKS discovery. Defaults to OIDC_PROVIDER_URL.")
+	envOIDCIssuerURL         = environment.NewVariable("OIDC_ISSUER_URL", "", "Keycloak Realm URL (external) for issuer validation.")
+	envOIDCInternalIssuerURL = environment.NewVariable("OIDC_INTERNAL_ISSUER_URL", "", "Keycloak Realm URL (internal) for JWKS discovery. Defaults to OIDC_ISSUER_URL.")
 	envOIDCClientID          = environment.NewVariable("OIDC_CLIENT_ID", "", "Expected audience in OIDC token.")
 )
 
