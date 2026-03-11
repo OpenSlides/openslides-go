@@ -16,6 +16,7 @@ import (
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/OpenSlides/openslides-go/oserror"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ostcar/topic"
 )
 
@@ -33,6 +34,12 @@ var (
 
 	envAuthTokenFile  = environment.NewVariable("AUTH_TOKEN_KEY_FILE", "/run/secrets/auth_token_key", "Key to sign the JWT auth tocken.")
 	envAuthCookieFile = environment.NewVariable("AUTH_COOKIE_KEY_FILE", "/run/secrets/auth_cookie_key", "Key to sign the JWT auth cookie.")
+
+	// OIDC environment variables
+	envOIDCEnabled           = environment.NewVariable("OIDC_ENABLED", "false", "Enable OIDC authentication.")
+	envOIDCIssuerURL         = environment.NewVariable("OIDC_ISSUER_URL", "", "Keycloak Realm URL (external) for issuer validation.")
+	envOIDCInternalIssuerURL = environment.NewVariable("OIDC_INTERNAL_ISSUER_URL", "", "Keycloak Realm URL (internal) for JWKS discovery. Defaults to OIDC_ISSUER_URL.")
+	envOIDCClientID          = environment.NewVariable("OIDC_CLIENT_ID", "", "Expected audience in OIDC token.")
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -65,13 +72,21 @@ type Auth struct {
 
 	tokenKey  string
 	cookieKey string
+
+	// OIDC fields
+	oidcEnabled   bool
+	oidcValidator *OIDCValidator
+	userLookup    *UserLookup
 }
 
 // New initializes the Auth object.
 //
-// Returns the initialized Auth objectand a function to be called in the
+// Returns the initialized Auth object and a function to be called in the
 // background.
-func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
+//
+// The pool parameter is optional and only needed for OIDC mode to lookup users
+// by keycloak_id.
+func New(lookup environment.Environmenter, messageBus LogoutEventer, pool ...*pgxpool.Pool) (*Auth, func(context.Context, func(error)), error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
@@ -91,12 +106,40 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 		return nil, nil, fmt.Errorf("reading cookie token: %w", err)
 	}
 
+	// OIDC configuration
+	oidcEnabled, _ := strconv.ParseBool(envOIDCEnabled.Value(lookup))
+
+	var oidcValidator *OIDCValidator
+	var userLookup *UserLookup
+
+	if oidcEnabled {
+		issuerURL := envOIDCIssuerURL.Value(lookup)
+		internalIssuerURL := envOIDCInternalIssuerURL.Value(lookup)
+		clientID := envOIDCClientID.Value(lookup)
+		if issuerURL == "" || clientID == "" {
+			return nil, nil, fmt.Errorf("OIDC enabled but OIDC_ISSUER_URL or OIDC_CLIENT_ID not set")
+		}
+		// Use internal URL for JWKS if provided, otherwise use issuer URL
+		if internalIssuerURL == "" {
+			internalIssuerURL = issuerURL
+		}
+		oidcValidator = NewOIDCValidator(issuerURL, internalIssuerURL, clientID)
+
+		if len(pool) == 0 || pool[0] == nil {
+			return nil, nil, fmt.Errorf("OIDC enabled but no database pool provided")
+		}
+		userLookup = NewUserLookup(pool[0])
+	}
+
 	a := &Auth{
 		fake:             fake,
 		logedoutSessions: topic.New[string](),
 		authServiceURL:   url,
 		tokenKey:         authToken,
 		cookieKey:        cookieToken,
+		oidcEnabled:      oidcEnabled,
+		oidcValidator:    oidcValidator,
+		userLookup:       userLookup,
 	}
 
 	// Make sure the topic is not empty
@@ -115,7 +158,6 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 }
 
 // Authenticate uses the headers from the given request to get the user id. The
-// returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	if a.fake {
 		return r.Context(), nil
@@ -134,13 +176,13 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 
 	cid, sessionIDs := a.logedoutSessions.ReceiveAll()
 	if slices.Contains(sessionIDs, p.SessionID) {
-		return nil, &authError{"invalid session", nil}
+		return nil, &authError{msg: "invalid session", status: http.StatusUnauthorized}
 	}
 
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
+	ctx, cancelCtx := context.WithCancelCause(a.AuthenticatedContext(ctx, p.UserID))
 
 	go func() {
-		defer cancelCtx()
+		defer cancelCtx(nil)
 
 		var sessionIDs []string
 		var err error
@@ -151,6 +193,8 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 			}
 
 			if slices.Contains(sessionIDs, p.SessionID) {
+				// Cancel with LogoutError to signal server-initiated logout
+				cancelCtx(LogoutError{SessionID: p.SessionID})
 				return
 			}
 		}
@@ -223,7 +267,7 @@ func (a *Auth) pruneOldData(ctx context.Context) {
 
 // loadToken loads and validates the token. If the token is expires, it tries
 // to renews it and writes the new token to the responsewriter.
-func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
+func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, p *payload) error {
 	header := r.Header.Get(authHeader)
 	cookie, err := r.Cookie(cookieName)
 	if err != nil && err != http.ErrNoCookie {
@@ -231,18 +275,39 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	}
 
 	encodedToken := strings.TrimPrefix(header, "bearer ")
+	hasBearerToken := header != encodedToken
 
-	if cookie == nil && header == encodedToken {
-		// No token and no auth cookie. Handle the request as public access requst.
+	// No token and no auth cookie - public access
+	if cookie == nil && !hasBearerToken {
 		return nil
 	}
 
-	if cookie == nil && header != encodedToken {
-		return authError{"Can not find auth cookie", nil}
+	// Try OIDC validation if enabled and we have a bearer token (without cookie)
+	if a.oidcEnabled && a.oidcValidator != nil && hasBearerToken && cookie == nil {
+		claims, err := a.oidcValidator.ValidateToken(r.Context(), encodedToken)
+		if err == nil {
+			// OIDC token valid - lookup user ID by keycloak_id
+			userID, err := a.userLookup.GetUserIDByKeycloakID(r.Context(), claims.KeycloakID)
+			if err != nil {
+				return authError{msg: fmt.Sprintf("user not found: %s", claims.KeycloakID), wrapped: err}
+			}
+
+			// Set user ID in payload
+			p.UserID = userID
+			p.SessionID = claims.SessionID
+			return nil
+		}
+		// OIDC validation failed - return error (no cookie means no legacy fallback)
+		return authError{msg: "Invalid OIDC token", wrapped: err}
 	}
 
-	if cookie != nil && header == encodedToken {
-		return authError{"Can not find auth token", nil}
+	// Legacy validation requires both cookie and token
+	if cookie == nil && hasBearerToken {
+		return authError{msg: "Can not find auth cookie"}
+	}
+
+	if cookie != nil && !hasBearerToken {
+		return authError{msg: "Can not find auth token"}
 	}
 
 	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
@@ -253,12 +318,12 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	if err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
-			return authError{"Invalid auth token", err}
+			return authError{msg: "Invalid auth token", wrapped: err}
 		}
 		return fmt.Errorf("validating auth cookie: %w", err)
 	}
 
-	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
+	_, err = jwt.ParseWithClaims(encodedToken, p, func(token *jwt.Token) (interface{}, error) {
 		return []byte(a.tokenKey), nil
 	})
 	if err != nil {
@@ -273,7 +338,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 
 func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken, encodedCookie string) error {
 	if !tokenExpired(invalid.Errors) {
-		return authError{"Invalid auth token", invalid}
+		return authError{msg: "Invalid auth token", wrapped: invalid}
 	}
 
 	token, err := a.refreshToken(ctx, encodedToken, encodedCookie)
@@ -324,7 +389,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 		if rPayload.Message == "" {
 			rPayload.Message = "Can not refresh token"
 		}
-		return "", authError{rPayload.Message, nil}
+		return "", authError{msg: rPayload.Message}
 
 	}
 
@@ -341,4 +406,14 @@ type payload struct {
 	jwt.StandardClaims
 	UserID    int    `json:"userId"`
 	SessionID string `json:"sessionId"`
+}
+
+// LogoutError indicates that a session was terminated due to logout.
+// This error is used as the cause when cancelling a context due to backchannel logout.
+type LogoutError struct {
+	SessionID string
+}
+
+func (e LogoutError) Error() string {
+	return "session logged out"
 }
