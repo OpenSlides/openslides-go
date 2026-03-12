@@ -127,6 +127,33 @@ func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 		updateFn = func(m map[dskey.Key][]byte, err error) {}
 	}
 
+	type UpdateNoData interface {
+		UpdateNoData(ctx context.Context, updateFn func([]dskey.Key, error))
+	}
+
+	flowWithUpdateNoData, ok := c.flow.(UpdateNoData)
+	if ok {
+		flowWithUpdateNoData.UpdateNoData(ctx, func(keys []dskey.Key, err error) {
+			if err != nil {
+				updateFn(nil, fmt.Errorf("fetching keys from UpdateNoData: %w", err))
+				return
+			}
+
+			requiredKeys := c.data.FilterPendingOrExists(keys)
+
+			data, err := c.flow.Get(ctx, requiredKeys...)
+
+			if err != nil {
+				updateFn(nil, fmt.Errorf("fetching pending and existing keys from flow: %w", err))
+				return
+			}
+
+			c.data.SetIfPendingOrExists(data)
+			updateFn(data, nil)
+		})
+		return
+	}
+
 	c.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
 		if err != nil {
 			updateFn(nil, err)
