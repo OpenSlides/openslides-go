@@ -296,28 +296,31 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
-		sql := `SELECT DISTINCT fqid FROM os_notify_log_t WHERE xact_id = $1::xid8;`
+		sql := `SELECT DISTINCT fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
 		rows, err := conn.Conn().Query(ctx, sql, payload.XACTID)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("query fqids for transaction %d: %w", payload.XACTID, err))
 			return
 		}
 
-		fqids, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+			Fqid          string
+			UpdatedFields []string
+		}])
 		if err != nil {
-			updateFn(nil, fmt.Errorf("parse rows: %w", err))
+			updateFn(nil, fmt.Errorf("parse notify_log: %w", err))
 			return
 		}
 
 		var allKeys []dskey.Key
-		for _, fqid := range fqids {
-			collectionName, id, err := getCollectionNameAndID(fqid)
+		for _, updateLog := range updateLogs {
+			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
-				updateFn(nil, fmt.Errorf("split fqid from %s: %w", fqid, err))
+				updateFn(nil, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
 				return
 			}
 
-			keys, err := createKeyList(collectionName, id)
+			keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
 			if err != nil {
 				updateFn(nil, fmt.Errorf("creating key list from notification: %w", err))
 				return
@@ -361,8 +364,10 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 	}
 }
 
-func createKeyList(collection string, id int) ([]dskey.Key, error) {
-	fields := collectionFields[collection]
+func createKeyList(collection string, id int, fields []string) ([]dskey.Key, error) {
+	if len(fields) == 0 {
+		fields = collectionFields[collection]
+	}
 
 	keys := make([]dskey.Key, len(fields))
 	var err error
