@@ -308,7 +308,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			UpdatedFields []string
 		}])
 		if err != nil {
-			updateFn(nil, fmt.Errorf("parse rows: %w", err))
+			updateFn(nil, fmt.Errorf("parse notify_log: %w", err))
 			return
 		}
 
@@ -316,7 +316,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		for _, updateLog := range updateLogs {
 			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
-				updateFn(nil, fmt.Errorf("split fqid from %s: %w", updateLog, err))
+				updateFn(nil, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
 				return
 			}
 
