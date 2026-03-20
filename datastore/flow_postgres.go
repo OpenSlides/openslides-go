@@ -29,7 +29,8 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	Pool *pgxpool.Pool
+	Pool  *pgxpool.Pool
+	enums map[uint32]struct{}
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -71,14 +72,45 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	ctx := context.Background()
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
 	flow := FlowPostgres{Pool: pool}
+	if err := flow.updateEnums(ctx); err != nil {
+		return nil, err
+	}
 
 	return &flow, nil
+}
+
+func (p *FlowPostgres) updateEnums(ctx context.Context) error {
+	c, err := p.Pool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer c.Release()
+
+	sql := `SELECT oid FROM pg_type WHERE typtype = 'e';`
+	rows, err := c.Conn().Query(ctx, sql)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	p.enums = map[uint32]struct{}{}
+	for rows.Next() {
+		var oid uint32
+		if err := rows.Scan(&oid); err != nil {
+			return err
+		}
+
+		p.enums[oid] = struct{}{}
+	}
+
+	return nil
 }
 
 // Close closes the connection pool.
@@ -94,10 +126,10 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 	}
 	defer conn.Release()
 
-	return getWithConn(ctx, conn.Conn(), keys...)
+	return p.getWithConn(ctx, conn.Conn(), keys...)
 }
 
-func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	collectionIDs := make(map[string][]int)
 	collectionFields := make(map[string][]string)
 
@@ -184,7 +216,7 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 						continue
 					}
 
-					keyValues[key], err = convertValue(value, fieldDescription[i].DataTypeOID)
+					keyValues[key], err = p.convertValue(value, fieldDescription[i].DataTypeOID)
 					if err != nil {
 						return fmt.Errorf("convert value for field %s/%s: %w", collection, field, err)
 					}
@@ -208,7 +240,7 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 	return result, nil
 }
 
-func convertValue(value []byte, oid uint32) ([]byte, error) {
+func (p *FlowPostgres) convertValue(value []byte, oid uint32) ([]byte, error) {
 	switch oid {
 	case pgtype.VarcharOID, pgtype.TextOID:
 		return json.Marshal(string(value))
@@ -248,6 +280,10 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 		return json.Marshal(strArray)
 
 	default:
+		if _, ok := p.enums[oid]; ok {
+			return json.Marshal(string(value))
+		}
+
 		return nil, fmt.Errorf("unsupported postgres type %d", oid)
 	}
 }
@@ -316,7 +352,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			allKeys = append(allKeys, keys...)
 		}
 
-		values, err := getWithConn(ctx, conn.Conn(), allKeys...)
+		values, err := p.getWithConn(ctx, conn.Conn(), allKeys...)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
 		}
