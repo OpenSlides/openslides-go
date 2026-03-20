@@ -13,6 +13,7 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -208,46 +209,37 @@ func getWithConn(ctx context.Context, conn *pgx.Conn, keys ...dskey.Key) (map[ds
 }
 
 func convertValue(value []byte, oid uint32) ([]byte, error) {
-	const (
-		PSQLTypeInt         = 23
-		PSQLTypeBool        = 16
-		PSQLTypeIntList     = 1007
-		PSQLTypeTimestamp   = 1184
-		PSQLTypeDecimal     = 1700
-		PSQLTypeJSON        = 3802
-		PSQLTypeTextList    = 1009
-		PSQLTypeVarCharList = 1015
-		PSQLTypeFloat       = 701
-	)
-
 	switch oid {
-	case PSQLTypeInt, PSQLTypeJSON, PSQLTypeFloat:
+	case pgtype.VarcharOID, pgtype.TextOID:
+		return json.Marshal(string(value))
+
+	case pgtype.Int4OID, pgtype.Float8OID, pgtype.JSONOID:
 		return bytes.Clone(value), nil
 
-	case PSQLTypeIntList:
+	case pgtype.Int4ArrayOID:
 		result := make([]byte, len(value))
 		copy(result, value)
 		result[0] = '['
 		result[len(result)-1] = ']'
 		return result, nil
 
-	case PSQLTypeBool:
+	case pgtype.BoolOID:
 		if string(value) == "t" {
 			return []byte("true"), nil
 		}
 		return []byte("false"), nil
 
-	case PSQLTypeDecimal:
+	case pgtype.NumericOID:
 		return fmt.Appendf(nil, `"%s"`, value), nil
 
-	case PSQLTypeTimestamp:
+	case pgtype.TimestamptzOID:
 		timeValue, err := time.Parse("2006-01-02 15:04:05-07", string(value))
 		if err != nil {
 			return nil, fmt.Errorf("parsing time %s: %w", value, err)
 		}
 		return strconv.AppendInt(nil, timeValue.Unix(), 10), nil
 
-	case PSQLTypeVarCharList, PSQLTypeTextList:
+	case pgtype.VarcharArrayOID, pgtype.TextArrayOID:
 		strValue := strings.Trim(string(value), "{}")
 		if strValue == "" {
 			return []byte("[]"), nil
@@ -256,7 +248,7 @@ func convertValue(value []byte, oid uint32) ([]byte, error) {
 		return json.Marshal(strArray)
 
 	default:
-		return json.Marshal(string(value))
+		return nil, fmt.Errorf("unsupported postgres type %d", oid)
 	}
 }
 
