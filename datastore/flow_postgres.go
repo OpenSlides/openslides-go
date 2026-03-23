@@ -296,7 +296,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
-		sql := `SELECT DISTINCT fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
+		sql := `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
 		rows, err := conn.Conn().Query(ctx, sql, payload.XACTID)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("query fqids for transaction %d: %w", payload.XACTID, err))
@@ -304,6 +304,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+			Operation     string
 			Fqid          string
 			UpdatedFields []string
 		}])
@@ -312,7 +313,8 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
-		var allKeys []dskey.Key
+		var deletedKeys []dskey.Key
+		var updatedKeys []dskey.Key
 		for _, updateLog := range updateLogs {
 			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
@@ -326,12 +328,22 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 				return
 			}
 
-			allKeys = append(allKeys, keys...)
+			switch updateLog.Operation {
+			case "delete":
+				deletedKeys = append(deletedKeys, keys...)
+			case "insert", "update":
+				updatedKeys = append(updatedKeys, keys...)
+			}
 		}
 
-		values, err := getWithConn(ctx, conn.Conn(), allKeys...)
+		// TODO: don't use getWithConn for insert operation
+		values, err := getWithConn(ctx, conn.Conn(), updatedKeys...)
 		if err != nil {
-			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
+			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
+		}
+
+		for _, key := range deletedKeys {
+			values[key] = nil
 		}
 
 		updateFn(values, nil)
