@@ -375,9 +375,12 @@ func createKeyList(collection string, id int, fields []string) ([]dskey.Key, err
 
 	keys := make([]dskey.Key, len(fields))
 	for i, field := range fields {
-		if key, err := dskey.FromParts(collection, id, field); err == nil {
-			keys[i] = key
+		key, err := dskey.FromParts(collection, id, field)
+		if err != nil {
+			continue
 		}
+
+		keys[i] = key
 	}
 	return keys, nil
 }
