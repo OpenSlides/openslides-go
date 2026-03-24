@@ -352,12 +352,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			allKeys = append(allKeys, keys...)
 		}
 
-<<<<<<< HEAD
-		values, err := getWithConn(ctx, conn.Conn(), allKeys...)
-=======
-		// TODO: don't use getWithConn for insert operation
-		values, err := p.getWithConn(ctx, conn.Conn(), updatedKeys...)
->>>>>>> 674592d (Support enums (#193))
+		values, err := p.getWithConn(ctx, conn.Conn(), allKeys...)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
 		}
