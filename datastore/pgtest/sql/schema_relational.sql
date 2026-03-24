@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '207ed31447d3c58b438905c54d56542f'
+-- MODELS_YML_CHECKSUM = '5c5cad2597e38d8a1b33bebe7a469bcb'
 
 
 -- Function and meta table definitions
@@ -46,6 +46,27 @@ END;
 $sequences_trigger$
 LANGUAGE plpgsql;
 
+CREATE OR REPLACE PROCEDURE log_field_change(
+    operation_var TEXT,
+    fqid_var TEXT,
+    fields TEXT[]
+) AS
+$log_field_change$
+BEGIN
+    INSERT INTO os_notify_log_t (operation, fqid, xact_id, timestamp, updated_fields)
+    VALUES (operation_var, fqid_var, pg_current_xact_id(), now(), fields)
+    ON CONFLICT (operation, fqid, xact_id) DO UPDATE SET updated_fields = (
+        SELECT ARRAY(
+            SELECT DISTINCT e
+            FROM unnest(COALESCE(os_notify_log_t.updated_fields, '{}'::varchar[])) AS e
+            UNION
+            SELECT DISTINCT e
+            FROM unnest(COALESCE(EXCLUDED.updated_fields, '{}'::varchar[])) AS e
+        )
+    );
+END;
+$log_field_change$ LANGUAGE plpgsql;
+
 CREATE FUNCTION log_modified_models() RETURNS trigger AS $log_modified_trigger$
 DECLARE
     escaped_table_name varchar;
@@ -71,17 +92,7 @@ BEGIN
         updated_fields_var := akeys((new_hstore - old_hstore) || (old_hstore - new_hstore));
     END IF;
 
-    INSERT INTO os_notify_log_t (operation, fqid, xact_id, timestamp, updated_fields)
-    VALUES (operation_var, fqid_var, pg_current_xact_id(), 'now', updated_fields_var)
-    ON CONFLICT (operation,fqid,xact_id) DO UPDATE SET updated_fields = (
-        SELECT ARRAY(
-            SELECT DISTINCT e
-            FROM unnest(COALESCE(os_notify_log_t.updated_fields, '{}'::varchar[])) AS e
-            UNION
-            SELECT DISTINCT e
-            FROM unnest(COALESCE(EXCLUDED.updated_fields, '{}'::varchar[])) AS e
-        )
-    );
+    CALL log_field_change(operation_var, fqid_var, updated_fields_var);
 
     RETURN NULL;  -- AFTER TRIGGER needs no return
 END;
@@ -160,17 +171,16 @@ BEGIN
 
         IF foreign_id IS NOT NULL THEN
             fqid_var := foreign_table || '/' || foreign_id;
-            INSERT INTO os_notify_log_t  (operation, fqid, xact_id, timestamp, updated_fields)
-            VALUES ('update', fqid_var, pg_current_xact_id(), now(), ARRAY[fk_field])
-            ON CONFLICT (operation,fqid,xact_id) DO UPDATE SET updated_fields = (
-                SELECT ARRAY(
-                    SELECT DISTINCT e
-                    FROM unnest(COALESCE(os_notify_log_t.updated_fields, '{}'::varchar[])) AS e
-                    UNION
-                    SELECT DISTINCT e
-                    FROM unnest(COALESCE(EXCLUDED.updated_fields, '{}'::varchar[])) AS e
-                )
-            );
+            CALL log_field_change('update', fqid_var, ARRAY[fk_field]);
+        END IF;
+
+        --when update there must be a notification for the old foreign_fqid
+        IF (TG_OP = 'UPDATE') THEN
+            EXECUTE format('SELECT ($1).%I', ref_column) INTO foreign_id USING OLD;
+            IF foreign_id IS NOT NULL THEN
+                fqid_var := foreign_table || '/' || foreign_id;
+                CALL log_field_change('update', fqid_var, ARRAY[fk_field]);
+            END IF;
         END IF;
 
         i := i + 3;
@@ -398,10 +408,10 @@ CREATE TABLE agenda_item_t (
     level integer,
     weight integer,
     content_object_id varchar(100) NOT NULL,
-    content_object_id_motion_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_motion_block_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion_block' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_assignment_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'assignment' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_topic_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_motion_id integer CONSTRAINT unique_agenda_item_content_object_id_motion_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_motion_block_id integer CONSTRAINT unique_agenda_item_content_object_id_motion_block_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion_block' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_assignment_id integer CONSTRAINT unique_agenda_item_content_object_id_assignment_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'assignment' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_topic_id integer CONSTRAINT unique_agenda_item_content_object_id_topic_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','motion_block','assignment','topic')),
     parent_id integer,
     meeting_id integer NOT NULL
@@ -424,7 +434,7 @@ CREATE TABLE assignment_t (
     default_poll_description text,
     number_poll_candidates boolean,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_assignment_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_assignment_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     meeting_id integer NOT NULL
 );
 
@@ -448,7 +458,8 @@ CREATE TABLE chat_group_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     name varchar(256) NOT NULL,
     weight integer DEFAULT 10000,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_chat_group_meeting_id_name UNIQUE (meeting_id, name)
 );
 
 
@@ -470,26 +481,22 @@ CREATE TABLE committee_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     name varchar(256) NOT NULL,
     description text,
-    external_id varchar(256),
-    default_meeting_id integer UNIQUE,
+    external_id varchar(256) CONSTRAINT unique_committee_external_id UNIQUE,
+    default_meeting_id integer CONSTRAINT unique_committee_default_meeting_id UNIQUE,
     parent_id integer,
     organization_id integer GENERATED ALWAYS AS (1) STORED NOT NULL
 );
 
 
 
-comment on column committee_t.external_id is 'unique';
-
 
 CREATE TABLE gender_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    name varchar(256) NOT NULL,
+    name varchar(256) NOT NULL CONSTRAINT unique_gender_name UNIQUE,
     organization_id integer GENERATED ALWAYS AS (1) STORED NOT NULL
 );
 
 
-
-comment on column gender_t.name is 'unique';
 
 
 CREATE TABLE group_t (
@@ -502,12 +509,11 @@ CREATE TABLE group_t (
     used_as_assignment_poll_default_id integer,
     used_as_topic_poll_default_id integer,
     used_as_poll_default_id integer,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_group_meeting_id_external_id UNIQUE (meeting_id, external_id)
 );
 
 
-
-comment on column group_t.external_id is 'unique in meeting';
 
 
 CREATE TABLE history_entry_t (
@@ -551,14 +557,14 @@ CREATE TABLE list_of_speakers_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     closed boolean DEFAULT False,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_list_of_speakers_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_list_of_speakers_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     moderator_notes text,
     content_object_id varchar(100) NOT NULL,
-    content_object_id_motion_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_motion_block_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion_block' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_assignment_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'assignment' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_topic_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_meeting_mediafile_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'meeting_mediafile' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_motion_id integer CONSTRAINT unique_list_of_speakers_content_object_id_motion_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_motion_block_id integer CONSTRAINT unique_list_of_speakers_content_object_id_motion_block_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion_block' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_assignment_id integer CONSTRAINT unique_list_of_speakers_content_object_id_assignment_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'assignment' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_topic_id integer CONSTRAINT unique_list_of_speakers_content_object_id_topic_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_meeting_mediafile_id integer CONSTRAINT unique_list_of_speakers_content_object_id_meeting_mediafile_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'meeting_mediafile' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','motion_block','assignment','topic','meeting_mediafile')),
     meeting_id integer NOT NULL
 );
@@ -577,13 +583,14 @@ CREATE TABLE mediafile_t (
     mimetype varchar(256),
     pdf_information jsonb,
     create_timestamp timestamptz,
-    token varchar(256),
+    token varchar(256) CONSTRAINT unique_mediafile_token UNIQUE,
     published_to_meetings_in_organization_id integer,
     parent_id integer,
     owner_id varchar(100) NOT NULL,
     owner_id_meeting_id integer GENERATED ALWAYS AS (CASE WHEN split_part(owner_id, '/', 1) = 'meeting' THEN cast(split_part(owner_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     owner_id_organization_id integer GENERATED ALWAYS AS (CASE WHEN split_part(owner_id, '/', 1) = 'organization' THEN cast(split_part(owner_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_owner_id_part1 CHECK (split_part(owner_id, '/', 1) IN ('meeting','organization'))
+    CONSTRAINT valid_owner_id_part1 CHECK (split_part(owner_id, '/', 1) IN ('meeting','organization')),
+    CONSTRAINT unique_mediafile_title_parent_id_owner_id UNIQUE (title, parent_id, owner_id)
 );
 
 
@@ -595,7 +602,7 @@ comment on column mediafile_t.filename is 'The uploaded filename. Will be used f
 
 CREATE TABLE meeting_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    external_id varchar(256),
+    external_id varchar(256) CONSTRAINT unique_meeting_external_id UNIQUE,
     welcome_title varchar(256) DEFAULT 'Welcome to OpenSlides',
     welcome_text text DEFAULT 'Space for your welcome text.',
     name varchar(200) NOT NULL DEFAULT 'OpenSlides',
@@ -669,8 +676,8 @@ CREATE TABLE meeting_t (
     list_of_speakers_default_structure_level_time integer CONSTRAINT minimum_list_of_speakers_default_structure_level_time CHECK (list_of_speakers_default_structure_level_time >= 0),
     list_of_speakers_enable_interposed_question boolean,
     list_of_speakers_intervention_time integer,
-    motions_default_workflow_id integer NOT NULL UNIQUE,
-    motions_default_amendment_workflow_id integer NOT NULL UNIQUE,
+    motions_default_workflow_id integer NOT NULL CONSTRAINT unique_meeting_motions_default_workflow_id UNIQUE,
+    motions_default_amendment_workflow_id integer NOT NULL CONSTRAINT unique_meeting_motions_default_amendment_workflow_id UNIQUE,
     motions_preamble text DEFAULT 'The assembly may decide:',
     motions_default_line_numbering varchar(256) CONSTRAINT enum_meeting_motions_default_line_numbering CHECK (motions_default_line_numbering IN ('outside', 'inline', 'none')) DEFAULT 'outside',
     motions_line_length integer CONSTRAINT minimum_motions_line_length CHECK (motions_line_length >= 40) DEFAULT 85,
@@ -761,39 +768,38 @@ This email was generated automatically.',
     poll_default_backend varchar(256) CONSTRAINT enum_meeting_poll_default_backend CHECK (poll_default_backend IN ('long', 'fast')) DEFAULT 'fast',
     poll_default_live_voting_enabled boolean DEFAULT False,
     poll_couple_countdown boolean DEFAULT True,
-    logo_projector_main_id integer UNIQUE,
-    logo_projector_header_id integer UNIQUE,
-    logo_web_header_id integer UNIQUE,
-    logo_pdf_header_l_id integer UNIQUE,
-    logo_pdf_header_r_id integer UNIQUE,
-    logo_pdf_footer_l_id integer UNIQUE,
-    logo_pdf_footer_r_id integer UNIQUE,
-    logo_pdf_ballot_paper_id integer UNIQUE,
-    font_regular_id integer UNIQUE,
-    font_italic_id integer UNIQUE,
-    font_bold_id integer UNIQUE,
-    font_bold_italic_id integer UNIQUE,
-    font_monospace_id integer UNIQUE,
-    font_chyron_speaker_name_id integer UNIQUE,
-    font_projector_h1_id integer UNIQUE,
-    font_projector_h2_id integer UNIQUE,
+    logo_projector_main_id integer CONSTRAINT unique_meeting_logo_projector_main_id UNIQUE,
+    logo_projector_header_id integer CONSTRAINT unique_meeting_logo_projector_header_id UNIQUE,
+    logo_web_header_id integer CONSTRAINT unique_meeting_logo_web_header_id UNIQUE,
+    logo_pdf_header_l_id integer CONSTRAINT unique_meeting_logo_pdf_header_l_id UNIQUE,
+    logo_pdf_header_r_id integer CONSTRAINT unique_meeting_logo_pdf_header_r_id UNIQUE,
+    logo_pdf_footer_l_id integer CONSTRAINT unique_meeting_logo_pdf_footer_l_id UNIQUE,
+    logo_pdf_footer_r_id integer CONSTRAINT unique_meeting_logo_pdf_footer_r_id UNIQUE,
+    logo_pdf_ballot_paper_id integer CONSTRAINT unique_meeting_logo_pdf_ballot_paper_id UNIQUE,
+    font_regular_id integer CONSTRAINT unique_meeting_font_regular_id UNIQUE,
+    font_italic_id integer CONSTRAINT unique_meeting_font_italic_id UNIQUE,
+    font_bold_id integer CONSTRAINT unique_meeting_font_bold_id UNIQUE,
+    font_bold_italic_id integer CONSTRAINT unique_meeting_font_bold_italic_id UNIQUE,
+    font_monospace_id integer CONSTRAINT unique_meeting_font_monospace_id UNIQUE,
+    font_chyron_speaker_name_id integer CONSTRAINT unique_meeting_font_chyron_speaker_name_id UNIQUE,
+    font_projector_h1_id integer CONSTRAINT unique_meeting_font_projector_h1_id UNIQUE,
+    font_projector_h2_id integer CONSTRAINT unique_meeting_font_projector_h2_id UNIQUE,
     committee_id integer NOT NULL,
-    reference_projector_id integer NOT NULL UNIQUE,
-    list_of_speakers_countdown_id integer UNIQUE,
-    poll_countdown_id integer UNIQUE,
-    default_group_id integer NOT NULL UNIQUE,
-    admin_group_id integer UNIQUE,
-    anonymous_group_id integer UNIQUE
+    reference_projector_id integer NOT NULL CONSTRAINT unique_meeting_reference_projector_id UNIQUE,
+    list_of_speakers_countdown_id integer CONSTRAINT unique_meeting_list_of_speakers_countdown_id UNIQUE,
+    poll_countdown_id integer CONSTRAINT unique_meeting_poll_countdown_id UNIQUE,
+    default_group_id integer NOT NULL CONSTRAINT unique_meeting_default_group_id UNIQUE,
+    admin_group_id integer CONSTRAINT unique_meeting_admin_group_id UNIQUE,
+    anonymous_group_id integer CONSTRAINT unique_meeting_anonymous_group_id UNIQUE
 );
 
 
 
-comment on column meeting_t.external_id is 'unique in committee';
 comment on column meeting_t.is_active_in_organization_id is 'Backrelation and boolean flag at once';
 comment on column meeting_t.is_archived_in_organization_id is 'Backrelation and boolean flag at once';
 comment on column meeting_t.list_of_speakers_default_structure_level_time is '0 disables structure level countdowns.';
 comment on column meeting_t.list_of_speakers_intervention_time is '0 disables intervention speakers.';
-comment on column meeting_t.poll_default_live_voting_enabled is 'Defines default ''poll.live_voting_enabled'' option suggested to user. Is not used in the validations.';
+comment on column meeting_t.poll_default_live_voting_enabled is 'Defines default "poll.live_voting_enabled" option suggested to user. Is not used in the validations.';
 
 
 CREATE TABLE meeting_mediafile_t (
@@ -817,7 +823,8 @@ CREATE TABLE meeting_user_t (
     locked_out boolean,
     user_id integer NOT NULL,
     meeting_id integer NOT NULL,
-    vote_delegated_to_id integer
+    vote_delegated_to_id integer,
+    CONSTRAINT unique_meeting_user_meeting_id_user_id UNIQUE (meeting_id, user_id)
 );
 
 
@@ -828,7 +835,7 @@ CREATE TABLE motion_t (
     number varchar(256),
     number_value integer,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_motion_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_motion_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     title varchar(256) NOT NULL,
     text text,
     text_hash varchar(256),
@@ -854,7 +861,8 @@ CREATE TABLE motion_t (
     recommendation_id integer,
     category_id integer,
     block_id integer,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_meeting_id_number UNIQUE (meeting_id, number)
 );
 
 
@@ -869,7 +877,7 @@ CREATE TABLE motion_block_t (
     title varchar(256) NOT NULL,
     internal boolean,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_motion_block_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_motion_block_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     meeting_id integer NOT NULL
 );
 
@@ -885,7 +893,7 @@ CREATE TABLE motion_category_t (
     weight integer DEFAULT 10000,
     level integer,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_motion_category_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_motion_category_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     parent_id integer,
     meeting_id integer NOT NULL
 );
@@ -918,7 +926,8 @@ CREATE TABLE motion_comment_t (
     comment text,
     motion_id integer NOT NULL,
     section_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_comment_motion_id_section_id UNIQUE (motion_id, section_id)
 );
 
 
@@ -929,7 +938,7 @@ CREATE TABLE motion_comment_section_t (
     name varchar(256) NOT NULL,
     weight integer DEFAULT 10000,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_motion_comment_section_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_motion_comment_section_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     submitter_can_write boolean,
     meeting_id integer NOT NULL
 );
@@ -944,7 +953,8 @@ CREATE TABLE motion_editor_t (
     weight integer,
     meeting_user_id integer,
     motion_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_editor_meeting_user_id_motion_id UNIQUE (meeting_user_id, motion_id)
 );
 
 
@@ -971,7 +981,8 @@ CREATE TABLE motion_state_t (
     state_button_label varchar(256),
     submitter_withdraw_state_id integer,
     workflow_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_state_name_workflow_id UNIQUE (name, workflow_id)
 );
 
 
@@ -982,7 +993,8 @@ CREATE TABLE motion_submitter_t (
     weight integer,
     meeting_user_id integer,
     motion_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_submitter_meeting_user_id_motion_id UNIQUE (meeting_user_id, motion_id)
 );
 
 
@@ -992,7 +1004,8 @@ CREATE TABLE motion_supporter_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     meeting_user_id integer,
     motion_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_supporter_meeting_user_id_motion_id UNIQUE (meeting_user_id, motion_id)
 );
 
 
@@ -1002,8 +1015,8 @@ CREATE TABLE motion_workflow_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     name varchar(256) NOT NULL,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_motion_workflow_sequential_number UNIQUE (sequential_number, meeting_id),
-    first_state_id integer NOT NULL UNIQUE,
+    CONSTRAINT unique_motion_workflow_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
+    first_state_id integer NOT NULL CONSTRAINT unique_motion_workflow_first_state_id UNIQUE,
     meeting_id integer NOT NULL
 );
 
@@ -1017,7 +1030,8 @@ CREATE TABLE motion_working_group_speaker_t (
     weight integer,
     meeting_user_id integer,
     motion_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_motion_working_group_speaker_meeting_user_id_motion_id UNIQUE (meeting_user_id, motion_id)
 );
 
 
@@ -1031,13 +1045,15 @@ CREATE TABLE option_t (
     no decimal(16,6),
     abstain decimal(16,6),
     poll_id integer,
-    used_as_global_option_in_poll_id integer UNIQUE,
+    used_as_global_option_in_poll_id integer CONSTRAINT unique_option_used_as_global_option_in_poll_id UNIQUE,
     content_object_id varchar(100),
     content_object_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     content_object_id_user_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'user' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_poll_candidate_list_id integer UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'poll_candidate_list' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_poll_candidate_list_id integer CONSTRAINT unique_option_content_object_id_poll_candidate_list_id UNIQUE GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'poll_candidate_list' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','user','poll_candidate_list')),
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_option_content_object_id_poll_id UNIQUE (content_object_id, poll_id),
+    CONSTRAINT unique_option_text_poll_id UNIQUE (text, poll_id)
 );
 
 
@@ -1067,7 +1083,7 @@ CREATE TABLE organization_t (
     saml_metadata_idp text,
     saml_metadata_sp text,
     saml_private_key text,
-    theme_id integer NOT NULL UNIQUE,
+    theme_id integer NOT NULL CONSTRAINT unique_organization_theme_id UNIQUE,
     users_email_sender varchar(256) DEFAULT 'OpenSlides',
     users_email_replyto varchar(256),
     users_email_subject varchar(256) DEFAULT 'OpenSlides access data',
@@ -1108,7 +1124,8 @@ CREATE TABLE personal_note_t (
     content_object_id varchar(100),
     content_object_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion')),
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_personal_note_meeting_user_id_content_object_id UNIQUE (meeting_user_id, content_object_id)
 );
 
 
@@ -1146,13 +1163,13 @@ CREATE TABLE poll_t (
     entitled_users_at_stop jsonb,
     live_voting_enabled boolean DEFAULT False,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_poll_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_poll_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     content_object_id varchar(100) NOT NULL,
     content_object_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     content_object_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'assignment' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     content_object_id_topic_id integer GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','assignment','topic')),
-    global_option_id integer UNIQUE,
+    global_option_id integer CONSTRAINT unique_poll_global_option_id UNIQUE,
     meeting_id integer NOT NULL
 );
 
@@ -1244,7 +1261,7 @@ CREATE TABLE projector_t (
     show_logo boolean DEFAULT True,
     show_clock boolean DEFAULT True,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_projector_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_projector_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     used_as_default_projector_for_agenda_item_list_in_meeting_id integer,
     used_as_default_projector_for_topic_in_meeting_id integer,
     used_as_default_projector_for_list_of_speakers_in_meeting_id integer,
@@ -1274,7 +1291,8 @@ CREATE TABLE projector_countdown_t (
     default_time integer,
     countdown_time double precision DEFAULT 60,
     running boolean DEFAULT False,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_projector_countdown_meeting_id_title UNIQUE (meeting_id, title)
 );
 
 
@@ -1316,7 +1334,8 @@ CREATE TABLE structure_level_t (
     name varchar(256) NOT NULL,
     color varchar(7) CHECK (color is null or color ~* '^#[a-f0-9]{6}$'),
     default_time integer CONSTRAINT minimum_default_time CHECK (default_time >= 0),
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_structure_level_meeting_id_name UNIQUE (meeting_id, name)
 );
 
 
@@ -1330,7 +1349,8 @@ CREATE TABLE structure_level_list_of_speakers_t (
     additional_time double precision,
     remaining_time double precision NOT NULL,
     current_start_time timestamptz,
-    meeting_id integer NOT NULL
+    meeting_id integer NOT NULL,
+    CONSTRAINT unique_structure_level_list_of_speakers_meeting_id_struce047abe UNIQUE (meeting_id, structure_level_id, list_of_speakers_id)
 );
 
 
@@ -1410,7 +1430,7 @@ CREATE TABLE topic_t (
     title varchar(256) NOT NULL,
     text text,
     sequential_number integer NOT NULL,
-    CONSTRAINT unique_topic_sequential_number UNIQUE (sequential_number, meeting_id),
+    CONSTRAINT unique_topic_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     meeting_id integer NOT NULL
 );
 
@@ -1421,9 +1441,9 @@ comment on column topic_t.sequential_number is 'The (positive) serial number of 
 
 CREATE TABLE user_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    username varchar(256) NOT NULL,
-    member_number varchar(256),
-    saml_id varchar(256) CONSTRAINT minlength_saml_id CHECK (char_length(saml_id) >= 1),
+    username varchar(256) NOT NULL CONSTRAINT unique_user_username UNIQUE,
+    member_number varchar(256) CONSTRAINT unique_user_member_number UNIQUE,
+    saml_id varchar(256) CONSTRAINT unique_user_saml_id UNIQUE CONSTRAINT minlength_saml_id CHECK (char_length(saml_id) >= 1),
     pronoun varchar(32),
     title varchar(256),
     first_name varchar(256),
@@ -1571,7 +1591,7 @@ CREATE TABLE gm_meeting_mediafile_attachment_ids_t (
     attachment_id_topic_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'topic' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_meeting_mediafile_attachment_ids_t_attachment_id_tf2c2308 REFERENCES topic_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     attachment_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(attachment_id, '/', 1) = 'assignment' THEN cast(split_part(attachment_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_meeting_mediafile_attachment_ids_t_attachment_id_af0f87e8 REFERENCES assignment_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_attachment_id_part1 CHECK (split_part(attachment_id, '/', 1) IN ('motion', 'topic', 'assignment')),
-    CONSTRAINT unique_$meeting_mediafile_id_$attachment_id UNIQUE (meeting_mediafile_id, attachment_id)
+    CONSTRAINT unique_meeting_mediafile_id_attachment_id UNIQUE (meeting_mediafile_id, attachment_id)
 );
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_meeting_mediafile_id ON gm_meeting_mediafile_attachment_ids_t (meeting_mediafile_id);
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id ON gm_meeting_mediafile_attachment_ids_t (attachment_id);
@@ -1608,7 +1628,7 @@ CREATE TABLE gm_motion_state_extension_reference_ids_t (
     state_extension_reference_id varchar(100) NOT NULL,
     state_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(state_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(state_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_motion_state_extension_reference_ids_t_state_exten1eb8dcc REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_state_extension_reference_id_part1 CHECK (split_part(state_extension_reference_id, '/', 1) IN ('motion')),
-    CONSTRAINT unique_$motion_id_$state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
+    CONSTRAINT unique_motion_id_state_extension_reference_id UNIQUE (motion_id, state_extension_reference_id)
 );
 CREATE INDEX idx_gm_motion_state_extension_reference_ids_t_motion_id ON gm_motion_state_extension_reference_ids_t (motion_id);
 CREATE INDEX idx_gm_motion_state_extension_reference_ids_t_state_exte869c61b ON gm_motion_state_extension_reference_ids_t (state_extension_reference_id);
@@ -1619,7 +1639,7 @@ CREATE TABLE gm_motion_recommendation_extension_reference_ids_t (
     recommendation_extension_reference_id varchar(100) NOT NULL,
     recommendation_extension_reference_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(recommendation_extension_reference_id, '/', 1) = 'motion' THEN cast(split_part(recommendation_extension_reference_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_motion_recommendation_extension_reference_ids_t_re6acbf83 REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_recommendation_extension_reference_id_part1 CHECK (split_part(recommendation_extension_reference_id, '/', 1) IN ('motion')),
-    CONSTRAINT unique_$motion_id_$recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
+    CONSTRAINT unique_motion_id_recommendation_extension_reference_id UNIQUE (motion_id, recommendation_extension_reference_id)
 );
 CREATE INDEX idx_gm_motion_recommendation_extension_reference_ids_t_m81631d0 ON gm_motion_recommendation_extension_reference_ids_t (motion_id);
 CREATE INDEX idx_gm_motion_recommendation_extension_reference_ids_t_r6488b59 ON gm_motion_recommendation_extension_reference_ids_t (recommendation_extension_reference_id);
@@ -1639,7 +1659,7 @@ CREATE TABLE gm_organization_tag_tagged_ids_t (
     tagged_id_committee_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'committee' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_organization_tag_tagged_ids_t_tagged_id_committee_c4b8172 REFERENCES committee_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     tagged_id_meeting_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'meeting' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_organization_tag_tagged_ids_t_tagged_id_meeting_id97a619f REFERENCES meeting_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('committee', 'meeting')),
-    CONSTRAINT unique_$organization_tag_id_$tagged_id UNIQUE (organization_tag_id, tagged_id)
+    CONSTRAINT unique_organization_tag_id_tagged_id UNIQUE (organization_tag_id, tagged_id)
 );
 CREATE INDEX idx_gm_organization_tag_tagged_ids_t_organization_tag_id ON gm_organization_tag_tagged_ids_t (organization_tag_id);
 CREATE INDEX idx_gm_organization_tag_tagged_ids_t_tagged_id ON gm_organization_tag_tagged_ids_t (tagged_id);
@@ -1661,7 +1681,7 @@ CREATE TABLE gm_tag_tagged_ids_t (
     tagged_id_assignment_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'assignment' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_tag_tagged_ids_t_tagged_id_assignment_id_assignment_id REFERENCES assignment_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     tagged_id_motion_id integer GENERATED ALWAYS AS (CASE WHEN split_part(tagged_id, '/', 1) = 'motion' THEN cast(split_part(tagged_id, '/', 2) AS INTEGER) ELSE null END) STORED CONSTRAINT fk_gm_tag_tagged_ids_t_tagged_id_motion_id_motion_id REFERENCES motion_t(id) ON DELETE CASCADE INITIALLY DEFERRED,
     CONSTRAINT valid_tagged_id_part1 CHECK (split_part(tagged_id, '/', 1) IN ('agenda_item', 'assignment', 'motion')),
-    CONSTRAINT unique_$tag_id_$tagged_id UNIQUE (tag_id, tagged_id)
+    CONSTRAINT unique_tag_id_tagged_id UNIQUE (tag_id, tagged_id)
 );
 CREATE INDEX idx_gm_tag_tagged_ids_t_tag_id ON gm_tag_tagged_ids_t (tag_id);
 CREATE INDEX idx_gm_tag_tagged_ids_t_tagged_id ON gm_tag_tagged_ids_t (tagged_id);
@@ -1860,8 +1880,6 @@ CREATE VIEW "meeting" AS SELECT *,
 (select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.meeting_id = m.id) as relevant_history_entry_ids
 FROM meeting_t m;
 
-comment on column "meeting_t".is_active_in_organization_id is 'Backrelation and boolean flag at once';
-comment on column "meeting_t".is_archived_in_organization_id is 'Backrelation and boolean flag at once';
 comment on column "meeting".user_ids is 'Calculated. All user ids from all users assigned to groups of this meeting.';
 
 CREATE VIEW "meeting_mediafile" AS SELECT *,
@@ -2910,12 +2928,12 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','me
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmiagi_meeting_mediafile_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
-CREATE TRIGGER tr_log_nm_group_read_comment_section_ids_motion_comment_section_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_read_comment_section_ids_motion_comment_section_t
+CREATE TRIGGER tr_log_nm_group_read_comment_section_ids_motion_comment_6e42c77 AFTER INSERT OR UPDATE OR DELETE ON nm_group_read_comment_section_ids_motion_comment_section_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','read_comment_section_ids','motion_comment_section','motion_comment_section_id','read_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_read_comment_section_ids_motion_comment_section_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
-CREATE TRIGGER tr_log_nm_group_write_comment_section_ids_motion_comment_section_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_write_comment_section_ids_motion_comment_section_t
+CREATE TRIGGER tr_log_nm_group_write_comment_section_ids_motion_commentb627a2e AFTER INSERT OR UPDATE OR DELETE ON nm_group_write_comment_section_ids_motion_comment_section_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','write_comment_section_ids','motion_comment_section','motion_comment_section_id','write_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_write_comment_section_ids_motion_comment_section_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
@@ -3083,13 +3101,13 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('mediafile', 'mediafil
 CREATE TRIGGER tr_log_meeting_mediafile_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'meeting_mediafile_ids');
 
-CREATE TRIGGER tr_log_attachment_id_motion_id_gm_meeting_mediafile_attachment_ids_t AFTER INSERT OR UPDATE OF attachment_id_motion_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
+CREATE TRIGGER tr_log_attachment_id_motion_id_gm_meeting_mediafile_atta25df47a AFTER INSERT OR UPDATE OF attachment_id_motion_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','meeting_mediafile_id','attachment_ids','motion','attachment_id_motion_id','attachment_meeting_mediafile_ids');
 
-CREATE TRIGGER tr_log_attachment_id_topic_id_gm_meeting_mediafile_attachment_ids_t AFTER INSERT OR UPDATE OF attachment_id_topic_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
+CREATE TRIGGER tr_log_attachment_id_topic_id_gm_meeting_mediafile_attac4e93703 AFTER INSERT OR UPDATE OF attachment_id_topic_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','meeting_mediafile_id','attachment_ids','topic','attachment_id_topic_id','attachment_meeting_mediafile_ids');
 
-CREATE TRIGGER tr_log_attachment_id_assignment_id_gm_meeting_mediafile_attachment_ids_t AFTER INSERT OR UPDATE OF attachment_id_assignment_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
+CREATE TRIGGER tr_log_attachment_id_assignment_id_gm_meeting_mediafile_2f214fd AFTER INSERT OR UPDATE OF attachment_id_assignment_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','meeting_mediafile_id','attachment_ids','assignment','attachment_id_assignment_id','attachment_meeting_mediafile_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
@@ -3139,12 +3157,12 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state', 'state
 CREATE TRIGGER tr_log_motion_t_recommendation_id AFTER INSERT OR UPDATE OF recommendation_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state', 'recommendation_id', 'motion_recommendation_ids');
 
-CREATE TRIGGER tr_log_state_extension_reference_id_motion_id_gm_motion_state_extension_reference_ids_t AFTER INSERT OR UPDATE OF state_extension_reference_id_motion_id OR DELETE ON gm_motion_state_extension_reference_ids_t
+CREATE TRIGGER tr_log_state_extension_reference_id_motion_id_gm_motion_2720cdc AFTER INSERT OR UPDATE OF state_extension_reference_id_motion_id OR DELETE ON gm_motion_state_extension_reference_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','motion_id','state_extension_reference_ids','motion','state_extension_reference_id_motion_id','referenced_in_motion_state_extension_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_motion_state_extension_reference_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
-CREATE TRIGGER tr_log_recommendation_extension_reference_id_motion_id_gm_motion_recommendation_extension_reference_ids_t AFTER INSERT OR UPDATE OF recommendation_extension_reference_id_motion_id OR DELETE ON gm_motion_recommendation_extension_reference_ids_t
+CREATE TRIGGER tr_log_recommendation_extension_reference_id_motion_id_g047b2db AFTER INSERT OR UPDATE OF recommendation_extension_reference_id_motion_id OR DELETE ON gm_motion_recommendation_extension_reference_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','motion_id','recommendation_extension_reference_ids','motion','recommendation_extension_reference_id_motion_id','referenced_in_motion_recommendation_extension_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_motion_recommendation_extension_reference_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
@@ -3294,7 +3312,7 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_obje
 CREATE TRIGGER tr_log_user_content_object_id_user_id AFTER INSERT OR UPDATE OF content_object_id_user_id OR DELETE ON option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','content_object_id_user_id','option_ids');
 
-CREATE TRIGGER tr_log_poll_candidate_list_content_object_id_poll_candidate_list_id AFTER INSERT OR UPDATE OF content_object_id_poll_candidate_list_id OR DELETE ON option_t
+CREATE TRIGGER tr_log_poll_candidate_list_content_object_id_poll_candidc235209 AFTER INSERT OR UPDATE OF content_object_id_poll_candidate_list_id OR DELETE ON option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_candidate_list','content_object_id_poll_candidate_list_id','option_id');
 CREATE TRIGGER tr_log_option_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'option_ids');
@@ -3428,7 +3446,7 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll','content_object
 CREATE TRIGGER tr_log_projector_message_content_object_id_projector_message_id AFTER INSERT OR UPDATE OF content_object_id_projector_message_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector_message','content_object_id_projector_message_id','projection_ids');
 
-CREATE TRIGGER tr_log_projector_countdown_content_object_id_projector_countdown_id AFTER INSERT OR UPDATE OF content_object_id_projector_countdown_id OR DELETE ON projection_t
+CREATE TRIGGER tr_log_projector_countdown_content_object_id_projector_c35fae82 AFTER INSERT OR UPDATE OF content_object_id_projector_countdown_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector_countdown','content_object_id_projector_countdown_id','projection_ids');
 CREATE TRIGGER tr_log_projection_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'all_projection_ids');
