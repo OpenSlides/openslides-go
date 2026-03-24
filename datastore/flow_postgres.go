@@ -245,7 +245,7 @@ func (p *FlowPostgres) convertValue(value []byte, oid uint32) ([]byte, error) {
 	case pgtype.VarcharOID, pgtype.TextOID:
 		return json.Marshal(string(value))
 
-	case pgtype.Int4OID, pgtype.Float8OID, pgtype.JSONOID:
+	case pgtype.Int4OID, pgtype.Float8OID, pgtype.JSONBOID:
 		return bytes.Clone(value), nil
 
 	case pgtype.Int4ArrayOID:
