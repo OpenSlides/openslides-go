@@ -365,6 +365,10 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
 		}
 
+		if values == nil && len(deletedKeys) != 0 {
+			values = map[dskey.Key][]byte{}
+		}
+
 		for _, key := range deletedKeys {
 			values[key] = nil
 		}
