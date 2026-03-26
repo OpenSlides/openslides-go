@@ -144,7 +144,9 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for collection := range collectionIDs {
 		slices.Sort(collectionIDs[collection])
-		collectionIDs[collection] = slices.Compact(collectionIDs[collection])
+		if collection != "invalid" {
+			collectionIDs[collection] = slices.Compact(collectionIDs[collection])
+		}
 	}
 
 	for collection := range collectionFields {
