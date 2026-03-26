@@ -135,6 +135,10 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for _, key := range keys {
 		collection := key.Collection()
+		if collection == "invalid" {
+			continue
+		}
+
 		collectionIDs[collection] = append(collectionIDs[collection], key.ID())
 
 		if field := key.Field(); field != "id" {
