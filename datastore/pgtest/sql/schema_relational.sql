@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'a3df818a0c54ca1298f259af47ba6be7'
+-- MODELS_YML_CHECKSUM = 'ef613d14c48235cc8eaf5ebbb1367463'
 
 
 -- Function and meta table definitions
@@ -837,6 +837,7 @@ CREATE TABLE motion_t (
     sequential_number integer NOT NULL,
     CONSTRAINT unique_motion_sequential_number_meeting_id UNIQUE (sequential_number, meeting_id),
     title varchar(256) NOT NULL,
+    diff_version varchar(256),
     text text,
     text_hash varchar(256),
     amendment_paragraphs jsonb,

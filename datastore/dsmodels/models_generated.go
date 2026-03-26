@@ -3779,6 +3779,7 @@ type Motion struct {
 	CommentIDs                                    []int
 	Created                                       int
 	DerivedMotionIDs                              []int
+	DiffVersion                                   string
 	EditorIDs                                     []int
 	Forwarded                                     int
 	HistoryEntryIDs                               []int
@@ -3874,6 +3875,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_CommentIDs(id).Lazy(&c.CommentIDs)
 	ds.Motion_Created(id).Lazy(&c.Created)
 	ds.Motion_DerivedMotionIDs(id).Lazy(&c.DerivedMotionIDs)
+	ds.Motion_DiffVersion(id).Lazy(&c.DiffVersion)
 	ds.Motion_EditorIDs(id).Lazy(&c.EditorIDs)
 	ds.Motion_Forwarded(id).Lazy(&c.Forwarded)
 	ds.Motion_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
