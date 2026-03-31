@@ -232,7 +232,7 @@ func valueType(collectionType string, required bool) string {
 	case "number", "relation", "timestamp":
 		return "ValueInt"
 
-	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template":
+	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "timezone":
 		return "ValueString"
 
 	case "decimal(6)":
