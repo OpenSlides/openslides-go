@@ -1727,6 +1727,7 @@ type Meeting struct {
 	StructureLevelListOfSpeakersIDs              []int
 	TagIDs                                       []int
 	TemplateForOrganizationID                    dsfetch.Maybe[int]
+	TimeZone                                     string
 	TopicIDs                                     []int
 	TopicPollDefaultGroupIDs                     []int
 	UserIDs                                      []int
@@ -2070,6 +2071,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
 	ds.Meeting_TagIDs(id).Lazy(&c.TagIDs)
 	ds.Meeting_TemplateForOrganizationID(id).Lazy(&c.TemplateForOrganizationID)
+	ds.Meeting_TimeZone(id).Lazy(&c.TimeZone)
 	ds.Meeting_TopicIDs(id).Lazy(&c.TopicIDs)
 	ds.Meeting_TopicPollDefaultGroupIDs(id).Lazy(&c.TopicPollDefaultGroupIDs)
 	ds.Meeting_UserIDs(id).Lazy(&c.UserIDs)
@@ -3779,6 +3781,7 @@ type Motion struct {
 	CommentIDs                                    []int
 	Created                                       int
 	DerivedMotionIDs                              []int
+	DiffVersion                                   string
 	EditorIDs                                     []int
 	Forwarded                                     int
 	HistoryEntryIDs                               []int
@@ -3874,6 +3877,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_CommentIDs(id).Lazy(&c.CommentIDs)
 	ds.Motion_Created(id).Lazy(&c.Created)
 	ds.Motion_DerivedMotionIDs(id).Lazy(&c.DerivedMotionIDs)
+	ds.Motion_DiffVersion(id).Lazy(&c.DiffVersion)
 	ds.Motion_EditorIDs(id).Lazy(&c.EditorIDs)
 	ds.Motion_Forwarded(id).Lazy(&c.Forwarded)
 	ds.Motion_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
@@ -5472,6 +5476,7 @@ type Organization struct {
 	TemplateMeetingIDs                      []int
 	ThemeID                                 int
 	ThemeIDs                                []int
+	TimeZone                                string
 	Url                                     string
 	UserIDs                                 []int
 	UsersEmailBody                          string
@@ -5530,6 +5535,7 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_TemplateMeetingIDs(id).Lazy(&c.TemplateMeetingIDs)
 	ds.Organization_ThemeID(id).Lazy(&c.ThemeID)
 	ds.Organization_ThemeIDs(id).Lazy(&c.ThemeIDs)
+	ds.Organization_TimeZone(id).Lazy(&c.TimeZone)
 	ds.Organization_Url(id).Lazy(&c.Url)
 	ds.Organization_UserIDs(id).Lazy(&c.UserIDs)
 	ds.Organization_UsersEmailBody(id).Lazy(&c.UsersEmailBody)
