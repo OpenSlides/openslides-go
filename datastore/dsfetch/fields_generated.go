@@ -4361,6 +4361,15 @@ func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt 
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_TimeZone(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "time_zone")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "topic_ids")
 	if err != nil {
@@ -5576,6 +5585,15 @@ func (r *Fetch) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Motion_DiffVersion(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "diff_version")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_EditorIDs(motionID int) *ValueIntSlice {
 	key, err := dskey.FromParts("motion", motionID, "editor_ids")
 	if err != nil {
@@ -6384,6 +6402,15 @@ func (r *Fetch) Organization_ThemeIDs(organizationID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_TimeZone(organizationID int) *ValueString {
+	key, err := dskey.FromParts("organization", organizationID, "time_zone")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_Url(organizationID int) *ValueString {
