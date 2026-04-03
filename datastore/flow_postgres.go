@@ -135,9 +135,6 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for _, key := range keys {
 		collection := key.Collection()
-		if collection == "invalid" {
-			continue
-		}
 
 		collectionIDs[collection] = append(collectionIDs[collection], key.ID())
 
@@ -148,9 +145,6 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for collection := range collectionIDs {
 		slices.Sort(collectionIDs[collection])
-		if collection != "invalid" {
-			collectionIDs[collection] = slices.Compact(collectionIDs[collection])
-		}
 	}
 
 	for collection := range collectionFields {
@@ -369,6 +363,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		values, err := p.getWithConn(ctx, conn.Conn(), updatedKeys...)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
+			return
 		}
 
 		if values == nil && len(deletedKeys) != 0 {
@@ -418,14 +413,14 @@ func createKeyList(collection string, id int, fields []string) ([]dskey.Key, err
 		fields = collectionFields[collection]
 	}
 
-	keys := make([]dskey.Key, len(fields))
-	for i, field := range fields {
+	keys := make([]dskey.Key, 0, len(fields))
+	for _, field := range fields {
 		key, err := dskey.FromParts(collection, id, field)
 		if err != nil {
 			continue
 		}
 
-		keys[i] = key
+		keys = append(keys, key)
 	}
 	return keys, nil
 }
