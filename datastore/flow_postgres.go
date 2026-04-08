@@ -29,8 +29,9 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	Pool  *pgxpool.Pool
-	enums map[uint32]struct{}
+	Pool      *pgxpool.Pool
+	enums     map[uint32]struct{}
+	enumArray map[uint32]struct{}
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -93,7 +94,7 @@ func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 	}
 	defer c.Release()
 
-	sql := `SELECT oid FROM pg_type WHERE typtype = 'e';`
+	sql := `SELECT oid, typarray FROM pg_type WHERE typtype = 'e';`
 	rows, err := c.Conn().Query(ctx, sql)
 	if err != nil {
 		return err
@@ -101,13 +102,16 @@ func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 	defer rows.Close()
 
 	p.enums = map[uint32]struct{}{}
+	p.enumArray = map[uint32]struct{}{}
 	for rows.Next() {
 		var oid uint32
-		if err := rows.Scan(&oid); err != nil {
+		var typarray uint32
+		if err := rows.Scan(&oid, &typarray); err != nil {
 			return err
 		}
 
 		p.enums[oid] = struct{}{}
+		p.enumArray[typarray] = struct{}{}
 	}
 
 	return nil
@@ -272,16 +276,14 @@ func (p *FlowPostgres) convertValue(value []byte, oid uint32) ([]byte, error) {
 		return strconv.AppendInt(nil, timeValue.Unix(), 10), nil
 
 	case pgtype.VarcharArrayOID, pgtype.TextArrayOID:
-		strValue := strings.Trim(string(value), "{}")
-		if strValue == "" {
-			return []byte("[]"), nil
-		}
-		strArray := strings.Split(strValue, ",")
-		return json.Marshal(strArray)
+		return convertPGArray(string(value))
 
 	default:
 		if _, ok := p.enums[oid]; ok {
 			return json.Marshal(string(value))
+		}
+		if _, ok := p.enumArray[oid]; ok {
+			return convertPGArray(string(value))
 		}
 
 		return nil, fmt.Errorf("unsupported postgres type %d", oid)
@@ -453,4 +455,13 @@ func getCollectionNameAndID(keyStr string) (string, int, error) {
 	// Can be removed when this is merged:
 	// https://github.com/OpenSlides/openslides-meta/pull/240
 	return strings.TrimSuffix(keyStr[:idx1], "_t"), id, nil
+}
+
+func convertPGArray(pgValue string) ([]byte, error) {
+	strValue := strings.Trim(string(pgValue), "{}")
+	if strValue == "" {
+		return []byte("[]"), nil
+	}
+	strArray := strings.Split(strValue, ",")
+	return json.Marshal(strArray)
 }
