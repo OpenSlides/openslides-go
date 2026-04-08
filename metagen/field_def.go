@@ -819,6 +819,7 @@ var RestrictionModes = map[string]string{
 	"meeting/locked_from_inside":                                    "F",
 	"meeting/meeting_user_ids":                                      "F",
 	"meeting/start_time":                                            "F",
+	"meeting/time_zone":                                             "F",
 
 	// meeting_mediafile
 	"meeting_mediafile/access_group_ids":                               "A",
@@ -1082,6 +1083,7 @@ var RestrictionModes = map[string]string{
 	"organization/template_meeting_ids":                         "A",
 	"organization/theme_id":                                     "A",
 	"organization/theme_ids":                                    "A",
+	"organization/time_zone":                                    "A",
 	"organization/url":                                          "A",
 	"organization/users_email_body":                             "A",
 	"organization/users_email_replyto":                          "A",
