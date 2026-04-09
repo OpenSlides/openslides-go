@@ -290,6 +290,16 @@ func (p *FlowPostgres) convertValue(value []byte, oid uint32) ([]byte, error) {
 	}
 }
 
+// convertPGArray transforms a postgres style array into a json array.
+func convertPGArray(pgValue string) ([]byte, error) {
+	strValue := strings.Trim(string(pgValue), "{}")
+	if strValue == "" {
+		return []byte("[]"), nil
+	}
+	strArray := strings.Split(strValue, ",")
+	return json.Marshal(strArray)
+}
+
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	conn, err := p.Pool.Acquire(ctx)
@@ -455,13 +465,4 @@ func getCollectionNameAndID(keyStr string) (string, int, error) {
 	// Can be removed when this is merged:
 	// https://github.com/OpenSlides/openslides-meta/pull/240
 	return strings.TrimSuffix(keyStr[:idx1], "_t"), id, nil
-}
-
-func convertPGArray(pgValue string) ([]byte, error) {
-	strValue := strings.Trim(string(pgValue), "{}")
-	if strValue == "" {
-		return []byte("[]"), nil
-	}
-	strArray := strings.Split(strValue, ",")
-	return json.Marshal(strArray)
 }
