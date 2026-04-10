@@ -12,6 +12,7 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -61,6 +62,7 @@ func postgresDSN(lookup environment.Environmenter) (string, error) {
 
 // NewFlowPostgres initializes a SourcePostgres.
 func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
+	oslog.Error("------ New postgres flow")
 	addr, err := postgresDSN(lookup)
 	if err != nil {
 		return nil, fmt.Errorf("reading postgres password: %w", err)
@@ -80,6 +82,7 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 	}
 
 	flow := FlowPostgres{Pool: pool}
+	oslog.Error("------- Reading enum oids from database")
 	if err := flow.updateEnums(ctx); err != nil {
 		return nil, err
 	}
@@ -113,6 +116,7 @@ func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 		p.enums[oid] = struct{}{}
 		p.enumArray[typarray] = struct{}{}
 	}
+	oslog.Error("------- Got all oids!")
 
 	return nil
 }
