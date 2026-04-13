@@ -408,12 +408,30 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 		conn, err = pgx.Connect(ctx, addr)
 		if err == nil {
 			err = conn.Ping(ctx)
-			_ = conn.Close(ctx)
 		}
 
-		cancel()
 		if err == nil {
-			return nil
+			waitDatabaseInitialized(ctx, conn)
+		}
+
+		_ = conn.Close(ctx)
+		cancel()
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		return nil
+	}
+}
+
+// waitDatabaseInitialized checks if the version table is existing and the latest migration is finalized
+func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) {
+	for {
+		var cnt int64
+		err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM version").Scan(&cnt)
+		if err == nil && cnt >= 1 {
+			return
 		}
 
 		time.Sleep(1 * time.Second)
