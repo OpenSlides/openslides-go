@@ -408,13 +408,14 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 		conn, err = pgx.Connect(ctx, addr)
 		if err == nil {
 			err = conn.Ping(ctx)
+
+			if err == nil {
+				err = waitDatabaseInitialized(ctx, conn)
+			}
+
+			_ = conn.Close(context.Background())
 		}
 
-		if err == nil {
-			err = waitDatabaseInitialized(ctx, conn)
-		}
-
-		_ = conn.Close(ctx)
 		cancel()
 		if err != nil {
 			time.Sleep(1 * time.Second)
