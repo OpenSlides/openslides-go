@@ -403,7 +403,7 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 
 	var conn *pgx.Conn
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 		conn, err = pgx.Connect(ctx, addr)
 		if err == nil {
@@ -411,7 +411,7 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 		}
 
 		if err == nil {
-			waitDatabaseInitialized(ctx, conn)
+			err = waitDatabaseInitialized(ctx, conn)
 		}
 
 		_ = conn.Close(ctx)
@@ -426,12 +426,16 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 }
 
 // waitDatabaseInitialized checks if the version table is existing and the latest migration is finalized
-func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) {
+func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) error {
 	for {
 		var cnt int64
 		err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM version").Scan(&cnt)
 		if err == nil && cnt >= 1 {
-			return
+			return nil
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
 
 		time.Sleep(1 * time.Second)
