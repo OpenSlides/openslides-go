@@ -53,7 +53,7 @@ func NewPostgresTest(ctx context.Context) (*PostgresTest, error) {
 
 	runOpts := dockertest.RunOptions{
 		Repository: "postgres",
-		Tag:        "15",
+		Tag:        "17",
 		Env: []string{
 			"POSTGRES_USER=postgres",
 			"POSTGRES_PASSWORD=openslides",

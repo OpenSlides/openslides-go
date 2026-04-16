@@ -375,9 +375,10 @@ func TestBigQuery(t *testing.T) {
 	expected := make(map[dskey.Key][]byte)
 	for i := range count {
 		keys[i], _ = dskey.FromParts("user", i+2, "username")
-		expected[keys[i]] = []byte(`"hugo"`)
+		username := fmt.Sprintf("hugo_%d", i+1)
+		expected[keys[i]] = []byte(`"` + username + `"`)
 
-		sql := fmt.Sprintf(`INSERT INTO "user" (id, username) values (%d, 'hugo');`, i+2)
+		sql := fmt.Sprintf(`INSERT INTO "user" (id, username) values (%d, '%s');`, i+2, username)
 		if _, err := conn.Exec(ctx, sql); err != nil {
 			t.Fatalf("adding user %d: %v", i+2, err)
 		}
