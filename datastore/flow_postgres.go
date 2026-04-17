@@ -333,13 +333,8 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
-<<<<<<< HEAD
 		sql := `SELECT DISTINCT fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
-		rows, err := conn.Conn().Query(ctx, sql, payload.XACTID)
-=======
-		sql := `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
 		rows, err := conn.Query(ctx, sql, payload.XACTID)
->>>>>>> 77fee45 (Use separat postgres config for notify (#180))
 		if err != nil {
 			updateFn(nil, fmt.Errorf("query fqids for transaction %d: %w", payload.XACTID, err))
 			return
@@ -371,12 +366,8 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			allKeys = append(allKeys, keys...)
 		}
 
-<<<<<<< HEAD
-		values, err := p.getWithConn(ctx, conn.Conn(), allKeys...)
-=======
 		// TODO: don't use getWithConn for insert operation
-		values, err := p.Get(ctx, updatedKeys...)
->>>>>>> 77fee45 (Use separat postgres config for notify (#180))
+		values, err := p.Get(ctx, allKeys...)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
 		}
