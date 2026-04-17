@@ -5739,7 +5739,7 @@ func (r *Fetch) OrganizationTag(ids ...int) *organizationTagBuilder {
 
 // PersonalNote has all fields from personal_note.
 type PersonalNote struct {
-	ContentObjectID dsfetch.Maybe[string]
+	ContentObjectID string
 	ID              int
 	MeetingID       int
 	MeetingUserID   int
