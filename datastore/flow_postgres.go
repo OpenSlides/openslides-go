@@ -300,22 +300,41 @@ func convertPGArray(pgValue string) ([]byte, error) {
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	// TODO: Make connect + listen reusable within the method
-	conn := getPostgresConnection(ctx, p.notifyConfig)
-	defer conn.Close(context.Background())
+	reconnect := func() (*pgx.Conn, error) {
+		conn := getPostgresConnection(ctx, p.notifyConfig)
 
-	_, err := conn.Exec(ctx, "LISTEN os_notify")
-	if err != nil {
-		updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
-		return
+		_, err := conn.Exec(ctx, "LISTEN os_notify")
+		if err != nil {
+			return nil, fmt.Errorf("listen on channel os_notify: %w", err)
+		}
+
+		return conn, nil
 	}
 
+	conn, err := reconnect()
+	if err != nil {
+		panic(err)
+	}
+
+	defer conn.Close(context.Background())
+
+	lastXactID := 0
 	for {
-		// TODO: Add check if context is canceled
-		// TODO: Add check if database connection is still healthy
+		if ctx.Err() != nil {
+			return
+		}
+
+		if conn.IsClosed() {
+			conn, err = reconnect()
+			if err != nil {
+				panic(err)
+			}
+		}
+
 		notification, err := conn.WaitForNotification(ctx)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
-			return
+			continue
 		}
 
 		var payload struct {
@@ -327,12 +346,18 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			continue
 		}
 
-		// TODO: Request xact_id range between last message and payload.XACTID should be processed
-		sql := `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
-		rows, err := conn.Query(ctx, sql, payload.XACTID)
+		var sql string
+		args := []any{payload.XACTID}
+		if lastXactID > 0 {
+			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id <= $1::xid8 AND xact_id > $2::xid8;`
+			args = append(args, lastXactID)
+		} else {
+			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
+		}
+		rows, err := conn.Query(ctx, sql, args...)
 		if err != nil {
-			updateFn(nil, fmt.Errorf("query fqids for transaction %d: %w", payload.XACTID, err))
-			return
+			updateFn(nil, fmt.Errorf("query fqids for transactions %v: %w", args, err))
+			continue
 		}
 
 		// TODO: At least connection errors should result in a continue here
@@ -390,7 +415,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		updateFn(values, nil)
-		// TODO: Update last successful processed xact_id
+		lastXactID = payload.XACTID
 	}
 }
 
@@ -425,7 +450,8 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 	}
 }
 
-// waitDatabaseInitialized checks if the version table is existing and the latest migration is finalized
+// getPostgresConnection tries to connect to a database until it is successful
+// TODO: Return error on credential related errors
 func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx.Conn {
 	retryDelay := 1 * time.Second
 
