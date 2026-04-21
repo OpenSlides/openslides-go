@@ -298,6 +298,8 @@ func convertPGArray(pgValue string) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	// TODO: Create connection via WaitPostgresAvailable
+	// TODO: Make connect + listen reusable within the method
 	conn, err := pgx.ConnectConfig(ctx, p.notifyConfig)
 	if err != nil {
 		updateFn(nil, fmt.Errorf("create connection to postgres: %w", err))
@@ -312,6 +314,8 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 
 	for {
+		// TODO: Add check if context is canceled
+		// TODO: Add check if database connection is still healthy
 		notification, err := conn.WaitForNotification(ctx)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
@@ -324,9 +328,10 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		if err := json.Unmarshal([]byte(notification.Payload), &payload); err != nil {
 			updateFn(nil, fmt.Errorf("unmarshal notify payload: %w", err))
-			return
+			continue
 		}
 
+		// TODO: Request xact_id range between last message and payload.XACTID should be processed
 		sql := `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
 		rows, err := conn.Query(ctx, sql, payload.XACTID)
 		if err != nil {
@@ -334,6 +339,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
+		// TODO: At least connection errors should result in a continue here
 		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
 			Operation     string
 			Fqid          string
@@ -346,6 +352,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		var deletedKeys []dskey.Key
 		var updatedKeys []dskey.Key
+		// TODO: Errors in this loop should be collected and returned alongside the data that could be successfully collected
 		for _, updateLog := range updateLogs {
 			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
@@ -370,6 +377,9 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		// TODO: don't use getWithConn for insert operation
 		values, err := p.Get(ctx, updatedKeys...)
 		if err != nil {
+			// TODO: This might need more sophisticated error handling
+			// Connection failures should result in a retry
+			// Other things might be okay to lead to a panic
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
 			return
 		}
@@ -383,10 +393,12 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		updateFn(values, nil)
+		// TODO: Update last successful processed xact_id
 	}
 }
 
 // WaitPostgresAvailable blocks until postgres db is availabe
+// TODO: This should return a connection and accept a postgresDSN + context as parameter
 func WaitPostgresAvailable(lookup environment.Environmenter) error {
 	if _, forDocu := lookup.(*environment.ForDocu); forDocu {
 		return nil
@@ -439,6 +451,7 @@ func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) error {
 	}
 }
 
+// TODO: This method does not contain a path to return an error. Return value should be updated
 func createKeyList(collection string, id int, fields []string) ([]dskey.Key, error) {
 	if len(fields) == 0 {
 		fields = collectionFields[collection]
@@ -448,6 +461,7 @@ func createKeyList(collection string, id int, fields []string) ([]dskey.Key, err
 	for _, field := range fields {
 		key, err := dskey.FromParts(collection, id, field)
 		if err != nil {
+			// TODO: Maybe collect errors and return alongside the successfully obtained keys
 			continue
 		}
 
