@@ -299,22 +299,7 @@ func convertPGArray(pgValue string) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	reconnect := func() (*pgx.Conn, error) {
-		conn := getPostgresConnection(ctx, p.notifyConfig)
-
-		_, err := conn.Exec(ctx, "LISTEN os_notify")
-		if err != nil {
-			return nil, fmt.Errorf("listen on channel os_notify: %w", err)
-		}
-
-		return conn, nil
-	}
-
-	conn, err := reconnect()
-	if err != nil {
-		panic(err)
-	}
-
+	var conn *pgx.Conn
 	defer conn.Close(context.Background())
 
 	lastXactID := 0
@@ -323,9 +308,13 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 
-		if conn.IsClosed() {
-			conn, err = reconnect()
+		if conn == nil || conn.IsClosed() {
+			conn = getPostgresConnection(ctx, p.notifyConfig)
+
+			_, err := conn.Exec(ctx, "LISTEN os_notify")
 			if err != nil {
+				err = fmt.Errorf("listen on channel os_notify: %w", err)
+				updateFn(nil, err)
 				panic(err)
 			}
 		}
