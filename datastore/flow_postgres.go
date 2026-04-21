@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -298,16 +299,11 @@ func convertPGArray(pgValue string) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	// TODO: Create connection via WaitPostgresAvailable
 	// TODO: Make connect + listen reusable within the method
-	conn, err := pgx.ConnectConfig(ctx, p.notifyConfig)
-	if err != nil {
-		updateFn(nil, fmt.Errorf("create connection to postgres: %w", err))
-		return
-	}
+	conn := getPostgresConnection(ctx, p.notifyConfig)
 	defer conn.Close(context.Background())
 
-	_, err = conn.Exec(ctx, "LISTEN os_notify")
+	_, err := conn.Exec(ctx, "LISTEN os_notify")
 	if err != nil {
 		updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
 		return
@@ -360,6 +356,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 				return
 			}
 
+			// TODO: Method can still return keys even on error
 			keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
 			if err != nil {
 				updateFn(nil, fmt.Errorf("creating key list from notification: %w", err))
@@ -398,7 +395,6 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 }
 
 // WaitPostgresAvailable blocks until postgres db is availabe
-// TODO: This should return a connection and accept a postgresDSN + context as parameter
 func WaitPostgresAvailable(lookup environment.Environmenter) error {
 	if _, forDocu := lookup.(*environment.ForDocu); forDocu {
 		return nil
@@ -406,31 +402,49 @@ func WaitPostgresAvailable(lookup environment.Environmenter) error {
 
 	addr, err := postgresDSN(lookup)
 	if err != nil {
-		return fmt.Errorf("reading postgres password: %w", err)
+		return fmt.Errorf("reading postgres config: %w", err)
 	}
 
-	var conn *pgx.Conn
+	config, err := pgx.ParseConfig(addr)
+	if err != nil {
+		return fmt.Errorf("parsing postgres config: %w", err)
+	}
+
+	ctx := context.Background()
+
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		conn, err = pgx.Connect(ctx, addr)
-		if err == nil {
-			err = conn.Ping(ctx)
-
-			if err == nil {
-				err = waitDatabaseInitialized(ctx, conn)
-			}
-
-			_ = conn.Close(context.Background())
-		}
-
-		cancel()
+		conn := getPostgresConnection(ctx, config)
+		err := waitDatabaseInitialized(ctx, conn)
+		_ = conn.Close(ctx)
 		if err != nil {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		return nil
+	}
+}
+
+// waitDatabaseInitialized checks if the version table is existing and the latest migration is finalized
+func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx.Conn {
+	retryDelay := 1 * time.Second
+
+	for {
+		conn, err := pgx.ConnectConfig(ctx, connConfig)
+		if err != nil {
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err = conn.Ping(pingCtx)
+		if err != nil {
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		cancel()
+		return conn
 	}
 }
 
@@ -451,23 +465,29 @@ func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) error {
 	}
 }
 
-// TODO: This method does not contain a path to return an error. Return value should be updated
 func createKeyList(collection string, id int, fields []string) ([]dskey.Key, error) {
 	if len(fields) == 0 {
 		fields = collectionFields[collection]
 	}
 
 	keys := make([]dskey.Key, 0, len(fields))
+	keyErrors := []error{}
 	for _, field := range fields {
 		key, err := dskey.FromParts(collection, id, field)
 		if err != nil {
-			// TODO: Maybe collect errors and return alongside the successfully obtained keys
+			keyErrors = append(keyErrors, err)
 			continue
 		}
 
 		keys = append(keys, key)
 	}
-	return keys, nil
+
+	var err error
+	if len(keyErrors) > 0 {
+		err = errors.Join(keyErrors...)
+	}
+
+	return keys, err
 }
 
 // forEachRow is like pgx.ForEachRow but uses CollectableRow instead of scan.
