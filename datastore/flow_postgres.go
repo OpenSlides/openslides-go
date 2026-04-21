@@ -299,7 +299,6 @@ func convertPGArray(pgValue string) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	// TODO: Make connect + listen reusable within the method
 	reconnect := func() (*pgx.Conn, error) {
 		conn := getPostgresConnection(ctx, p.notifyConfig)
 
@@ -360,32 +359,29 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			continue
 		}
 
-		// TODO: At least connection errors should result in a continue here
 		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
 			Operation     string
 			Fqid          string
 			UpdatedFields []string
 		}])
 		if err != nil {
-			updateFn(nil, fmt.Errorf("parse notify_log: %w", err))
-			return
+			panic(fmt.Errorf("parse notify_log: %w", err))
 		}
+
+		nonFatalErrs := []error{}
 
 		var deletedKeys []dskey.Key
 		var updatedKeys []dskey.Key
-		// TODO: Errors in this loop should be collected and returned alongside the data that could be successfully collected
 		for _, updateLog := range updateLogs {
 			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
-				updateFn(nil, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
-				return
+				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
+				continue
 			}
 
-			// TODO: Method can still return keys even on error
 			keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
 			if err != nil {
-				updateFn(nil, fmt.Errorf("creating key list from notification: %w", err))
-				return
+				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("creating key list from notification: %w", err))
 			}
 
 			switch updateLog.Operation {
@@ -403,7 +399,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			// Connection failures should result in a retry
 			// Other things might be okay to lead to a panic
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
-			return
+			continue
 		}
 
 		if values == nil && len(deletedKeys) != 0 {
@@ -414,7 +410,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			values[key] = nil
 		}
 
-		updateFn(values, nil)
+		updateFn(values, errors.Join(nonFatalErrs...))
 		lastXactID = payload.XACTID
 	}
 }
