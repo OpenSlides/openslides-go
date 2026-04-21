@@ -13,6 +13,7 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -310,6 +311,9 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		if conn == nil || conn.IsClosed() {
 			conn = getPostgresConnection(ctx, p.notifyConfig)
+			if lastXactID > 0 {
+				oslog.Info("Database reconnected")
+			}
 
 			_, err := conn.Exec(ctx, "LISTEN os_notify")
 			if err != nil {
@@ -443,6 +447,7 @@ func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx
 	for {
 		conn, err := pgx.ConnectConfig(ctx, connConfig)
 		if err != nil {
+			oslog.Error("Error connecting to db: %v", err)
 			time.Sleep(retryDelay)
 			continue
 		}
