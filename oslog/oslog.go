@@ -21,6 +21,7 @@ func InitLog(lookup environment.Environmenter) {
 	cw := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: "2006-01-02T15:04:05:000",
+		NoColor:    !devmode,
 		FormatLevel: func(i any) string {
 			level := strings.ToUpper(fmt.Sprintf("%-6s", i))
 			if !isDev {
