@@ -456,6 +456,7 @@ func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx
 		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		err = conn.Ping(pingCtx)
 		if err != nil {
+			oslog.Info("Waiting for db to become ready")
 			time.Sleep(retryDelay)
 			continue
 		}
@@ -476,6 +477,12 @@ func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) error {
 
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+
+		if err != nil {
+			oslog.Error("Could not request version table: %v", err)
+		} else {
+			oslog.Info("Waiting for db schema to become ready")
 		}
 
 		time.Sleep(1 * time.Second)
