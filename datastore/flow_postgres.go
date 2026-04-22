@@ -340,7 +340,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		var sql string
 		args := []any{payload.XACTID}
-		if lastXactID > 0 {
+		if lastXactID > 0 && lastXactID+1 < payload.XACTID {
 			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id <= $1::xid8 AND xact_id > $2::xid8;`
 			args = append(args, lastXactID)
 		} else {
