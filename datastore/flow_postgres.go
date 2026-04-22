@@ -388,11 +388,12 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		// TODO: don't use getWithConn for insert operation
 		values, err := p.Get(ctx, updatedKeys...)
 		if err != nil {
-			// TODO: This might need more sophisticated error handling
-			// Connection failures should result in a retry
-			// Other things might be okay to lead to a panic
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
-			continue
+			if conn.IsClosed() {
+				continue
+			} else {
+				panic("error on healty connection - exiting")
+			}
 		}
 
 		if values == nil && len(deletedKeys) != 0 {
