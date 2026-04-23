@@ -192,13 +192,14 @@ func (tp *PostgresTest) Cleanup(t *testing.T) {
 		// is usually used in defer, where t.Context() is already canceled.
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		if err := tp.reset(ctx); err != nil {
+		if err := tp.Reset(ctx); err != nil {
 			t.Logf("Cleanup database: %v", err)
 		}
 	})
 }
 
-func (tp *PostgresTest) reset(ctx context.Context) error {
+// Reset cleans up the pg test environment
+func (tp *PostgresTest) Reset(ctx context.Context) error {
 	// Use different database for drop database
 	config := tp.pgxConfig.Copy()
 	config.Database = "postgres"
