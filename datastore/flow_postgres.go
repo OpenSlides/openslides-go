@@ -317,9 +317,8 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 			_, err := conn.Exec(ctx, "LISTEN os_notify")
 			if err != nil {
-				err = fmt.Errorf("listen on channel os_notify: %w", err)
-				updateFn(nil, err)
-				panic(err)
+				updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
+				continue
 			}
 		}
 
@@ -358,7 +357,11 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			UpdatedFields []string
 		}])
 		if err != nil {
-			panic(fmt.Errorf("parse notify_log: %w", err))
+			if conn.IsClosed() {
+				continue
+			} else {
+				panic(fmt.Errorf("parse notify_log: %w", err))
+			}
 		}
 
 		nonFatalErrs := []error{}
