@@ -301,7 +301,11 @@ func convertPGArray(pgValue string) ([]byte, error) {
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	var conn *pgx.Conn
-	defer conn.Close(context.Background())
+	defer func() {
+		if conn != nil {
+			conn.Close(context.Background())
+		}
+	}()
 
 	lastXactID := 0
 	for {
