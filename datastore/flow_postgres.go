@@ -137,9 +137,6 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for _, key := range keys {
 		collection := key.Collection()
-		if collection == "invalid" {
-			continue
-		}
 
 		collectionIDs[collection] = append(collectionIDs[collection], key.ID())
 
@@ -150,9 +147,6 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for collection := range collectionIDs {
 		slices.Sort(collectionIDs[collection])
-		if collection != "invalid" {
-			collectionIDs[collection] = slices.Compact(collectionIDs[collection])
-		}
 	}
 
 	for collection := range collectionFields {
@@ -343,10 +337,6 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			continue
 		}
 
-<<<<<<< HEAD
-		sql := `SELECT DISTINCT fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
-		rows, err := conn.Query(ctx, sql, payload.XACTID)
-=======
 		var sql string
 		args := []any{payload.XACTID}
 		if lastXactID > 0 && lastXactID+1 < payload.XACTID {
@@ -356,13 +346,13 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
 		}
 		rows, err := conn.Query(ctx, sql, args...)
->>>>>>> 2d847cb (Error hardening in pg flow update (#244))
 		if err != nil {
 			updateFn(nil, fmt.Errorf("query fqids for transactions %v: %w", args, err))
 			continue
 		}
 
 		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+			Operation     string
 			Fqid          string
 			UpdatedFields []string
 		}])
@@ -374,14 +364,10 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			}
 		}
 
-<<<<<<< HEAD
-		var allKeys []dskey.Key
-=======
 		nonFatalErrs := []error{}
 
 		var deletedKeys []dskey.Key
 		var updatedKeys []dskey.Key
->>>>>>> 2d847cb (Error hardening in pg flow update (#244))
 		for _, updateLog := range updateLogs {
 			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
@@ -394,15 +380,17 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("creating key list from notification: %w", err))
 			}
 
-			allKeys = append(allKeys, keys...)
+			switch updateLog.Operation {
+			case "delete":
+				deletedKeys = append(deletedKeys, keys...)
+			case "insert", "update":
+				updatedKeys = append(updatedKeys, keys...)
+			}
 		}
 
 		// TODO: don't use getWithConn for insert operation
-		values, err := p.Get(ctx, allKeys...)
+		values, err := p.Get(ctx, updatedKeys...)
 		if err != nil {
-<<<<<<< HEAD
-			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
-=======
 			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
 			if conn.IsClosed() {
 				continue
@@ -417,7 +405,6 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		for _, key := range deletedKeys {
 			values[key] = nil
->>>>>>> 2d847cb (Error hardening in pg flow update (#244))
 		}
 
 		updateFn(values, errors.Join(nonFatalErrs...))
@@ -427,6 +414,10 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 // WaitPostgresAvailable blocks until postgres db is availabe
 func WaitPostgresAvailable(lookup environment.Environmenter) error {
+	if _, forDocu := lookup.(*environment.ForDocu); forDocu {
+		return nil
+	}
+
 	addr, err := postgresDSN(lookup)
 	if err != nil {
 		return fmt.Errorf("reading postgres config: %w", err)
@@ -506,21 +497,16 @@ func createKeyList(collection string, id int, fields []string) ([]dskey.Key, err
 		fields = collectionFields[collection]
 	}
 
-<<<<<<< HEAD
-	keys := make([]dskey.Key, len(fields))
-	for i, field := range fields {
-=======
 	keys := make([]dskey.Key, 0, len(fields))
 	keyErrors := []error{}
 	for _, field := range fields {
->>>>>>> 2d847cb (Error hardening in pg flow update (#244))
 		key, err := dskey.FromParts(collection, id, field)
 		if err != nil {
 			keyErrors = append(keyErrors, err)
 			continue
 		}
 
-		keys[i] = key
+		keys = append(keys, key)
 	}
 
 	var err error
