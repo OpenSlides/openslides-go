@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -135,9 +137,6 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for _, key := range keys {
 		collection := key.Collection()
-		if collection == "invalid" {
-			continue
-		}
 
 		collectionIDs[collection] = append(collectionIDs[collection], key.ID())
 
@@ -148,9 +147,6 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 
 	for collection := range collectionIDs {
 		slices.Sort(collectionIDs[collection])
-		if collection != "invalid" {
-			collectionIDs[collection] = slices.Compact(collectionIDs[collection])
-		}
 	}
 
 	for collection := range collectionFields {
@@ -304,24 +300,32 @@ func convertPGArray(pgValue string) ([]byte, error) {
 
 // Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	conn, err := pgx.ConnectConfig(ctx, p.notifyConfig)
-	if err != nil {
-		updateFn(nil, fmt.Errorf("create connection to postgres: %w", err))
-		return
-	}
+	var conn *pgx.Conn
 	defer conn.Close(context.Background())
 
-	_, err = conn.Exec(ctx, "LISTEN os_notify")
-	if err != nil {
-		updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
-		return
-	}
-
+	lastXactID := 0
 	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		if conn == nil || conn.IsClosed() {
+			conn = getPostgresConnection(ctx, p.notifyConfig)
+			if lastXactID > 0 {
+				oslog.Info("Database reconnected")
+			}
+
+			_, err := conn.Exec(ctx, "LISTEN os_notify")
+			if err != nil {
+				updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
+				continue
+			}
+		}
+
 		notification, err := conn.WaitForNotification(ctx)
 		if err != nil {
 			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
-			return
+			continue
 		}
 
 		var payload struct {
@@ -330,81 +334,138 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		if err := json.Unmarshal([]byte(notification.Payload), &payload); err != nil {
 			updateFn(nil, fmt.Errorf("unmarshal notify payload: %w", err))
-			return
+			continue
 		}
 
-		sql := `SELECT DISTINCT fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
-		rows, err := conn.Query(ctx, sql, payload.XACTID)
+		var sql string
+		args := []any{payload.XACTID}
+		if lastXactID > 0 && lastXactID+1 < payload.XACTID {
+			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id <= $1::xid8 AND xact_id > $2::xid8;`
+			args = append(args, lastXactID)
+		} else {
+			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
+		}
+		rows, err := conn.Query(ctx, sql, args...)
 		if err != nil {
-			updateFn(nil, fmt.Errorf("query fqids for transaction %d: %w", payload.XACTID, err))
-			return
+			updateFn(nil, fmt.Errorf("query fqids for transactions %v: %w", args, err))
+			continue
 		}
 
 		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+			Operation     string
 			Fqid          string
 			UpdatedFields []string
 		}])
 		if err != nil {
-			updateFn(nil, fmt.Errorf("parse notify_log: %w", err))
-			return
+			if conn.IsClosed() {
+				continue
+			} else {
+				panic(fmt.Errorf("parse notify_log: %w", err))
+			}
 		}
 
-		var allKeys []dskey.Key
+		nonFatalErrs := []error{}
+
+		var deletedKeys []dskey.Key
+		var updatedKeys []dskey.Key
 		for _, updateLog := range updateLogs {
 			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
 			if err != nil {
-				updateFn(nil, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
-				return
+				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
+				continue
 			}
 
 			keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
 			if err != nil {
-				updateFn(nil, fmt.Errorf("creating key list from notification: %w", err))
-				return
+				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("creating key list from notification: %w", err))
 			}
 
-			allKeys = append(allKeys, keys...)
+			switch updateLog.Operation {
+			case "delete":
+				deletedKeys = append(deletedKeys, keys...)
+			case "insert", "update":
+				updatedKeys = append(updatedKeys, keys...)
+			}
 		}
 
 		// TODO: don't use getWithConn for insert operation
-		values, err := p.Get(ctx, allKeys...)
+		values, err := p.Get(ctx, updatedKeys...)
 		if err != nil {
-			updateFn(nil, fmt.Errorf("fetching keys %v: %w", allKeys, err))
+			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
+			if conn.IsClosed() {
+				continue
+			} else {
+				panic("error on healty connection - exiting")
+			}
 		}
 
-		updateFn(values, nil)
+		if values == nil && len(deletedKeys) != 0 {
+			values = map[dskey.Key][]byte{}
+		}
+
+		for _, key := range deletedKeys {
+			values[key] = nil
+		}
+
+		updateFn(values, errors.Join(nonFatalErrs...))
+		lastXactID = payload.XACTID
 	}
 }
 
 // WaitPostgresAvailable blocks until postgres db is availabe
 func WaitPostgresAvailable(lookup environment.Environmenter) error {
-	addr, err := postgresDSN(lookup)
-	if err != nil {
-		return fmt.Errorf("reading postgres password: %w", err)
+	if _, forDocu := lookup.(*environment.ForDocu); forDocu {
+		return nil
 	}
 
-	var conn *pgx.Conn
+	addr, err := postgresDSN(lookup)
+	if err != nil {
+		return fmt.Errorf("reading postgres config: %w", err)
+	}
+
+	config, err := pgx.ParseConfig(addr)
+	if err != nil {
+		return fmt.Errorf("parsing postgres config: %w", err)
+	}
+
+	ctx := context.Background()
+
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		conn, err = pgx.Connect(ctx, addr)
-		if err == nil {
-			err = conn.Ping(ctx)
-
-			if err == nil {
-				err = waitDatabaseInitialized(ctx, conn)
-			}
-
-			_ = conn.Close(context.Background())
-		}
-
-		cancel()
+		conn := getPostgresConnection(ctx, config)
+		err := waitDatabaseInitialized(ctx, conn)
+		_ = conn.Close(ctx)
 		if err != nil {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		return nil
+	}
+}
+
+// getPostgresConnection tries to connect to a database until it is successful
+// TODO: Return error on credential related errors
+func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx.Conn {
+	retryDelay := 1 * time.Second
+
+	for {
+		conn, err := pgx.ConnectConfig(ctx, connConfig)
+		if err != nil {
+			oslog.Error("Error connecting to db: %v", err)
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err = conn.Ping(pingCtx)
+		if err != nil {
+			oslog.Info("Waiting for db to become ready")
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		cancel()
+		return conn
 	}
 }
 
@@ -421,6 +482,12 @@ func waitDatabaseInitialized(ctx context.Context, conn *pgx.Conn) error {
 			return ctx.Err()
 		}
 
+		if err != nil {
+			oslog.Error("Could not request version table: %v", err)
+		} else {
+			oslog.Info("Waiting for db schema to become ready")
+		}
+
 		time.Sleep(1 * time.Second)
 	}
 }
@@ -430,16 +497,24 @@ func createKeyList(collection string, id int, fields []string) ([]dskey.Key, err
 		fields = collectionFields[collection]
 	}
 
-	keys := make([]dskey.Key, len(fields))
-	for i, field := range fields {
+	keys := make([]dskey.Key, 0, len(fields))
+	keyErrors := []error{}
+	for _, field := range fields {
 		key, err := dskey.FromParts(collection, id, field)
 		if err != nil {
+			keyErrors = append(keyErrors, err)
 			continue
 		}
 
-		keys[i] = key
+		keys = append(keys, key)
 	}
-	return keys, nil
+
+	var err error
+	if len(keyErrors) > 0 {
+		err = errors.Join(keyErrors...)
+	}
+
+	return keys, err
 }
 
 // forEachRow is like pgx.ForEachRow but uses CollectableRow instead of scan.

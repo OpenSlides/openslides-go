@@ -229,6 +229,7 @@ func TestReconnect(t *testing.T) {
 
 	sender <- struct{}{} // Close connection so there is a reconnect
 	sender <- struct{}{} // Close connection again
+	ts.Close()
 
 	if counter < 2 {
 		t.Errorf("Got %d connections, expected 2", counter)
@@ -236,9 +237,6 @@ func TestReconnect(t *testing.T) {
 }
 
 func TestGetWithoutConnect(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for msg := range sender {
@@ -258,7 +256,7 @@ func TestGetWithoutConnect(t *testing.T) {
 
 	key := dskey.MustKey("poll/1/live_votes")
 
-	ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
+	ctxTimeout, cancel := context.WithTimeout(t.Context(), time.Millisecond)
 	defer cancel()
 
 	_, err := source.Get(ctxTimeout, key)
