@@ -128,13 +128,13 @@ func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 	}
 
 	c.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
-		if err != nil {
+		if data == nil {
 			updateFn(nil, err)
 			return
 		}
 
 		c.data.SetIfPendingOrExists(data)
-		updateFn(data, nil)
+		updateFn(data, err)
 	})
 }
 
