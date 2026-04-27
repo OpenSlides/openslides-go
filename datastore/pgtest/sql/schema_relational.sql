@@ -3801,49 +3801,49 @@ FOR EACH ROW EXECUTE FUNCTION generate_sequence('topic_t', 'sequential_number', 
 -- Create triggers checking foreign_id not null for view-relations and no duplicates in 1:1 relationships
 
 -- definition trigger not null for assignment.list_of_speakers_id against list_of_speakers.content_object_id_assignment_id
-CREATE CONSTRAINT TRIGGER tr_i_assignment_list_of_speakers_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_assignment_list_of_speakers_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('assignment', 'list_of_speakers_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_assignment_list_of_speakers_id AFTER UPDATE OF content_object_id_assignment_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_assignment_list_of_speakers_id AFTER UPDATE OF content_object_id_assignment_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('assignment', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_assignment_id');
 
 
 -- definition trigger not null for motion.list_of_speakers_id against list_of_speakers.content_object_id_motion_id
-CREATE CONSTRAINT TRIGGER tr_i_motion_list_of_speakers_id AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_motion_list_of_speakers_id AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion', 'list_of_speakers_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_motion_list_of_speakers_id AFTER UPDATE OF content_object_id_motion_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_motion_list_of_speakers_id AFTER UPDATE OF content_object_id_motion_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_motion_id');
 
 
 -- definition trigger not null for motion_block.list_of_speakers_id against list_of_speakers.content_object_id_motion_block_id
-CREATE CONSTRAINT TRIGGER tr_i_motion_block_list_of_speakers_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_motion_block_list_of_speakers_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_motion_block_list_of_speakers_id AFTER UPDATE OF content_object_id_motion_block_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_motion_block_list_of_speakers_id AFTER UPDATE OF content_object_id_motion_block_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_motion_block_id');
 
 
 -- definition trigger not null for poll_candidate_list.option_id against option.content_object_id_poll_candidate_list_id
-CREATE CONSTRAINT TRIGGER tr_i_poll_candidate_list_option_id AFTER INSERT ON poll_candidate_list_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_candidate_list_option_id AFTER INSERT ON poll_candidate_list_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_candidate_list', 'option_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_poll_candidate_list_option_id AFTER UPDATE OF content_object_id_poll_candidate_list_id OR DELETE ON option_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_candidate_list_option_id AFTER UPDATE OF content_object_id_poll_candidate_list_id OR DELETE ON option_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_candidate_list', 'option_id', 'option', 'content_object_id_poll_candidate_list_id');
 
 
 -- definition trigger not null for topic.agenda_item_id against agenda_item.content_object_id_topic_id
-CREATE CONSTRAINT TRIGGER tr_i_topic_agenda_item_id AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_topic_agenda_item_id AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'agenda_item_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_topic_agenda_item_id AFTER UPDATE OF content_object_id_topic_id OR DELETE ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_topic_agenda_item_id AFTER UPDATE OF content_object_id_topic_id OR DELETE ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'agenda_item_id', 'agenda_item', 'content_object_id_topic_id');
 
 -- definition trigger not null for topic.list_of_speakers_id against list_of_speakers.content_object_id_topic_id
-CREATE CONSTRAINT TRIGGER tr_i_topic_list_of_speakers_id AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_topic_list_of_speakers_id AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_topic_list_of_speakers_id AFTER UPDATE OF content_object_id_topic_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_topic_list_of_speakers_id AFTER UPDATE OF content_object_id_topic_id OR DELETE ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_topic_id');
 
 
@@ -3851,114 +3851,114 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('topic', 'list_of_speakers_
 -- Create triggers checking foreign_id not null for 1:n relationships
 
 -- definition trigger not null for meeting.default_projector_agenda_item_list_ids against projector.used_as_default_projector_for_agenda_item_list_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_agenda_item_list_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_agenda_item_list_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_agenda_item_list_ids', 'projector_t', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_agenda_item_list_ids AFTER UPDATE OF used_as_default_projector_for_agenda_item_list_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_agenda_item_list_ids AFTER UPDATE OF used_as_default_projector_for_agenda_item_list_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_agenda_item_list_ids', 'projector_t', 'used_as_default_projector_for_agenda_item_list_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_topic_ids against projector.used_as_default_projector_for_topic_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_topic_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_topic_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_topic_ids', 'projector_t', 'used_as_default_projector_for_topic_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_topic_ids AFTER UPDATE OF used_as_default_projector_for_topic_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_topic_ids AFTER UPDATE OF used_as_default_projector_for_topic_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_topic_ids', 'projector_t', 'used_as_default_projector_for_topic_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_list_of_speakers_ids against projector.used_as_default_projector_for_list_of_speakers_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_list_of_speakers_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_list_of_speakers_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_list_of_speakers_ids', 'projector_t', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_list_of_speakers_ids AFTER UPDATE OF used_as_default_projector_for_list_of_speakers_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_list_of_speakers_ids AFTER UPDATE OF used_as_default_projector_for_list_of_speakers_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_list_of_speakers_ids', 'projector_t', 'used_as_default_projector_for_list_of_speakers_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_current_los_ids against projector.used_as_default_projector_for_current_los_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_current_los_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_current_los_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_current_los_ids', 'projector_t', 'used_as_default_projector_for_current_los_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_current_los_ids AFTER UPDATE OF used_as_default_projector_for_current_los_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_current_los_ids AFTER UPDATE OF used_as_default_projector_for_current_los_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_current_los_ids', 'projector_t', 'used_as_default_projector_for_current_los_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_motion_ids against projector.used_as_default_projector_for_motion_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_motion_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_ids', 'projector_t', 'used_as_default_projector_for_motion_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_ids AFTER UPDATE OF used_as_default_projector_for_motion_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_motion_ids AFTER UPDATE OF used_as_default_projector_for_motion_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_ids', 'projector_t', 'used_as_default_projector_for_motion_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_amendment_ids against projector.used_as_default_projector_for_amendment_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_amendment_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_amendment_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_amendment_ids', 'projector_t', 'used_as_default_projector_for_amendment_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_amendment_ids AFTER UPDATE OF used_as_default_projector_for_amendment_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_amendment_ids AFTER UPDATE OF used_as_default_projector_for_amendment_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_amendment_ids', 'projector_t', 'used_as_default_projector_for_amendment_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_motion_block_ids against projector.used_as_default_projector_for_motion_block_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_block_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_motion_block_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_block_ids', 'projector_t', 'used_as_default_projector_for_motion_block_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_block_ids AFTER UPDATE OF used_as_default_projector_for_motion_block_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_motion_block_ids AFTER UPDATE OF used_as_default_projector_for_motion_block_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_block_ids', 'projector_t', 'used_as_default_projector_for_motion_block_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_assignment_ids against projector.used_as_default_projector_for_assignment_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_assignment_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_assignment_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_ids', 'projector_t', 'used_as_default_projector_for_assignment_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_assignment_ids AFTER UPDATE OF used_as_default_projector_for_assignment_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_assignment_ids AFTER UPDATE OF used_as_default_projector_for_assignment_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_ids', 'projector_t', 'used_as_default_projector_for_assignment_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_mediafile_ids against projector.used_as_default_projector_for_mediafile_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_mediafile_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_mediafile_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_mediafile_ids', 'projector_t', 'used_as_default_projector_for_mediafile_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_mediafile_ids AFTER UPDATE OF used_as_default_projector_for_mediafile_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_mediafile_ids AFTER UPDATE OF used_as_default_projector_for_mediafile_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_mediafile_ids', 'projector_t', 'used_as_default_projector_for_mediafile_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_message_ids against projector.used_as_default_projector_for_message_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_message_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_message_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_message_ids', 'projector_t', 'used_as_default_projector_for_message_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_message_ids AFTER UPDATE OF used_as_default_projector_for_message_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_message_ids AFTER UPDATE OF used_as_default_projector_for_message_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_message_ids', 'projector_t', 'used_as_default_projector_for_message_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_countdown_ids against projector.used_as_default_projector_for_countdown_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_countdown_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_countdown_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_countdown_ids', 'projector_t', 'used_as_default_projector_for_countdown_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_countdown_ids AFTER UPDATE OF used_as_default_projector_for_countdown_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_countdown_ids AFTER UPDATE OF used_as_default_projector_for_countdown_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_countdown_ids', 'projector_t', 'used_as_default_projector_for_countdown_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_assignment_poll_ids against projector.used_as_default_projector_for_assignment_poll_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_assignment_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_assignment_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_poll_ids', 'projector_t', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_assignment_poll_ids AFTER UPDATE OF used_as_default_projector_for_assignment_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_assignment_poll_ids AFTER UPDATE OF used_as_default_projector_for_assignment_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_assignment_poll_ids', 'projector_t', 'used_as_default_projector_for_assignment_poll_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_motion_poll_ids against projector.used_as_default_projector_for_motion_poll_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_motion_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_motion_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_poll_ids', 'projector_t', 'used_as_default_projector_for_motion_poll_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_motion_poll_ids AFTER UPDATE OF used_as_default_projector_for_motion_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_motion_poll_ids AFTER UPDATE OF used_as_default_projector_for_motion_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_poll_ids', 'projector_t', 'used_as_default_projector_for_motion_poll_in_meeting_id');
 
 
 -- definition trigger not null for meeting.default_projector_poll_ids against projector.used_as_default_projector_for_poll_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_meeting_default_projector_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_poll_ids', 'projector_t', 'used_as_default_projector_for_poll_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_meeting_default_projector_poll_ids AFTER UPDATE OF used_as_default_projector_for_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_poll_ids AFTER UPDATE OF used_as_default_projector_for_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_poll_ids', 'projector_t', 'used_as_default_projector_for_poll_in_meeting_id');
 
 
@@ -3967,10 +3967,10 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_proje
 -- Create triggers checking foreign_ids not null for n:m relationships
 
 -- definition trigger not null for meeting_user.group_ids against group.meeting_user_ids through nm_group_meeting_user_ids_meeting_user_t
-CREATE CONSTRAINT TRIGGER tr_i_meeting_user_group_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_user_group_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_n_m('nm_group_meeting_user_ids_meeting_user_t', 'meeting_user_t', 'group_ids', 'meeting_user_id');
 
-CREATE CONSTRAINT TRIGGER tr_d_meeting_user_group_ids AFTER DELETE ON nm_group_meeting_user_ids_meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER tr_d_not_null_meeting_user_group_ids AFTER DELETE ON nm_group_meeting_user_ids_meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_n_m('nm_group_meeting_user_ids_meeting_user_t', 'meeting_user_t', 'group_ids', 'meeting_user_id', 'group_id', 'group', 'meeting_user_ids');
 
 
@@ -3979,7 +3979,7 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_n_m('nm_group_meeting_user_ids_
 -- Create triggers preventing mirrored duplicates in fields referencing themselves
 
 -- definition trigger unique ids pair for motion.identical_motion_ids
-CREATE TRIGGER restrict_motion_identical_motion_ids BEFORE INSERT OR UPDATE ON nm_motion_identical_motion_ids_motion_t
+CREATE TRIGGER tr_restrict_unique_ids_pair_motion_identical_motion_ids BEFORE INSERT OR UPDATE ON nm_motion_identical_motion_ids_motion_t
 FOR EACH ROW EXECUTE FUNCTION check_unique_ids_pair('identical_motion_id');
 
 
