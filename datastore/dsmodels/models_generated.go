@@ -422,14 +422,12 @@ func (r *Fetch) AssignmentCandidate(ids ...int) *assignmentCandidateBuilder {
 type Ballot struct {
 	ActingMeetingUserID      dsfetch.Maybe[int]
 	ID                       int
-	MeetingID                int
 	PollID                   int
 	RepresentedMeetingUserID dsfetch.Maybe[int]
 	Split                    bool
 	Value                    string
 	Weight                   decimal.Decimal
 	ActingMeetingUser        *dsfetch.Maybe[MeetingUser]
-	Meeting                  *Meeting
 	Poll                     *Poll
 	RepresentedMeetingUser   *dsfetch.Maybe[MeetingUser]
 }
@@ -442,7 +440,6 @@ func (b *ballotBuilder) lazy(ds *Fetch, id int) *Ballot {
 	c := Ballot{}
 	ds.Ballot_ActingMeetingUserID(id).Lazy(&c.ActingMeetingUserID)
 	ds.Ballot_ID(id).Lazy(&c.ID)
-	ds.Ballot_MeetingID(id).Lazy(&c.MeetingID)
 	ds.Ballot_PollID(id).Lazy(&c.PollID)
 	ds.Ballot_RepresentedMeetingUserID(id).Lazy(&c.RepresentedMeetingUserID)
 	ds.Ballot_Split(id).Lazy(&c.Split)
@@ -463,17 +460,6 @@ func (b *ballotBuilder) ActingMeetingUser() *meetingUserBuilder {
 			parent:   b,
 			idField:  "ActingMeetingUserID",
 			relField: "ActingMeetingUser",
-		},
-	}
-}
-
-func (b *ballotBuilder) Meeting() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "MeetingID",
-			relField: "Meeting",
 		},
 	}
 }
@@ -1629,7 +1615,6 @@ type Meeting struct {
 	AssignmentPollSortPollResultByVotes          bool
 	AssignmentsExportPreamble                    string
 	AssignmentsExportTitle                       string
-	BallotIDs                                    []int
 	ChatGroupIDs                                 []int
 	ChatMessageIDs                               []int
 	CommitteeID                                  int
@@ -1845,7 +1830,6 @@ type Meeting struct {
 	AssignmentCandidateList                      []AssignmentCandidate
 	AssignmentList                               []Assignment
 	AssignmentPollDefaultGroupList               []Group
-	BallotList                                   []Ballot
 	ChatGroupList                                []ChatGroup
 	ChatMessageList                              []ChatMessage
 	Committee                                    *Committee
@@ -1966,7 +1950,6 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_AssignmentPollSortPollResultByVotes(id).Lazy(&c.AssignmentPollSortPollResultByVotes)
 	ds.Meeting_AssignmentsExportPreamble(id).Lazy(&c.AssignmentsExportPreamble)
 	ds.Meeting_AssignmentsExportTitle(id).Lazy(&c.AssignmentsExportTitle)
-	ds.Meeting_BallotIDs(id).Lazy(&c.BallotIDs)
 	ds.Meeting_ChatGroupIDs(id).Lazy(&c.ChatGroupIDs)
 	ds.Meeting_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
 	ds.Meeting_CommitteeID(id).Lazy(&c.CommitteeID)
@@ -2260,18 +2243,6 @@ func (b *meetingBuilder) AssignmentPollDefaultGroupList() *groupBuilder {
 			parent:   b,
 			idField:  "AssignmentPollDefaultGroupIDs",
 			relField: "AssignmentPollDefaultGroupList",
-			many:     true,
-		},
-	}
-}
-
-func (b *meetingBuilder) BallotList() *ballotBuilder {
-	return &ballotBuilder{
-		builder: builder[ballotBuilder, *ballotBuilder, Ballot]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "BallotIDs",
-			relField: "BallotList",
 			many:     true,
 		},
 	}

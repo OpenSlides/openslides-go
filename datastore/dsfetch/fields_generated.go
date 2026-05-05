@@ -1139,15 +1139,6 @@ func (r *Fetch) Ballot_ID(ballotID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Ballot_MeetingID(ballotID int) *ValueInt {
-	key, err := dskey.FromParts("ballot", ballotID, "meeting_id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
 func (r *Fetch) Ballot_PollID(ballotID int) *ValueInt {
 	key, err := dskey.FromParts("ballot", ballotID, "poll_id")
 	if err != nil {
@@ -2766,15 +2757,6 @@ func (r *Fetch) Meeting_AssignmentsExportTitle(meetingID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) Meeting_BallotIDs(meetingID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting", meetingID, "ballot_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ChatGroupIDs(meetingID int) *ValueIntSlice {

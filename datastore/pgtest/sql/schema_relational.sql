@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '2f9f14555504e4f501fadc87b3661578'
+-- MODELS_YML_CHECKSUM = '16fab06ccd342abd9a78e00b0048aa41'
 
 
 -- ENUM definitions
@@ -953,8 +953,6 @@ CREATE TABLE ballot_t (
     split boolean
         CONSTRAINT default_ballot_split DEFAULT False,
     value text,
-    meeting_id integer
-        CONSTRAINT required_ballot_meeting_id NOT NULL,
     poll_id integer
         CONSTRAINT required_ballot_poll_id NOT NULL,
     acting_meeting_user_id integer,
@@ -3047,7 +3045,6 @@ CREATE VIEW "meeting" AS SELECT *,
 (select array_agg(mc.id ORDER BY mc.id) from motion_change_recommendation_t mc where mc.meeting_id = m.id) as motion_change_recommendation_ids,
 (select array_agg(ms.id ORDER BY ms.id) from motion_state_t ms where ms.meeting_id = m.id) as motion_state_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_t p where p.meeting_id = m.id) as poll_ids,
-(select array_agg(b.id ORDER BY b.id) from ballot_t b where b.meeting_id = m.id) as ballot_ids,
 (select array_agg(a.id ORDER BY a.id) from assignment_t a where a.meeting_id = m.id) as assignment_ids,
 (select array_agg(a.id ORDER BY a.id) from assignment_candidate_t a where a.meeting_id = m.id) as assignment_candidate_ids,
 (select array_agg(p.id ORDER BY p.id) from personal_note_t p where p.meeting_id = m.id) as personal_note_ids,
@@ -3399,8 +3396,6 @@ CREATE INDEX idx_assignment_candidate_t_meeting_user_id ON assignment_candidate_
 ALTER TABLE assignment_candidate_t ADD CONSTRAINT fk_assignment_candidate_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_assignment_candidate_t_meeting_id ON assignment_candidate_t (meeting_id);
 
-ALTER TABLE ballot_t ADD CONSTRAINT fk_ballot_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_ballot_t_meeting_id ON ballot_t (meeting_id);
 ALTER TABLE ballot_t ADD CONSTRAINT fk_ballot_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_ballot_t_poll_id ON ballot_t (poll_id);
 ALTER TABLE ballot_t ADD CONSTRAINT fk_ballot_t_acting_meeting_user_id_meeting_user_t_id FOREIGN KEY(acting_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
@@ -4098,8 +4093,6 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_models('ballot');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON ballot_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
-CREATE TRIGGER tr_log_ballot_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON ballot_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'ballot_ids');
 CREATE TRIGGER tr_log_ballot_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON ballot_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_ids');
 CREATE TRIGGER tr_log_ballot_t_acting_meeting_user_id AFTER INSERT OR UPDATE OF acting_meeting_user_id OR DELETE ON ballot_t
@@ -4908,13 +4901,6 @@ FOR EACH ROW EXECUTE FUNCTION check_equals('assignment_candidate', 'meeting_user
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_ballot_t_poll_id AFTER INSERT ON ballot_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('ballot', 'poll', 'poll_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_ballot_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('ballot', 'poll', 'poll_id', 'meeting_id', TRUE);
-
-
-
 CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_t_read_group_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_chat_group_read_group_ids_group_t', 'chat_group_id', 'chat_group', 'group_id', 'group', 'meeting_id', 'read_group_ids');
 CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_read_chat_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
@@ -5456,7 +5442,6 @@ FIELD 1rR:nt => assignment_candidate/assignment_id:-> assignment/candidate_ids
 FIELD 1r:nt => assignment_candidate/meeting_user_id:-> meeting_user/assignment_candidate_ids
 FIELD 1rR:nt => assignment_candidate/meeting_id:-> meeting/assignment_candidate_ids
 
-FIELD 1rR:nr => ballot/meeting_id:-> meeting/ballot_ids
 FIELD 1rR:nr => ballot/poll_id:-> poll/ballot_ids
 FIELD 1r:nt => ballot/acting_meeting_user_id:-> meeting_user/acting_ballot_ids
 FIELD 1r:nt => ballot/represented_meeting_user_id:-> meeting_user/represented_ballot_ids
@@ -5561,7 +5546,6 @@ SQL nt:1rR => meeting/motion_working_group_speaker_ids:-> motion_working_group_s
 SQL nt:1rR => meeting/motion_change_recommendation_ids:-> motion_change_recommendation/meeting_id
 SQL nt:1rR => meeting/motion_state_ids:-> motion_state/meeting_id
 SQL nr:1rR => meeting/poll_ids:-> poll/meeting_id
-SQL nr:1rR => meeting/ballot_ids:-> ballot/meeting_id
 SQL nt:1rR => meeting/assignment_ids:-> assignment/meeting_id
 SQL nt:1rR => meeting/assignment_candidate_ids:-> assignment_candidate/meeting_id
 SQL nt:1rR => meeting/personal_note_ids:-> personal_note/meeting_id
