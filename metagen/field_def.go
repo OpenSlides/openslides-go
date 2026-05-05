@@ -13,7 +13,6 @@ var RelationFields = map[string]string{
 	"assignment_candidate/meeting_id":                                        "meeting/assignment_candidate_ids",
 	"assignment_candidate/meeting_user_id":                                   "meeting_user/assignment_candidate_ids",
 	"ballot/acting_meeting_user_id":                                          "meeting_user/acting_ballot_ids",
-	"ballot/meeting_id":                                                      "meeting/ballot_ids",
 	"ballot/poll_id":                                                         "poll/ballot_ids",
 	"ballot/represented_meeting_user_id":                                     "meeting_user/represented_ballot_ids",
 	"chat_group/meeting_id":                                                  "meeting/chat_group_ids",
@@ -233,7 +232,6 @@ var RelationListFields = map[string]string{
 	"meeting/assignment_candidate_ids":                         "assignment_candidate/meeting_id",
 	"meeting/assignment_ids":                                   "assignment/meeting_id",
 	"meeting/assignment_poll_default_group_ids":                "group/used_as_assignment_poll_default_id",
-	"meeting/ballot_ids":                                       "ballot/meeting_id",
 	"meeting/chat_group_ids":                                   "chat_group/meeting_id",
 	"meeting/chat_message_ids":                                 "chat_message/meeting_id",
 	"meeting/default_projector_agenda_item_list_ids":           "projector/used_as_default_projector_for_agenda_item_list_in_meeting_id",
@@ -454,7 +452,6 @@ var RestrictionModes = map[string]string{
 
 	// ballot
 	"ballot/id":                          "A",
-	"ballot/meeting_id":                  "A",
 	"ballot/poll_id":                     "A",
 	"ballot/split":                       "B",
 	"ballot/value":                       "B",
@@ -612,7 +609,6 @@ var RestrictionModes = map[string]string{
 	"meeting/assignment_poll_sort_poll_result_by_votes":             "B",
 	"meeting/assignments_export_preamble":                           "B",
 	"meeting/assignments_export_title":                              "B",
-	"meeting/ballot_ids":                                            "B",
 	"meeting/chat_group_ids":                                        "B",
 	"meeting/chat_message_ids":                                      "B",
 	"meeting/custom_translations":                                   "B",
