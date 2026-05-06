@@ -10,18 +10,12 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-go/models"
+	"github.com/OpenSlides/openslides-go/collection"
 	"github.com/OpenSlides/openslides-go/set"
 )
 
 func main() {
-	r, err := openModelYML()
-	if err != nil {
-		log.Fatalf("Can not load models defition: %v", err)
-	}
-	defer r.Close()
-
-	collectionFields, err := parse(r)
+	collectionFields, err := parse("../../meta")
 	if err != nil {
 		log.Fatalf("Can not parse model definition: %v", err)
 	}
@@ -31,19 +25,15 @@ func main() {
 	}
 }
 
-func openModelYML() (io.ReadCloser, error) {
-	return os.Open("../../meta/models.yml")
-}
-
 type collectionField struct {
 	Collection string
 	Field      string
 }
 
-func parse(r io.Reader) ([]collectionField, error) {
-	inData, err := models.Unmarshal(r)
+func parse(path string) ([]collectionField, error) {
+	inData, err := collection.Collections(path)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling models.yml: %w", err)
+		return nil, fmt.Errorf("parse collections: %w", err)
 	}
 
 	var result []collectionField
@@ -79,7 +69,7 @@ func parse(r io.Reader) ([]collectionField, error) {
 	return result, nil
 }
 
-const tpl = `// Code generated with models.yml DO NOT EDIT.
+const tpl = `// Code generated from meta/collections. DO NOT EDIT.
 package dskey
 
 var collectionFields = [...]collectionField{

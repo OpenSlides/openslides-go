@@ -50,3 +50,10 @@ func (m *Maybe[T]) UnmarshalJSON(bs []byte) error {
 	m.Set(v)
 	return nil
 }
+
+func (m Maybe[T]) MarshalJSON() ([]byte, error) {
+	if !m.hasValue {
+		return []byte("null"), nil
+	}
+	return json.Marshal(m.value)
+}
