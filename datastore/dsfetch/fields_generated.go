@@ -6962,15 +6962,6 @@ func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Projection_Content(projectionID int) *ValueJSON {
-	key, err := dskey.FromParts("projection", projectionID, "content")
-	if err != nil {
-		return &ValueJSON{err: err}
-	}
-
-	return &ValueJSON{fetch: r, key: key}
-}
-
 func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
 	key, err := dskey.FromParts("projection", projectionID, "content_object_id")
 	if err != nil {

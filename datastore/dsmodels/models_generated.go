@@ -6278,7 +6278,6 @@ func (r *Fetch) PollOption(ids ...int) *pollOptionBuilder {
 
 // Projection has all fields from projection.
 type Projection struct {
-	Content            json.RawMessage
 	ContentObjectID    string
 	CurrentProjectorID dsfetch.Maybe[int]
 	HistoryProjectorID dsfetch.Maybe[int]
@@ -6301,7 +6300,6 @@ type projectionBuilder struct {
 
 func (b *projectionBuilder) lazy(ds *Fetch, id int) *Projection {
 	c := Projection{}
-	ds.Projection_Content(id).Lazy(&c.Content)
 	ds.Projection_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Projection_CurrentProjectorID(id).Lazy(&c.CurrentProjectorID)
 	ds.Projection_HistoryProjectorID(id).Lazy(&c.HistoryProjectorID)

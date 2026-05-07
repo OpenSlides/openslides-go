@@ -1174,7 +1174,6 @@ var RestrictionModes = map[string]string{
 	"poll_option/weight":          "A",
 
 	// projection
-	"projection/content":              "A",
 	"projection/content_object_id":    "A",
 	"projection/current_projector_id": "A",
 	"projection/history_projector_id": "A",
