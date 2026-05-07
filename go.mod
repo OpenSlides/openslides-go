@@ -1,17 +1,17 @@
 module github.com/OpenSlides/openslides-go
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/gomodule/redigo v1.9.3
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/ostcar/topic v0.7.0
-	github.com/rs/zerolog v1.35.0
+	github.com/rs/zerolog v1.35.1
 	github.com/shopspring/decimal v1.4.0
-	golang.org/x/sys v0.42.0
+	golang.org/x/sys v0.43.0
 )
 
 require (
