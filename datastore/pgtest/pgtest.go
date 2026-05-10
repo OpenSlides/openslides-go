@@ -174,10 +174,13 @@ func (tp *PostgresTest) AddData(ctx context.Context, data string) error {
 }
 
 // Flow returns a flow that is using the postgres instance.
-func (tp *PostgresTest) Flow() (*datastore.FlowPostgres, error) {
-	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+func (tp *PostgresTest) Flow(ctx context.Context) (*datastore.FlowPostgres, error) {
+	flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		return nil, fmt.Errorf("create postgres flow: %w", err)
+	}
+	if err := init(ctx); err != nil {
+		return nil, fmt.Errorf("init postgres: %w", err)
 	}
 	return flow, nil
 }

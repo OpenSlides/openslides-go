@@ -44,33 +44,38 @@ type FlowPostgres struct {
 }
 
 // NewFlowPostgres initializes a SourcePostgres.
-func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
+//
+// Returns the postgres instance, an init function, that has to be called before
+// the first use and an error.
+func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, func(context.Context) error, error) {
 	addr, err := postgresDSN(lookup)
 	if err != nil {
-		return nil, fmt.Errorf("reading postgres dns: %w", err)
+		return nil, nil, fmt.Errorf("reading postgres dns: %w", err)
 	}
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
+		return nil, nil, fmt.Errorf("parse config: %w", err)
 	}
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
-	ctx := context.Background()
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	// NewWithConfig does no IO, if MinConns == 0. So the background-context
+	// does nothing in this case.
+	config.MinConns = 0
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, fmt.Errorf("creating connection pool: %w", err)
+		return nil, nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
 	notifyAddr, err := postgresDSNNotify(lookup)
 	if err != nil {
-		return nil, fmt.Errorf("reading postgres dns for notify: %w", err)
+		return nil, nil, fmt.Errorf("reading postgres dns for notify: %w", err)
 	}
 
 	notifyConf, err := pgx.ParseConfig(notifyAddr)
 	if err != nil {
-		return nil, fmt.Errorf("generate config for notify: %w", err)
+		return nil, nil, fmt.Errorf("generate config for notify: %w", err)
 	}
 
 	flow := FlowPostgres{
@@ -78,24 +83,32 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 		notifyConfig: notifyConf,
 	}
 
-	if err := flow.updateEnums(ctx); err != nil {
-		return nil, err
+	init := func(ctx context.Context) error {
+		if err := waitPostgresAvailable(ctx, config.ConnConfig); err != nil {
+			return fmt.Errorf("waiting for postgres: %w", err)
+		}
+
+		if err := flow.updateEnums(ctx); err != nil {
+			return fmt.Errorf("init enum values: %w", err)
+		}
+		return nil
 	}
 
-	return &flow, nil
+	return &flow, init, nil
 }
 
+// updateEnums ready the enum values from postgres for later use.
 func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 	c, err := p.Pool.Acquire(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("acquire connection: %w", err)
 	}
 	defer c.Release()
 
 	sql := `SELECT oid, typarray FROM pg_type WHERE typtype = 'e';`
 	rows, err := c.Conn().Query(ctx, sql)
 	if err != nil {
-		return err
+		return fmt.Errorf("fetch pg_types: %w", err)
 	}
 	defer rows.Close()
 
@@ -105,7 +118,7 @@ func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 		var oid uint32
 		var typarray uint32
 		if err := rows.Scan(&oid, &typarray); err != nil {
-			return err
+			return fmt.Errorf("read type: %w", err)
 		}
 
 		p.enums[oid] = struct{}{}
@@ -416,24 +429,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 }
 
-// WaitPostgresAvailable blocks until postgres db is availabe
-func WaitPostgresAvailable(lookup environment.Environmenter) error {
-	if _, forDocu := lookup.(*environment.ForDocu); forDocu {
-		return nil
-	}
-
-	addr, err := postgresDSN(lookup)
-	if err != nil {
-		return fmt.Errorf("reading postgres config: %w", err)
-	}
-
-	config, err := pgx.ParseConfig(addr)
-	if err != nil {
-		return fmt.Errorf("parsing postgres config: %w", err)
-	}
-
-	ctx := context.Background()
-
+func waitPostgresAvailable(ctx context.Context, config *pgx.ConnConfig) error {
 	for {
 		conn := getPostgresConnection(ctx, config)
 		err := waitDatabaseInitialized(ctx, conn)
@@ -463,6 +459,7 @@ func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx
 		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		err = conn.Ping(pingCtx)
 		if err != nil {
+			cancel()
 			oslog.Info("Waiting for db to become ready")
 			time.Sleep(retryDelay)
 			continue
