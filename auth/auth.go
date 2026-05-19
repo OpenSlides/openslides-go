@@ -22,20 +22,8 @@ import (
 	"github.com/ostcar/topic"
 )
 
-// DebugTokenKey and DebugCookieKey are non random auth keys for development.
-const (
-	DebugTokenKey  = "auth-dev-token-key"
-	DebugCookieKey = "auth-dev-cookie-key"
-)
-
 var (
-	envAuthHost     = environment.NewVariable("AUTH_HOST", "localhost", "Host of the auth service.")
-	envAuthPort     = environment.NewVariable("AUTH_PORT", "9004", "Port of the auth service.")
-	envAuthProtocol = environment.NewVariable("AUTH_PROTOCOL", "http", "Protocol of the auth service.")
-	envAuthFake     = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
-
-	envAuthTokenFile  = environment.NewVariable("AUTH_TOKEN_KEY_FILE", "/run/secrets/auth_token_key", "Key to sign the JWT auth tocken.")
-	envAuthCookieFile = environment.NewVariable("AUTH_COOKIE_KEY_FILE", "/run/secrets/auth_cookie_key", "Key to sign the JWT auth cookie.")
+	envAuthFake     	= environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
 	envIssuerURL 		= environment.NewVariable("OIDC_ISSUER_URL", "http://localhost:8080/realms/openslides", "URL of keycloak server")
 	envIssuerURLDocker 	= environment.NewVariable("OIDC_ISSUER_URL_DOCKER", "http://keycloak-server:8080/realms/openslides", "Dockerized URL of keycloak server")
@@ -45,13 +33,11 @@ var (
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
-// then the max livetime of a token.
+// than the max lifetime of a token.
 const pruneTime = 15 * time.Minute
 
 const (
-	cookieName = "refreshId"
 	authHeader = "Authorization"
-	authPath   = "/internal/auth/authenticate"
 )
 
 // LogoutEventer tells, when a sessionID gets revoked.
@@ -70,8 +56,6 @@ type Auth struct {
 
 	logedoutSessions *topic.Topic[string]
 
-	authServiceURL string
-
 	tokenKey  string
 	cookieKey string
 
@@ -86,36 +70,15 @@ type Auth struct {
 // Returns the initialized Auth objectand a function to be called in the
 // background.
 func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
-	url := fmt.Sprintf(
-		"%s://%s:%s",
-		envAuthProtocol.Value(lookup),
-		envAuthHost.Value(lookup),
-		envAuthPort.Value(lookup),
-	)
-
-	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
-
-	authToken, err := environment.ReadSecretWithDefault(lookup, envAuthTokenFile, DebugTokenKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("reading auth token: %w", err)
-	}
-
-	cookieToken, err := environment.ReadSecretWithDefault(lookup, envAuthCookieFile, DebugCookieKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("reading cookie token: %w", err)
-	}
-
 	issuerURLDocker := envIssuerURLDocker.Value(lookup)
 	if issuerURLDocker == "" {
 		issuerURLDocker = envIssuerURL.Value(lookup)
 	}
 
+	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
+
 	a := &Auth{
-		fake:             fake,
 		logedoutSessions: topic.New[string](),
-		authServiceURL:   url,
-		tokenKey:         authToken,
-		cookieKey:        cookieToken,
 		issuerURLDocker:  issuerURLDocker,
 		keys:			  make(map[string]*rsa.PublicKey),
 	}
@@ -215,7 +178,7 @@ func (a *Auth) loadTokenKeycloak(w http.ResponseWriter, r *http.Request, payload
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
 			fmt.Println(err)
-			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken, "")
+			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken)
 		}
 	}
 
@@ -359,58 +322,7 @@ func parseRSAPublicKey(nStr, eStr string) (*rsa.PublicKey, error) {
 	return &rsa.PublicKey{N: n, E: e}, nil
 }
 
-
-
-
-
-
-
-// Authenticate uses the headers from the given request to get the user id. The
-// returned context will be cancled, if the session is revoked.
-func (a *Auth) AuthenticateLegacy(w http.ResponseWriter, r *http.Request) (context.Context, error) {
-	if a.fake {
-		return r.Context(), nil
-	}
-
-	ctx := r.Context()
-
-	p := new(payload)
-	if err := a.loadToken(w, r, p); err != nil {
-		return nil, fmt.Errorf("reading token: %w", err)
-	}
-
-	if p.UserID == 0 {
-		return a.AuthenticatedContext(ctx, 0), nil
-	}
-
-	cid, sessionIDs := a.logedoutSessions.ReceiveAll()
-	if slices.Contains(sessionIDs, p.SessionID) {
-		return nil, &authError{"invalid session", nil}
-	}
-
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
-
-	go func() {
-		defer cancelCtx()
-
-		var sessionIDs []string
-		var err error
-		for {
-			cid, sessionIDs, err = a.logedoutSessions.ReceiveSince(ctx, cid)
-			if err != nil {
-				return
-			}
-
-			if slices.Contains(sessionIDs, p.SessionID) {
-				return
-			}
-		}
-	}()
-
-	return ctx, nil
-}
-
-// AuthenticatedContext returns a new context that contains an userID.
+// AuthenticatedContext returns a new context that contains a userID.
 //
 // Should only used for internal URLs. All other URLs should use auth.Authenticate.
 func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Context {
@@ -472,114 +384,16 @@ func (a *Auth) pruneOldData(ctx context.Context) {
 	}
 }
 
-// loadToken loads and validates the token. If the token is expires, it tries
-// to renews it and writes the new token to the responsewriter.
-func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
-	header := r.Header.Get(authHeader)
-	cookie, err := r.Cookie(cookieName)
-	if err != nil && err != http.ErrNoCookie {
-		return fmt.Errorf("reading cookie: %w", err)
-	}
-
-	encodedToken := strings.TrimPrefix(header, "bearer ")
-
-	if cookie == nil && header == encodedToken {
-		// No token and no auth cookie. Handle the request as public access requst.
-		return nil
-	}
-
-	if cookie == nil && header != encodedToken {
-		return authError{"Can not find auth cookie", nil}
-	}
-
-	if cookie != nil && header == encodedToken {
-		return authError{"Can not find auth token", nil}
-	}
-
-	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
-
-	_, err = jwt.Parse(encodedCookie, func(token *jwt.Token) (interface{}, error) {
-		return []byte(a.cookieKey), nil
-	})
-	if err != nil {
-		var invalid *jwt.ValidationError
-		if errors.As(err, &invalid) {
-			return authError{"Invalid auth token", err}
-		}
-		return fmt.Errorf("validating auth cookie: %w", err)
-	}
-
-	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
-		return []byte(a.tokenKey), nil
-	})
-	if err != nil {
-		var invalid *jwt.ValidationError
-		if errors.As(err, &invalid) {
-			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken, encodedCookie)
-		}
-	}
-
-	return nil
-}
-
-func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken, encodedCookie string) error {
+func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken string) error {
 	if !tokenExpired(invalid.Errors) {
 		return authError{"Invalid auth token", invalid}
 	}
 
-	token, err := a.refreshToken(ctx, encodedToken, encodedCookie)
-	if err != nil {
-		return fmt.Errorf("refreshing token: %w", err)
-	}
-
-	w.Header().Set(authHeader, token)
-	return nil
+	return authError{"Token expired", invalid}
 }
 
 func tokenExpired(errNo uint32) bool {
 	return errNo&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0
-}
-
-func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "POST", a.authServiceURL+authPath, nil)
-	if err != nil {
-		return "", fmt.Errorf("creating auth request: %w", err)
-	}
-
-	req.Header.Add(authHeader, "bearer "+token)
-	req.AddCookie(&http.Cookie{Name: cookieName, Value: "bearer " + cookie, HttpOnly: true, Secure: true})
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		// TODO External ERROR
-		return "", fmt.Errorf("send request to auth service: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		if resp.StatusCode == 403 {
-			return "", authError{msg: "Invalid Session", wrapped: err}
-		}
-		// TODO LAST ERROR
-		return "", fmt.Errorf("auth-service returned status %s", resp.Status)
-	}
-
-	newToken := resp.Header.Get(authHeader)
-	if newToken == "" {
-		var rPayload struct {
-			Message string `json:"message"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&rPayload); err != nil {
-			return "", fmt.Errorf("decoding auth response: %w", err)
-		}
-		if rPayload.Message == "" {
-			rPayload.Message = "Can not refresh token"
-		}
-		return "", authError{rPayload.Message, nil}
-
-	}
-
-	return newToken, nil
 }
 
 type authString string
@@ -588,8 +402,3 @@ const (
 	userIDType authString = "user_id"
 )
 
-type payload struct {
-	jwt.StandardClaims
-	UserID    int    `json:"userId"`
-	SessionID string `json:"sessionId"`
-}
