@@ -151,7 +151,6 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
 
-	fmt.Println("We are here babeeey")
 	if p.KeycloakID == "" {
 		return a.AuthenticatedContext(ctx, 0), nil
 	}
@@ -204,7 +203,12 @@ func (a *Auth) loadTokenKeycloak(w http.ResponseWriter, r *http.Request, payload
 	}
 
 	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
-		return []byte(a.tokenKey), nil
+		kid, ok := token.Header["kid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("Missing kid in token header")
+		}
+
+		return a.getKey(r.Context(), kid)
 	})
 
 	if err != nil {
