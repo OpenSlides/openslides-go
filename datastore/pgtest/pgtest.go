@@ -33,6 +33,8 @@ var baseDataSQL string
 
 var pool dockertest.ClosablePool
 
+// RunTests has to be called in TestMain by every package, that uses
+// NewPostgresTest.
 func RunTests(m *testing.M) int {
 	ctx := context.Background()
 	var err error
