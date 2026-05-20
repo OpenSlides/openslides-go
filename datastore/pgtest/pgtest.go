@@ -2,10 +2,11 @@ package pgtest
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed" // Needed for embedding
 	"errors"
 	"fmt"
-	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v4"
 )
 
 // Go embed can only include files inside the same directory or sub directories.
@@ -30,14 +31,39 @@ var schemaSQL string
 //go:embed sql/base_data.sql
 var baseDataSQL string
 
+var pool dockertest.ClosablePool
+
+func RunTests(m *testing.M) int {
+	ctx := context.Background()
+	var err error
+	pool, err = dockertest.NewPool(ctx, "",
+		dockertest.WithMaxWait(2*time.Minute),
+	)
+	if err != nil {
+		panic(err)
+	}
+	code := m.Run()
+	// Close removes all tracked containers/networks and closes the client.
+	// Call before os.Exit — deferred functions do not run after os.Exit.
+	pool.Close(ctx)
+	return code
+}
+
 // PostgresTest is a test helper for postgres.
 //
-// It creates a postgres instance in a docker container. Can be used with
-// flow_postgres.
+// It creates or reuses a postgres container. Each test gets its own database.
+// After all test complete, the container ist shut down.
+//
+// When using this in subtests, either create a new PostgresTest for each
+// subtest or make sure, that all subtest do not conflict with each other, since
+// they are using the same database.
+//
+// You have to use the following code in each test-package, that wants to use this structure.
+//
+//	func TestMain(m *testing.M) {
+//		os.Exit(pgtest.RunTests(m))
+//	}
 type PostgresTest struct {
-	dockerPool     *dockertest.Pool
-	dockerResource *dockertest.Resource
-
 	Env map[string]string
 
 	pgxConfig *pgx.ConnConfig
@@ -45,54 +71,61 @@ type PostgresTest struct {
 
 // NewPostgresTest creates a PostgresTest instance to test against a postgres
 // server in a docker container.
-func NewPostgresTest(ctx context.Context) (*PostgresTest, error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return nil, fmt.Errorf("connect to docker: %w", err)
-	}
-
-	runOpts := dockertest.RunOptions{
-		Repository: "postgres",
-		Tag:        "17",
-		Env: []string{
+func NewPostgresTest(t *testing.T) (*PostgresTest, error) {
+	ctx := t.Context()
+	postgres, err := pool.Run(ctx, "postgres",
+		dockertest.WithTag("17"),
+		dockertest.WithEnv([]string{
 			"POSTGRES_USER=postgres",
 			"POSTGRES_PASSWORD=openslides",
-			"POSTGRES_DB=database",
-		},
-	}
-
-	resource, err := pool.RunWithOptions(&runOpts)
+			"POSTGRES_DB=postgres",
+		}),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("start postgres container: %w", err)
+		return nil, fmt.Errorf("run postgres: %w", err)
 	}
 
-	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf(`user=postgres password='openslides' host=localhost port=%s dbname=database`, port)
+	database := dbName(t)
+	port := postgres.GetPort("5432/tcp")
+
+	adminAddr := fmt.Sprintf(`user=postgres password='openslides' host=localhost port=%s dbname=postgres`, port)
+	adminConfig, err := pgx.ParseConfig(adminAddr)
+	if err != nil {
+		return nil, fmt.Errorf("parse admin config: %w", err)
+	}
+
+	err = pool.Retry(ctx, 30*time.Second, func() error {
+		conn, err := pgx.ConnectConfig(ctx, adminConfig)
+		if err != nil {
+			return fmt.Errorf("create admin connection: %w", err)
+		}
+		defer conn.Close(ctx)
+
+		if _, err = conn.Exec(ctx, "CREATE DATABASE "+database); err != nil {
+			return fmt.Errorf("send create database command: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create test database: %w", err)
+	}
+
+	addr := fmt.Sprintf(`user=postgres password='openslides' host=localhost port=%s dbname=%s`, port, database)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
 	tp := &PostgresTest{
-		dockerPool:     pool,
-		dockerResource: resource,
-		pgxConfig:      config,
+		pgxConfig: config,
 
 		Env: map[string]string{
 			"DATABASE_HOST": "localhost",
 			"DATABASE_PORT": port,
-			"DATABASE_NAME": "database",
+			"DATABASE_NAME": database,
 			"DATABASE_USER": "postgres",
 		},
 	}
-
-	defer func() {
-		if err != nil {
-			if err := tp.Close(); err != nil {
-				log.Println("Closing postgres: %w", err)
-			}
-		}
-	}()
 
 	if err := tp.addSchema(ctx); err != nil {
 		return nil, fmt.Errorf("add schema: %w", err)
@@ -105,12 +138,25 @@ func NewPostgresTest(ctx context.Context) (*PostgresTest, error) {
 	return tp, nil
 }
 
-// Close closes the postgres instance by removing the postgres container.
-func (tp *PostgresTest) Close() error {
-	if err := tp.dockerPool.Purge(tp.dockerResource); err != nil {
-		return fmt.Errorf("purge postgres container: %w", err)
+func dbName(t *testing.T) string {
+	name := "test_" + t.Name()
+
+	name = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		}
+		if r >= 'A' && r <= 'Z' {
+			return r + 32
+		}
+		return '_'
+	}, name)
+
+	if len(name) > 63 {
+		hash := fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
+		name = name[:47] + "_" + hash[:15]
 	}
-	return nil
+
+	return name
 }
 
 // Conn returns a pgx connection to the postgres server.
@@ -129,7 +175,7 @@ func (tp *PostgresTest) Conn(ctx context.Context) (*pgx.Conn, error) {
 			return nil, ctx.Err()
 		}
 	}
-	return nil, fmt.Errorf("getting connections 1000 times: %w", err)
+	return nil, fmt.Errorf("getting connections 100 times: %w", err)
 }
 
 func (tp *PostgresTest) addSchema(ctx context.Context) error {
@@ -180,51 +226,6 @@ func (tp *PostgresTest) Flow() (*datastore.FlowPostgres, error) {
 		return nil, fmt.Errorf("create postgres flow: %w", err)
 	}
 	return flow, nil
-}
-
-// Cleanup uses t.cleanup to register a cleanup function after the test is done.
-//
-// This can be used to reuse a PostgresTest without restarting the postgres
-// server.
-func (tp *PostgresTest) Cleanup(t *testing.T) {
-	t.Cleanup(func() {
-		// Use context.Background instead of t.Context(). The Cleanup function
-		// is usually used in defer, where t.Context() is already canceled.
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		if err := tp.reset(ctx); err != nil {
-			t.Logf("Cleanup database: %v", err)
-		}
-	})
-}
-
-func (tp *PostgresTest) reset(ctx context.Context) error {
-	// Use different database for drop database
-	config := tp.pgxConfig.Copy()
-	config.Database = "postgres"
-	conn, err := pgx.ConnectConfig(ctx, config)
-	if err != nil {
-		return fmt.Errorf("create connection: %w", err)
-	}
-	defer conn.Close(ctx)
-
-	if _, err := conn.Exec(ctx, `DROP DATABASE database WITH (FORCE);`); err != nil {
-		return fmt.Errorf("dropping database: %w", err)
-	}
-
-	if _, err := conn.Exec(ctx, `CREATE DATABASE database;`); err != nil {
-		return fmt.Errorf("recreating database: %w", err)
-	}
-
-	if err := tp.addSchema(ctx); err != nil {
-		return fmt.Errorf("adding schema: %w", err)
-	}
-
-	if err := tp.addBaseData(ctx); err != nil {
-		return fmt.Errorf("adding base data: %w", err)
-	}
-
-	return nil
 }
 
 // PrityPostgresError returns a formatted error message for PostgreSQL errors.
