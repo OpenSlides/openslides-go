@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'd9e38d61c6f4557dbfda3a3daa39848a'
+-- MODELS_YML_CHECKSUM = '472dd223307f11a19a864edd93b78230'
 
 
 -- ENUM definitions
@@ -1387,7 +1387,8 @@ CREATE TABLE meeting_t (
     motions_export_follow_recommendation boolean
         CONSTRAINT default_meeting_motions_export_follow_recommendation DEFAULT False,
     motions_enable_restricted_editor_for_manager boolean,
-    motions_enable_restricted_editor_for_non_manager boolean,
+    motions_enable_restricted_editor_for_non_manager boolean
+        CONSTRAINT default_meeting_motions_enable_restricted_editor_for_non493da85 DEFAULT True,
     motion_poll_ballot_paper_selection enum_ballot_paper_selection
         CONSTRAINT default_meeting_motion_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
     motion_poll_ballot_paper_number integer
