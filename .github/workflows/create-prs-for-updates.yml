@@ -31,3 +31,5 @@ jobs:
             assignee: bastianjoel
           - repository: openslides-projector-service
             assignee: bastianjoel
+          - repository: openslides-cli
+            assignee: 4echow
