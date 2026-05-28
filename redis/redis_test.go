@@ -1,7 +1,6 @@
 package redis_test
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -13,11 +12,9 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	tr := newTestRedis(t)
-	defer tr.Close()
 
 	r := redis.New(environment.ForTests(tr.Env))
 	r.Wait(ctx)
@@ -57,11 +54,9 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	tr := newTestRedis(t)
-	defer tr.Close()
 
 	r := redis.New(environment.ForTests(tr.Env))
 	r.Wait(ctx)

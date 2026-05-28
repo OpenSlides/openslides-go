@@ -1955,7 +1955,7 @@ func (r *Fetch) Mediafile_Title(mediafileID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Mediafile_Token(mediafileID int) *ValueString {
@@ -4361,6 +4361,15 @@ func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt 
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_TimeZone(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "time_zone")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "topic_ids")
 	if err != nil {
@@ -4772,7 +4781,7 @@ func (r *Fetch) MotionChangeRecommendation_LineFrom(motionChangeRecommendationID
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key}
+	return &ValueInt{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) MotionChangeRecommendation_LineTo(motionChangeRecommendationID int) *ValueInt {
@@ -4781,7 +4790,7 @@ func (r *Fetch) MotionChangeRecommendation_LineTo(motionChangeRecommendationID i
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key}
+	return &ValueInt{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) MotionChangeRecommendation_MeetingID(motionChangeRecommendationID int) *ValueInt {
@@ -4925,7 +4934,7 @@ func (r *Fetch) MotionComment_Comment(motionCommentID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) MotionComment_ID(motionCommentID int) *ValueInt {
@@ -5574,6 +5583,15 @@ func (r *Fetch) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Motion_DiffVersion(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "diff_version")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_EditorIDs(motionID int) *ValueIntSlice {
@@ -6386,6 +6404,15 @@ func (r *Fetch) Organization_ThemeIDs(organizationID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Organization_TimeZone(organizationID int) *ValueString {
+	key, err := dskey.FromParts("organization", organizationID, "time_zone")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Organization_Url(organizationID int) *ValueString {
 	key, err := dskey.FromParts("organization", organizationID, "url")
 	if err != nil {
@@ -6440,13 +6467,13 @@ func (r *Fetch) Organization_UsersEmailSubject(organizationID int) *ValueString 
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeString {
+func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueString {
 	key, err := dskey.FromParts("personal_note", personalNoteID, "content_object_id")
 	if err != nil {
-		return &ValueMaybeString{err: err}
+		return &ValueString{err: err}
 	}
 
-	return &ValueMaybeString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PersonalNote_ID(personalNoteID int) *ValueInt {
@@ -7094,7 +7121,7 @@ func (r *Fetch) ProjectorMessage_Message(projectorMessageID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) ProjectorMessage_ProjectionIDs(projectorMessageID int) *ValueIntSlice {
@@ -7256,7 +7283,7 @@ func (r *Fetch) Projector_Name(projectorID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Projector_PreviewProjectionIDs(projectorID int) *ValueIntSlice {
@@ -7859,7 +7886,7 @@ func (r *Fetch) Theme_Accent500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Theme_Accent600(themeID int) *ValueString {
@@ -8030,7 +8057,7 @@ func (r *Fetch) Theme_Primary500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Theme_Primary600(themeID int) *ValueString {
@@ -8165,7 +8192,7 @@ func (r *Fetch) Theme_Warn500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Theme_Warn600(themeID int) *ValueString {
@@ -8714,7 +8741,7 @@ func (r *Fetch) Vote_Value(voteID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Vote_Weight(voteID int) *ValueDecimal {
@@ -8723,5 +8750,5 @@ func (r *Fetch) Vote_Weight(voteID int) *ValueDecimal {
 		return &ValueDecimal{err: err}
 	}
 
-	return &ValueDecimal{fetch: r, key: key}
+	return &ValueDecimal{fetch: r, key: key, required: true}
 }

@@ -3,6 +3,7 @@ package datastore_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -13,19 +14,15 @@ import (
 	"github.com/OpenSlides/openslides-go/environment"
 )
 
-func TestFlowPostgres(t *testing.T) {
-	ctx := t.Context()
+func TestMain(m *testing.M) {
+	os.Exit(pgtest.RunTests(m))
+}
 
+func TestFlowPostgres(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("Postgres Test")
 	}
-
-	tp, err := pgtest.NewPostgresTest(ctx)
-	if err != nil {
-		t.Fatalf("starting postgres: %v", err)
-	}
-	defer tp.Close()
 
 	for _, tt := range []struct {
 		name   string // Name of the test
@@ -106,10 +103,25 @@ func TestFlowPostgres(t *testing.T) {
 				"history_entry/1/entries": []byte(`["entry1","entry2"]`),
 			},
 		},
+
+		{
+			"String list empty",
+			`
+			INSERT INTO history_position DEFAULT VALUES;
+			INSERT INTO history_entry (entries, position_id) VALUES ('{}', 1);
+			`,
+			map[string][]byte{
+				"history_entry/1/entries": []byte(`[]`),
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			tp, err := pgtest.NewPostgresTest(t)
+			if err != nil {
+				t.Fatalf("starting postgres: %v", err)
+			}
+
 			ctx := t.Context()
-			tp.Cleanup(t)
 
 			conn, err := tp.Conn(ctx)
 			if err != nil {
@@ -158,11 +170,10 @@ func TestPostgresUpdate(t *testing.T) {
 		t.Skip("Postgres Test")
 	}
 
-	tp, err := pgtest.NewPostgresTest(ctx)
+	tp, err := pgtest.NewPostgresTest(t)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
-	defer tp.Close()
 
 	conn, err := tp.Conn(ctx)
 	if err != nil {
@@ -232,11 +243,10 @@ func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
 		t.Skip("Postgres Test")
 	}
 
-	tp, err := pgtest.NewPostgresTest(ctx)
+	tp, err := pgtest.NewPostgresTest(t)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
-	defer tp.Close()
 
 	conn, err := tp.Conn(ctx)
 	if err != nil {
@@ -343,11 +353,10 @@ func TestBigQuery(t *testing.T) {
 
 	ctx := t.Context()
 
-	tp, err := pgtest.NewPostgresTest(ctx)
+	tp, err := pgtest.NewPostgresTest(t)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
-	defer tp.Close()
 
 	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
@@ -364,9 +373,10 @@ func TestBigQuery(t *testing.T) {
 	expected := make(map[dskey.Key][]byte)
 	for i := range count {
 		keys[i], _ = dskey.FromParts("user", i+2, "username")
-		expected[keys[i]] = []byte(`"hugo"`)
+		username := fmt.Sprintf("hugo_%d", i+1)
+		expected[keys[i]] = []byte(`"` + username + `"`)
 
-		sql := fmt.Sprintf(`INSERT INTO "user" (id, username) values (%d, 'hugo');`, i+2)
+		sql := fmt.Sprintf(`INSERT INTO "user" (id, username) values (%d, '%s');`, i+2, username)
 		if _, err := conn.Exec(ctx, sql); err != nil {
 			t.Fatalf("adding user %d: %v", i+2, err)
 		}

@@ -56,6 +56,15 @@ func (v Variable) Value(lookup Environmenter) string {
 	return val
 }
 
+// ValueOr returns the value for an enviroment.Varialbe. If its set to its default value, it uses another environment.Variable.
+func (v Variable) ValueOr(loopup Environmenter, other Variable) string {
+	val := v.Value(loopup)
+	if val == v.Default {
+		return other.Value(loopup)
+	}
+	return val
+}
+
 // Environmenter is an type, that can return the value for environment
 // variables.
 //
@@ -139,11 +148,23 @@ func ReadSecret(lookup Environmenter, pathVariable Variable) (string, error) {
 	return ReadSecretWithDefault(lookup, pathVariable, "openslides")
 }
 
+// ReadSecretOr works like ReadSecret but uses the or variable if pathVariable
+// is set to its default value.
+func ReadSecretOr(lookup Environmenter, pathVariable, pathVariableOr Variable) (string, error) {
+	return ReadSecretWithDefaultOr(lookup, pathVariable, pathVariableOr, "openslides")
+}
+
 // ReadSecretWithDefault is like ReadSecret, but it allows to set another
 // default value then "openslides".
 func ReadSecretWithDefault(lookup Environmenter, pathVariable Variable, defaultValue string) (string, error) {
+	return ReadSecretWithDefaultOr(lookup, pathVariable, pathVariable, defaultValue)
+}
+
+// ReadSecretWithDefaultOr is like ReadSecretWithDefault but uses the
+// pathVariableOr if pathVariable is set to its default value.
+func ReadSecretWithDefaultOr(lookup Environmenter, pathVariable, pathVariableOr Variable, defaultValue string) (string, error) {
 	useDev, _ := strconv.ParseBool(EnvDevelopment.Value(lookup))
-	path := pathVariable.Value(lookup)
+	path := pathVariable.ValueOr(lookup, pathVariableOr)
 
 	if useDev {
 		return defaultValue, nil

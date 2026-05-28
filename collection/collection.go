@@ -78,12 +78,7 @@ func Collections(meta string) (map[string]Collection, error) {
 
 // Collection represents collection from meta/collection.
 type Collection struct {
-	Fields map[string]*Field
-}
-
-// UnmarshalYAML decodes a yaml collection.
-func (m *Collection) UnmarshalYAML(node []byte) error {
-	return yaml.Unmarshal(node, &m.Fields)
+	Fields map[string]*Field `yaml:"fields"`
 }
 
 // Field of a model.
