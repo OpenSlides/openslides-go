@@ -4,13 +4,13 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
+	"crypto/rsa"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
-	"crypto/rsa"
 	"slices"
 	"strconv"
 	"strings"
@@ -23,13 +23,13 @@ import (
 )
 
 var (
-	envAuthFake     	= environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
+	envAuthFake = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
-	envIssuerURL 		= environment.NewVariable("OIDC_ISSUER_URL", "http://localhost:8080/realms/openslides", "URL of keycloak server")
-	envIssuerURLDocker 	= environment.NewVariable("OIDC_ISSUER_URL_DOCKER", "http://keycloak-server:8080/realms/openslides", "Dockerized URL of keycloak server")
-	envClientID 		= environment.NewVariable("OIDC_CLIENT_ID", "proxy-client", "Keycloak client name")
-	envClientSecret 	= environment.NewVariable("OIDC_CLIENT_SECRET", "proxy-secret", "Keycloak client secret")
-	envSecret			= environment.NewVariable("OIDC_SECRET", "qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK", "Keycloak secret")
+	envIssuerURL       = environment.NewVariable("OIDC_ISSUER_URL", "http://localhost:8080/realms/openslides", "URL of keycloak server")
+	envIssuerURLDocker = environment.NewVariable("OIDC_ISSUER_URL_DOCKER", "http://keycloak-server:8080/realms/openslides", "Dockerized URL of keycloak server")
+	envClientID        = environment.NewVariable("OIDC_CLIENT_ID", "proxy-client", "Keycloak client name")
+	envClientSecret    = environment.NewVariable("OIDC_CLIENT_SECRET", "proxy-secret", "Keycloak client secret")
+	envSecret          = environment.NewVariable("OIDC_SECRET", "qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK", "Keycloak secret")
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -80,7 +80,7 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 	a := &Auth{
 		logedoutSessions: topic.New[string](),
 		issuerURLDocker:  issuerURLDocker,
-		keys:			  make(map[string]*rsa.PublicKey),
+		keys:             make(map[string]*rsa.PublicKey),
 	}
 
 	// Make sure the topic is not empty
@@ -97,7 +97,6 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 
 	return a, background, nil
 }
-
 
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoked.
@@ -124,7 +123,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	}
 
 	// Get OS User Id linked to Keycloak ID
-	userID := 1
+	userID, err := strconv.Atoi(p.OSUserID)
+	if err != nil {
+		return nil, &authError{"user id is not an integer " + p.OSUserID, nil}
+	}
 
 	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, userID))
 
@@ -234,6 +236,7 @@ type payloadKeycloak struct {
 	Email      string `json:"email"`
 	Username   string `json:"preferred_username"`
 	ClientName string `json:"azp"`
+	OSUserID   string `json:"os_id"`
 }
 
 // getKey returns the RSA public key for the given kid, fetching from JWKS if needed
@@ -253,7 +256,7 @@ func (a *Auth) fetchJWKS(ctx context.Context, kid string) (*rsa.PublicKey, error
 		return key, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", a.issuerURLDocker + "/protocol/openid-connect/certs", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", a.issuerURLDocker+"/protocol/openid-connect/certs", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating JWKS request: %w", err)
 	}
@@ -401,4 +404,3 @@ type authString string
 const (
 	userIDType authString = "user_id"
 )
-
