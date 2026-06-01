@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'd99c7cda0eee3355b9c5e848de67a826'
+-- MODELS_YML_CHECKSUM = '0aaaf5eb39a57452f1622649418e3d8e'
 
 
 -- ENUM definitions
@@ -26,7 +26,7 @@ CREATE TYPE enum_agenda_item_type AS ENUM ('common', 'internal', 'hidden');
 
 CREATE TYPE enum_assignment_phase AS ENUM ('search', 'voting', 'finished');
 
-CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'assignment.can_manage', 'assignment.can_manage_polls', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'list_of_speakers.can_manage_moderator_notes', 'list_of_speakers.can_see_moderator_notes', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_see_origin', 'motion.can_support', 'poll.can_manage', 'poll.can_see_progress', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update', 'user.can_edit_own_delegation');
+CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_manage_polls', 'agenda_item.can_see_polls', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'assignment.can_manage', 'assignment.can_manage_polls', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see_polls', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'list_of_speakers.can_manage_moderator_notes', 'list_of_speakers.can_see_moderator_notes', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_see_origin', 'motion.can_support', 'poll.can_see_progress', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update', 'user.can_edit_own_delegation');
 
 CREATE TYPE enum_import_preview_name AS ENUM ('account', 'participant', 'topic', 'committee', 'motion');
 
@@ -1391,7 +1391,8 @@ CREATE TABLE meeting_t (
     motions_export_follow_recommendation boolean
         CONSTRAINT default_meeting_motions_export_follow_recommendation DEFAULT False,
     motions_enable_restricted_editor_for_manager boolean,
-    motions_enable_restricted_editor_for_non_manager boolean,
+    motions_enable_restricted_editor_for_non_manager boolean
+        CONSTRAINT default_meeting_motions_enable_restricted_editor_for_non493da85 DEFAULT True,
     motion_poll_ballot_paper_selection enum_ballot_paper_selection
         CONSTRAINT default_meeting_motion_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
     motion_poll_ballot_paper_number integer
@@ -6273,3 +6274,4 @@ FIELD 1rR:nr => user/organization_id:-> organization/user_ids
 */
 
 /*   Missing attribute handling for on_delete, constant_legacy, deferred */
+/*   Missing handling for collections _meta attributes: managed_by */
