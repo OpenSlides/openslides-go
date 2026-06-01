@@ -1,7 +1,6 @@
 package redis_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -14,14 +13,14 @@ import (
 )
 
 func TestMetric(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	tr := newTestRedis(t)
-	defer tr.Close()
 
 	r := redis.New(environment.ForTests(tr.Env))
-	r.Wait(ctx)
+	if err := r.Wait(ctx); err != nil {
+		t.Fatalf("wait for redis: %v", err)
+	}
 
 	t.Run("Save value", func(t *testing.T) {
 		m := redis.NewMetric[int](r, "test1", intCombiner{}, time.Second, nil)
