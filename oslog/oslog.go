@@ -12,6 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var (
+	EnvLogLevel = environment.NewVariable("OPENSLIDES_LOG_LEVEL", "", "Set the log level for oslog 1 for prod")
+)
+
 var isDev bool
 
 // InitLog has to be called at startup to set the log format.
@@ -50,6 +54,7 @@ func InitLog(lookup environment.Environmenter) {
 		cw.Out = os.Stderr
 	}
 
+	setLogLevel(lookup)
 	log.Logger = log.Output(cw)
 }
 
@@ -88,4 +93,17 @@ func msg(e *zerolog.Event, format string, a ...any) {
 		return
 	}
 	e.Str("msg", fmt.Sprintf(format, a...)).Msg("")
+}
+
+func setLogLevel(lookup environment.Environmenter) {
+	logLevel := zerolog.TraceLevel
+	logLevelRaw := EnvLogLevel.Value(lookup)
+	if logLevelRaw != "" {
+		logLevelTmp, _ := strconv.ParseInt(EnvLogLevel.Value(lookup), 10, 8)
+		logLevel = zerolog.Level(logLevelTmp)
+	} else if !isDev {
+		logLevel = zerolog.InfoLevel
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
 }
