@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Environment variables used to configure the environment.
 var (
 	EnvLogLevel = environment.NewVariable("OPENSLIDES_LOG_LEVEL", "", "Set the log level for oslog 1 for prod")
 )
