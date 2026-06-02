@@ -14,7 +14,7 @@ import (
 
 // Environment variables used to configure the environment.
 var (
-	EnvLogLevel = environment.NewVariable("OPENSLIDES_LOG_LEVEL", "", "Set the log level for oslog 1 for prod")
+	EnvLogLevel = environment.NewVariable("OPENSLIDES_LOG_LEVEL", "", "Set the log level for oslog trace for prod available values are (trace, debug, info, warn, error, fatal, panic)")
 )
 
 var isDev bool
@@ -100,8 +100,10 @@ func setLogLevel(lookup environment.Environmenter) {
 	logLevel := zerolog.TraceLevel
 	logLevelRaw := EnvLogLevel.Value(lookup)
 	if logLevelRaw != "" {
-		logLevelTmp, _ := strconv.ParseInt(EnvLogLevel.Value(lookup), 10, 8)
-		logLevel = zerolog.Level(logLevelTmp)
+		logLevelParsed, err := zerolog.ParseLevel(logLevelRaw)
+		if err == nil {
+			logLevel = logLevelParsed
+		}
 	} else if !isDev {
 		logLevel = zerolog.InfoLevel
 	}
