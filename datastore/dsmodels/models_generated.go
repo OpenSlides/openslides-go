@@ -1,4 +1,4 @@
-// Code generated from models.yml DO NOT EDIT.
+// Code generated from meta collections. DO NOT EDIT.
 package dsmodels
 
 import (
@@ -1727,6 +1727,7 @@ type Meeting struct {
 	StructureLevelListOfSpeakersIDs              []int
 	TagIDs                                       []int
 	TemplateForOrganizationID                    dsfetch.Maybe[int]
+	TimeZone                                     string
 	TopicIDs                                     []int
 	TopicPollDefaultGroupIDs                     []int
 	UserIDs                                      []int
@@ -1839,6 +1840,7 @@ type Meeting struct {
 	TemplateForOrganization                      *dsfetch.Maybe[Organization]
 	TopicList                                    []Topic
 	TopicPollDefaultGroupList                    []Group
+	UserList                                     []User
 	VoteList                                     []Vote
 }
 
@@ -2069,6 +2071,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
 	ds.Meeting_TagIDs(id).Lazy(&c.TagIDs)
 	ds.Meeting_TemplateForOrganizationID(id).Lazy(&c.TemplateForOrganizationID)
+	ds.Meeting_TimeZone(id).Lazy(&c.TimeZone)
 	ds.Meeting_TopicIDs(id).Lazy(&c.TopicIDs)
 	ds.Meeting_TopicPollDefaultGroupIDs(id).Lazy(&c.TopicPollDefaultGroupIDs)
 	ds.Meeting_UserIDs(id).Lazy(&c.UserIDs)
@@ -3139,6 +3142,18 @@ func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
 	}
 }
 
+func (b *meetingBuilder) UserList() *userBuilder {
+	return &userBuilder{
+		builder: builder[userBuilder, *userBuilder, User]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UserIDs",
+			relField: "UserList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingBuilder) VoteList() *voteBuilder {
 	return &voteBuilder{
 		builder: builder[voteBuilder, *voteBuilder, Vote]{
@@ -3766,6 +3781,7 @@ type Motion struct {
 	CommentIDs                                    []int
 	Created                                       int
 	DerivedMotionIDs                              []int
+	DiffVersion                                   string
 	EditorIDs                                     []int
 	Forwarded                                     int
 	HistoryEntryIDs                               []int
@@ -3861,6 +3877,7 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_CommentIDs(id).Lazy(&c.CommentIDs)
 	ds.Motion_Created(id).Lazy(&c.Created)
 	ds.Motion_DerivedMotionIDs(id).Lazy(&c.DerivedMotionIDs)
+	ds.Motion_DiffVersion(id).Lazy(&c.DiffVersion)
 	ds.Motion_EditorIDs(id).Lazy(&c.EditorIDs)
 	ds.Motion_Forwarded(id).Lazy(&c.Forwarded)
 	ds.Motion_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
@@ -5459,13 +5476,13 @@ type Organization struct {
 	TemplateMeetingIDs                      []int
 	ThemeID                                 int
 	ThemeIDs                                []int
+	TimeZone                                string
 	Url                                     string
 	UserIDs                                 []int
 	UsersEmailBody                          string
 	UsersEmailReplyto                       string
 	UsersEmailSender                        string
 	UsersEmailSubject                       string
-	VoteDecryptPublicMainKey                string
 	ActiveMeetingList                       []Meeting
 	ArchivedMeetingList                     []Meeting
 	CommitteeList                           []Committee
@@ -5518,13 +5535,13 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_TemplateMeetingIDs(id).Lazy(&c.TemplateMeetingIDs)
 	ds.Organization_ThemeID(id).Lazy(&c.ThemeID)
 	ds.Organization_ThemeIDs(id).Lazy(&c.ThemeIDs)
+	ds.Organization_TimeZone(id).Lazy(&c.TimeZone)
 	ds.Organization_Url(id).Lazy(&c.Url)
 	ds.Organization_UserIDs(id).Lazy(&c.UserIDs)
 	ds.Organization_UsersEmailBody(id).Lazy(&c.UsersEmailBody)
 	ds.Organization_UsersEmailReplyto(id).Lazy(&c.UsersEmailReplyto)
 	ds.Organization_UsersEmailSender(id).Lazy(&c.UsersEmailSender)
 	ds.Organization_UsersEmailSubject(id).Lazy(&c.UsersEmailSubject)
-	ds.Organization_VoteDecryptPublicMainKey(id).Lazy(&c.VoteDecryptPublicMainKey)
 	return &c
 }
 
@@ -5724,7 +5741,7 @@ func (r *Fetch) OrganizationTag(ids ...int) *organizationTagBuilder {
 
 // PersonalNote has all fields from personal_note.
 type PersonalNote struct {
-	ContentObjectID dsfetch.Maybe[string]
+	ContentObjectID string
 	ID              int
 	MeetingID       int
 	MeetingUserID   int
@@ -5851,8 +5868,6 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 type Poll struct {
 	Backend               string
 	ContentObjectID       string
-	CryptKey              string
-	CryptSignature        string
 	Description           string
 	EntitledGroupIDs      []int
 	EntitledUsersAtStop   json.RawMessage
@@ -5877,8 +5892,6 @@ type Poll struct {
 	Title                 string
 	Type                  string
 	VotedIDs              []int
-	VotesRaw              string
-	VotesSignature        string
 	Votescast             decimal.Decimal
 	Votesinvalid          decimal.Decimal
 	Votesvalid            decimal.Decimal
@@ -5898,8 +5911,6 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	c := Poll{}
 	ds.Poll_Backend(id).Lazy(&c.Backend)
 	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
-	ds.Poll_CryptKey(id).Lazy(&c.CryptKey)
-	ds.Poll_CryptSignature(id).Lazy(&c.CryptSignature)
 	ds.Poll_Description(id).Lazy(&c.Description)
 	ds.Poll_EntitledGroupIDs(id).Lazy(&c.EntitledGroupIDs)
 	ds.Poll_EntitledUsersAtStop(id).Lazy(&c.EntitledUsersAtStop)
@@ -5924,8 +5935,6 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_Title(id).Lazy(&c.Title)
 	ds.Poll_Type(id).Lazy(&c.Type)
 	ds.Poll_VotedIDs(id).Lazy(&c.VotedIDs)
-	ds.Poll_VotesRaw(id).Lazy(&c.VotesRaw)
-	ds.Poll_VotesSignature(id).Lazy(&c.VotesSignature)
 	ds.Poll_Votescast(id).Lazy(&c.Votescast)
 	ds.Poll_Votesinvalid(id).Lazy(&c.Votesinvalid)
 	ds.Poll_Votesvalid(id).Lazy(&c.Votesvalid)
@@ -7411,6 +7420,7 @@ type User struct {
 	HistoryPositionList         []HistoryPosition
 	HomeCommittee               *dsfetch.Maybe[Committee]
 	IsPresentInMeetingList      []Meeting
+	MeetingList                 []Meeting
 	MeetingUserList             []MeetingUser
 	OptionList                  []Option
 	Organization                *Organization
@@ -7557,6 +7567,18 @@ func (b *userBuilder) IsPresentInMeetingList() *meetingBuilder {
 			parent:   b,
 			idField:  "IsPresentInMeetingIDs",
 			relField: "IsPresentInMeetingList",
+			many:     true,
+		},
+	}
+}
+
+func (b *userBuilder) MeetingList() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingIDs",
+			relField: "MeetingList",
 			many:     true,
 		},
 	}
