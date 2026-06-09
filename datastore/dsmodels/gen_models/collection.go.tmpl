@@ -1,3 +1,15 @@
+{{ range .Relations }}
+	{{ if .IsGeneric }}
+		type {{ .Type }} interface {
+    		is{{ .Type }}()
+		}
+
+		{{ $type := .Type }}
+		{{ range $index, $element := .GenericTypes }}
+		func (*{{ $element }}) is{{ $type }}() {}{{ end }}
+	{{ end }}
+{{ end }}
+
 // {{.GoName}} has all fields from {{.CollectionName}}.
 type {{.GoName}} struct{
     {{- range .Fields}}
@@ -25,21 +37,25 @@ func (b *{{.GoNameLc}}Builder) Preload(rel builderWrapperI) *{{.GoNameLc}}Builde
     return b
 }
 
-{{ range .Relations}}
-func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
-	return &{{.TypeLc}}Builder{
-		builder: builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}]{
-			fetch: b.fetch,
-			parent: b,
-			idField: "{{.FieldName}}",
-			relField: "{{.MethodName}}",
-            {{- if .IsList}}
-            many: true,
-	        {{- end}}
-		},
-	}
-}
-{{end}}
+{{ range .Relations }}
+	{{ if .IsGeneric }}
+		// TODO: func (b *{{$.GoNameLc}}Builder) {{.MethodName}}()
+	{{ else }}
+		func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
+			return &{{.TypeLc}}Builder{
+				builder: builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}]{
+					fetch: b.fetch,
+					parent: b,
+					idField: "{{.FieldName}}",
+					relField: "{{.MethodName}}",
+            		{{- if .IsList}}
+            		many: true,
+	        		{{- end}}
+				},
+			}
+		}
+	{{ end }}
+{{ end }}
 
 func (r *Fetch){{.GoName}}(ids... int) *{{.GoNameLc}}Builder {
 	return &{{.GoNameLc}}Builder{

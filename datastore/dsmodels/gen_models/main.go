@@ -178,9 +178,12 @@ type CollectionField struct {
 // CollectionRelation is one Relation, needed for method generation.
 type CollectionRelation struct {
 	ResultType      string
+	IsGeneric       bool
 	IsList          bool
 	Type            string
 	TypeLc          string
+	GenericTypes    []string
+	GenericTypesLc  []string
 	FieldName       string
 	MethodName      string
 	StructFieldName string
@@ -212,20 +215,32 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 				continue
 			}
 
-			if strings.Contains(collectionField.Type, "generic") {
-				// TODO: Add generic
-				//fmt.Println(collectionName, fieldName)
-				continue
+			isGeneric := strings.Contains(collectionField.Type, "generic")
+
+			genericTypes := []string{}
+			genericTypesLc := []string{}
+			var resultType string
+			toType := goName(relation.ToCollections()[0].Collection)
+			if isGeneric {
+				toType = fmt.Sprintf("%s%sUnion", colGoName, withoutID(goName(fieldName)))
+				for _, col := range relation.ToCollections() {
+					colName := goName(col.Collection)
+					genericTypes = append(genericTypes, colName)
+					genericTypesLc = append(genericTypesLc, string(colName[0]+32)+string(colName[1:]))
+				}
 			}
 
-			toType := goName(relation.ToCollections()[0].Collection)
 			toTypeLc := string(toType[0]+32) + string(toType[1:])
 
-			resultType := fmt.Sprintf("*%s", toType)
+			resultType = fmt.Sprintf("*%s", toType)
 			if !relation.List() && !collectionField.Required {
 				resultType = fmt.Sprintf("*dsfetch.Maybe[%s]", toType)
 			}
 			if relation.List() {
+				if isGeneric {
+					continue
+				}
+
 				resultType = fmt.Sprintf("[]%s", toType)
 			}
 
@@ -236,12 +251,15 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 				col.Relations,
 				CollectionRelation{
 					ResultType:      resultType,
+					IsGeneric:       isGeneric,
 					IsList:          relation.List(),
 					FieldName:       goName(fieldName),
 					MethodName:      methodName,
 					StructFieldName: structFieldName,
 					Type:            toType,
 					TypeLc:          toTypeLc,
+					GenericTypes:    genericTypes,
+					GenericTypesLc:  genericTypesLc,
 					Required:        collectionField.Required,
 				},
 			)

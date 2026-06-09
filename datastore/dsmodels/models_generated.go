@@ -48,6 +48,15 @@ func (r *Fetch) ActionWorker(ids ...int) *actionWorkerBuilder {
 	}
 }
 
+type AgendaItemContentObjectUnion interface {
+	isAgendaItemContentObjectUnion()
+}
+
+func (*Motion) isAgendaItemContentObjectUnion()      {}
+func (*MotionBlock) isAgendaItemContentObjectUnion() {}
+func (*Assignment) isAgendaItemContentObjectUnion()  {}
+func (*Topic) isAgendaItemContentObjectUnion()       {}
+
 // AgendaItem has all fields from agenda_item.
 type AgendaItem struct {
 	ChildIDs        []int
@@ -67,6 +76,7 @@ type AgendaItem struct {
 	Type            string
 	Weight          int
 	ChildList       []AgendaItem
+	ContentObject   *AgendaItemContentObjectUnion
 	Meeting         *Meeting
 	Parent          *dsfetch.Maybe[AgendaItem]
 	ProjectionList  []Projection
@@ -114,6 +124,8 @@ func (b *agendaItemBuilder) ChildList() *agendaItemBuilder {
 		},
 	}
 }
+
+// TODO: func (b *agendaItemBuilder) ContentObject()
 
 func (b *agendaItemBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
@@ -1141,6 +1153,14 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 	}
 }
 
+type HistoryEntryModelUnion interface {
+	isHistoryEntryModelUnion()
+}
+
+func (*User) isHistoryEntryModelUnion()       {}
+func (*Motion) isHistoryEntryModelUnion()     {}
+func (*Assignment) isHistoryEntryModelUnion() {}
+
 // HistoryEntry has all fields from history_entry.
 type HistoryEntry struct {
 	Entries         []string
@@ -1150,6 +1170,7 @@ type HistoryEntry struct {
 	OriginalModelID string
 	PositionID      int
 	Meeting         *dsfetch.Maybe[Meeting]
+	Model           *dsfetch.Maybe[HistoryEntryModelUnion]
 	Position        *HistoryPosition
 }
 
@@ -1183,6 +1204,8 @@ func (b *historyEntryBuilder) Meeting() *meetingBuilder {
 		},
 	}
 }
+
+// TODO: func (b *historyEntryBuilder) Model()
 
 func (b *historyEntryBuilder) Position() *historyPositionBuilder {
 	return &historyPositionBuilder{
@@ -1303,6 +1326,16 @@ func (r *Fetch) ImportPreview(ids ...int) *importPreviewBuilder {
 	}
 }
 
+type ListOfSpeakersContentObjectUnion interface {
+	isListOfSpeakersContentObjectUnion()
+}
+
+func (*Motion) isListOfSpeakersContentObjectUnion()           {}
+func (*MotionBlock) isListOfSpeakersContentObjectUnion()      {}
+func (*Assignment) isListOfSpeakersContentObjectUnion()       {}
+func (*Topic) isListOfSpeakersContentObjectUnion()            {}
+func (*MeetingMediafile) isListOfSpeakersContentObjectUnion() {}
+
 // ListOfSpeakers has all fields from list_of_speakers.
 type ListOfSpeakers struct {
 	Closed                           bool
@@ -1314,6 +1347,7 @@ type ListOfSpeakers struct {
 	SequentialNumber                 int
 	SpeakerIDs                       []int
 	StructureLevelListOfSpeakersIDs  []int
+	ContentObject                    *ListOfSpeakersContentObjectUnion
 	Meeting                          *Meeting
 	ProjectionList                   []Projection
 	SpeakerList                      []Speaker
@@ -1342,6 +1376,8 @@ func (b *listOfSpeakersBuilder) Preload(rel builderWrapperI) *listOfSpeakersBuil
 	b.builder.Preload(rel)
 	return b
 }
+
+// TODO: func (b *listOfSpeakersBuilder) ContentObject()
 
 func (b *listOfSpeakersBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
@@ -1399,6 +1435,13 @@ func (r *Fetch) ListOfSpeakers(ids ...int) *listOfSpeakersBuilder {
 	}
 }
 
+type MediafileOwnerUnion interface {
+	isMediafileOwnerUnion()
+}
+
+func (*Meeting) isMediafileOwnerUnion()      {}
+func (*Organization) isMediafileOwnerUnion() {}
+
 // Mediafile has all fields from mediafile.
 type Mediafile struct {
 	ChildIDs                            []int
@@ -1417,6 +1460,7 @@ type Mediafile struct {
 	Token                               string
 	ChildList                           []Mediafile
 	MeetingMediafileList                []MeetingMediafile
+	Owner                               *MediafileOwnerUnion
 	Parent                              *dsfetch.Maybe[Mediafile]
 	PublishedToMeetingsInOrganization   *dsfetch.Maybe[Organization]
 }
@@ -1472,6 +1516,8 @@ func (b *mediafileBuilder) MeetingMediafileList() *meetingMediafileBuilder {
 		},
 	}
 }
+
+// TODO: func (b *mediafileBuilder) Owner()
 
 func (b *mediafileBuilder) Parent() *mediafileBuilder {
 	return &mediafileBuilder{
@@ -5624,6 +5670,12 @@ func (r *Fetch) OrganizationTag(ids ...int) *organizationTagBuilder {
 	}
 }
 
+type PersonalNoteContentObjectUnion interface {
+	isPersonalNoteContentObjectUnion()
+}
+
+func (*Motion) isPersonalNoteContentObjectUnion() {}
+
 // PersonalNote has all fields from personal_note.
 type PersonalNote struct {
 	ContentObjectID string
@@ -5632,6 +5684,7 @@ type PersonalNote struct {
 	MeetingUserID   int
 	Note            string
 	Star            bool
+	ContentObject   *PersonalNoteContentObjectUnion
 	Meeting         *Meeting
 	MeetingUser     *MeetingUser
 }
@@ -5655,6 +5708,8 @@ func (b *personalNoteBuilder) Preload(rel builderWrapperI) *personalNoteBuilder 
 	b.builder.Preload(rel)
 	return b
 }
+
+// TODO: func (b *personalNoteBuilder) ContentObject()
 
 func (b *personalNoteBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
@@ -5749,6 +5804,24 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 	}
 }
 
+type PollConfigUnion interface {
+	isPollConfigUnion()
+}
+
+func (*PollConfigApproval) isPollConfigUnion()       {}
+func (*PollConfigSelection) isPollConfigUnion()      {}
+func (*PollConfigRatingScore) isPollConfigUnion()    {}
+func (*PollConfigRatingApproval) isPollConfigUnion() {}
+func (*PollConfigStvScottish) isPollConfigUnion()    {}
+
+type PollContentObjectUnion interface {
+	isPollContentObjectUnion()
+}
+
+func (*Motion) isPollContentObjectUnion()     {}
+func (*Assignment) isPollContentObjectUnion() {}
+func (*Topic) isPollContentObjectUnion()      {}
+
 // Poll has all fields from poll.
 type Poll struct {
 	AllowInvalid      bool
@@ -5771,6 +5844,8 @@ type Poll struct {
 	Visibility        string
 	VotedIDs          []int
 	BallotList        []PollBallot
+	Config            *PollConfigUnion
+	ContentObject     *PollContentObjectUnion
 	EntitledGroupList []Group
 	Meeting           *Meeting
 	OptionList        []PollOption
@@ -5822,6 +5897,10 @@ func (b *pollBuilder) BallotList() *pollBallotBuilder {
 		},
 	}
 }
+
+// TODO: func (b *pollBuilder) Config()
+
+// TODO: func (b *pollBuilder) ContentObject()
 
 func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 	return &groupBuilder{
@@ -6282,6 +6361,22 @@ func (r *Fetch) PollOption(ids ...int) *pollOptionBuilder {
 	}
 }
 
+type ProjectionContentObjectUnion interface {
+	isProjectionContentObjectUnion()
+}
+
+func (*Meeting) isProjectionContentObjectUnion()            {}
+func (*Motion) isProjectionContentObjectUnion()             {}
+func (*MeetingMediafile) isProjectionContentObjectUnion()   {}
+func (*ListOfSpeakers) isProjectionContentObjectUnion()     {}
+func (*MotionBlock) isProjectionContentObjectUnion()        {}
+func (*Assignment) isProjectionContentObjectUnion()         {}
+func (*AgendaItem) isProjectionContentObjectUnion()         {}
+func (*Topic) isProjectionContentObjectUnion()              {}
+func (*Poll) isProjectionContentObjectUnion()               {}
+func (*ProjectorMessage) isProjectionContentObjectUnion()   {}
+func (*ProjectorCountdown) isProjectionContentObjectUnion() {}
+
 // Projection has all fields from projection.
 type Projection struct {
 	ContentObjectID    string
@@ -6294,6 +6389,7 @@ type Projection struct {
 	Stable             bool
 	Type               string
 	Weight             int
+	ContentObject      *ProjectionContentObjectUnion
 	CurrentProjector   *dsfetch.Maybe[Projector]
 	HistoryProjector   *dsfetch.Maybe[Projector]
 	Meeting            *Meeting
@@ -6323,6 +6419,8 @@ func (b *projectionBuilder) Preload(rel builderWrapperI) *projectionBuilder {
 	b.builder.Preload(rel)
 	return b
 }
+
+// TODO: func (b *projectionBuilder) ContentObject()
 
 func (b *projectionBuilder) CurrentProjector() *projectorBuilder {
 	return &projectorBuilder{
