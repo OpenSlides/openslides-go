@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -28,6 +29,9 @@ var tmplHeader string
 
 //go:embed collection.go.tmpl
 var tmplCollection string
+
+//go:embed generic_union.go.tmpl
+var tmplGenericUnion string
 
 func main() {
 	if err := run(os.Stdout); err != nil {
@@ -184,6 +188,7 @@ type CollectionRelation struct {
 	TypeLc          string
 	GenericTypes    []string
 	GenericTypesLc  []string
+	GenericTypesCc  []string
 	FieldName       string
 	MethodName      string
 	StructFieldName string
@@ -219,6 +224,7 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 
 			genericTypes := []string{}
 			genericTypesLc := []string{}
+			genericTypesCc := []string{}
 			var resultType string
 			toType := goName(relation.ToCollections()[0].Collection)
 			if isGeneric {
@@ -227,6 +233,7 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 					colName := goName(col.Collection)
 					genericTypes = append(genericTypes, colName)
 					genericTypesLc = append(genericTypesLc, string(colName[0]+32)+string(colName[1:]))
+					genericTypesCc = append(genericTypesCc, col.Collection)
 				}
 			}
 
@@ -238,6 +245,7 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 			}
 			if relation.List() {
 				if isGeneric {
+					// TODO: Generic lists are currently skipped
 					continue
 				}
 
@@ -260,6 +268,7 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 					TypeLc:          toTypeLc,
 					GenericTypes:    genericTypes,
 					GenericTypesLc:  genericTypesLc,
+					GenericTypesCc:  genericTypesCc,
 					Required:        collectionField.Required,
 				},
 			)
@@ -297,6 +306,15 @@ func goName(name string) string {
 
 	name = strings.ReplaceAll(name, "Id", "ID")
 	return name
+}
+
+func dbName(inputCamelCaseStr string) string {
+	re := regexp.MustCompile(`[A-z][^A-Z]*`)
+	parts := re.FindAllString(inputCamelCaseStr, -1)
+	for index := range parts {
+		parts[index] = strings.ToLower(parts[index])
+	}
+	return strings.Join(parts, "_")
 }
 
 func withoutID(in string) string {

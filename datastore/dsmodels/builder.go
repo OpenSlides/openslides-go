@@ -20,7 +20,7 @@ type builderWrapperI interface {
 }
 
 type builderPtr[T any, M any] interface {
-	lazy(ds *Fetch, id int) *M
+	lazy(ds *Fetch, id any) *M
 	*T
 }
 

@@ -3,6 +3,10 @@ package dsmodels
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
+	"unsafe"
+
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/shopspring/decimal"
 )
@@ -22,7 +26,8 @@ type actionWorkerBuilder struct {
 	builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker]
 }
 
-func (b *actionWorkerBuilder) lazy(ds *Fetch, id int) *ActionWorker {
+func (b *actionWorkerBuilder) lazy(ds *Fetch, idI any) *ActionWorker {
+	id := idI.(int)
 	c := ActionWorker{}
 	ds.ActionWorker_Created(id).Lazy(&c.Created)
 	ds.ActionWorker_ID(id).Lazy(&c.ID)
@@ -47,15 +52,6 @@ func (r *Fetch) ActionWorker(ids ...int) *actionWorkerBuilder {
 		},
 	}
 }
-
-type AgendaItemContentObjectUnion interface {
-	isAgendaItemContentObjectUnion()
-}
-
-func (*Motion) isAgendaItemContentObjectUnion()      {}
-func (*MotionBlock) isAgendaItemContentObjectUnion() {}
-func (*Assignment) isAgendaItemContentObjectUnion()  {}
-func (*Topic) isAgendaItemContentObjectUnion()       {}
 
 // AgendaItem has all fields from agenda_item.
 type AgendaItem struct {
@@ -87,7 +83,8 @@ type agendaItemBuilder struct {
 	builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]
 }
 
-func (b *agendaItemBuilder) lazy(ds *Fetch, id int) *AgendaItem {
+func (b *agendaItemBuilder) lazy(ds *Fetch, idI any) *AgendaItem {
+	id := idI.(int)
 	c := AgendaItem{}
 	ds.AgendaItem_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.AgendaItem_Closed(id).Lazy(&c.Closed)
@@ -125,7 +122,97 @@ func (b *agendaItemBuilder) ChildList() *agendaItemBuilder {
 	}
 }
 
-// TODO: func (b *agendaItemBuilder) ContentObject()
+func (b *agendaItemBuilder) ContentObject() *agendaItemContentObjectUnionBuilder {
+	return &agendaItemContentObjectUnionBuilder{
+		builder: builder[agendaItemContentObjectUnionBuilder, *agendaItemContentObjectUnionBuilder, AgendaItemContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+		},
+	}
+}
+
+type AgendaItemContentObjectUnion interface {
+	isAgendaItemContentObjectUnion()
+}
+
+func (*Motion) isAgendaItemContentObjectUnion()      {}
+func (*MotionBlock) isAgendaItemContentObjectUnion() {}
+func (*Assignment) isAgendaItemContentObjectUnion()  {}
+func (*Topic) isAgendaItemContentObjectUnion()       {}
+
+type agendaItemContentObjectUnionBuilder struct {
+	builder[agendaItemContentObjectUnionBuilder, *agendaItemContentObjectUnionBuilder, AgendaItemContentObjectUnion]
+}
+
+func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) *AgendaItemContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "motion":
+
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+
+	case "motion_block":
+
+		builder := &motionBlockBuilder{
+			builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+
+	case "assignment":
+
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+
+	case "topic":
+
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *agendaItemContentObjectUnionBuilder) Preload(rel builderWrapperI) *agendaItemContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *agendaItemBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
@@ -216,7 +303,8 @@ type assignmentBuilder struct {
 	builder[assignmentBuilder, *assignmentBuilder, Assignment]
 }
 
-func (b *assignmentBuilder) lazy(ds *Fetch, id int) *Assignment {
+func (b *assignmentBuilder) lazy(ds *Fetch, idI any) *Assignment {
+	id := idI.(int)
 	c := Assignment{}
 	ds.Assignment_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Assignment_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
@@ -373,7 +461,8 @@ type assignmentCandidateBuilder struct {
 	builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]
 }
 
-func (b *assignmentCandidateBuilder) lazy(ds *Fetch, id int) *AssignmentCandidate {
+func (b *assignmentCandidateBuilder) lazy(ds *Fetch, idI any) *AssignmentCandidate {
+	id := idI.(int)
 	c := AssignmentCandidate{}
 	ds.AssignmentCandidate_AssignmentID(id).Lazy(&c.AssignmentID)
 	ds.AssignmentCandidate_ID(id).Lazy(&c.ID)
@@ -449,7 +538,8 @@ type chatGroupBuilder struct {
 	builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]
 }
 
-func (b *chatGroupBuilder) lazy(ds *Fetch, id int) *ChatGroup {
+func (b *chatGroupBuilder) lazy(ds *Fetch, idI any) *ChatGroup {
+	id := idI.(int)
 	c := ChatGroup{}
 	ds.ChatGroup_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
 	ds.ChatGroup_ID(id).Lazy(&c.ID)
@@ -539,7 +629,8 @@ type chatMessageBuilder struct {
 	builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]
 }
 
-func (b *chatMessageBuilder) lazy(ds *Fetch, id int) *ChatMessage {
+func (b *chatMessageBuilder) lazy(ds *Fetch, idI any) *ChatMessage {
+	id := idI.(int)
 	c := ChatMessage{}
 	ds.ChatMessage_ChatGroupID(id).Lazy(&c.ChatGroupID)
 	ds.ChatMessage_Content(id).Lazy(&c.Content)
@@ -635,7 +726,8 @@ type committeeBuilder struct {
 	builder[committeeBuilder, *committeeBuilder, Committee]
 }
 
-func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
+func (b *committeeBuilder) lazy(ds *Fetch, idI any) *Committee {
+	id := idI.(int)
 	c := Committee{}
 	ds.Committee_AllChildIDs(id).Lazy(&c.AllChildIDs)
 	ds.Committee_AllParentIDs(id).Lazy(&c.AllParentIDs)
@@ -838,7 +930,8 @@ type genderBuilder struct {
 	builder[genderBuilder, *genderBuilder, Gender]
 }
 
-func (b *genderBuilder) lazy(ds *Fetch, id int) *Gender {
+func (b *genderBuilder) lazy(ds *Fetch, idI any) *Gender {
+	id := idI.(int)
 	c := Gender{}
 	ds.Gender_ID(id).Lazy(&c.ID)
 	ds.Gender_Name(id).Lazy(&c.Name)
@@ -929,7 +1022,8 @@ type groupBuilder struct {
 	builder[groupBuilder, *groupBuilder, Group]
 }
 
-func (b *groupBuilder) lazy(ds *Fetch, id int) *Group {
+func (b *groupBuilder) lazy(ds *Fetch, idI any) *Group {
+	id := idI.(int)
 	c := Group{}
 	ds.Group_AdminGroupForMeetingID(id).Lazy(&c.AdminGroupForMeetingID)
 	ds.Group_AnonymousGroupForMeetingID(id).Lazy(&c.AnonymousGroupForMeetingID)
@@ -1153,14 +1247,6 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 	}
 }
 
-type HistoryEntryModelUnion interface {
-	isHistoryEntryModelUnion()
-}
-
-func (*User) isHistoryEntryModelUnion()       {}
-func (*Motion) isHistoryEntryModelUnion()     {}
-func (*Assignment) isHistoryEntryModelUnion() {}
-
 // HistoryEntry has all fields from history_entry.
 type HistoryEntry struct {
 	Entries         []string
@@ -1178,7 +1264,8 @@ type historyEntryBuilder struct {
 	builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]
 }
 
-func (b *historyEntryBuilder) lazy(ds *Fetch, id int) *HistoryEntry {
+func (b *historyEntryBuilder) lazy(ds *Fetch, idI any) *HistoryEntry {
+	id := idI.(int)
 	c := HistoryEntry{}
 	ds.HistoryEntry_Entries(id).Lazy(&c.Entries)
 	ds.HistoryEntry_ID(id).Lazy(&c.ID)
@@ -1205,7 +1292,86 @@ func (b *historyEntryBuilder) Meeting() *meetingBuilder {
 	}
 }
 
-// TODO: func (b *historyEntryBuilder) Model()
+func (b *historyEntryBuilder) Model() *historyEntryModelUnionBuilder {
+	return &historyEntryModelUnionBuilder{
+		builder: builder[historyEntryModelUnionBuilder, *historyEntryModelUnionBuilder, HistoryEntryModelUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ModelID",
+			relField: "Model",
+		},
+	}
+}
+
+type HistoryEntryModelUnion interface {
+	isHistoryEntryModelUnion()
+}
+
+func (*User) isHistoryEntryModelUnion()       {}
+func (*Motion) isHistoryEntryModelUnion()     {}
+func (*Assignment) isHistoryEntryModelUnion() {}
+
+type historyEntryModelUnionBuilder struct {
+	builder[historyEntryModelUnionBuilder, *historyEntryModelUnionBuilder, HistoryEntryModelUnion]
+}
+
+func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) *HistoryEntryModelUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "user":
+
+		builder := &userBuilder{
+			builder: builder[userBuilder, *userBuilder, User]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*HistoryEntryModelUnion)(unsafe.Pointer(result))
+
+	case "motion":
+
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*HistoryEntryModelUnion)(unsafe.Pointer(result))
+
+	case "assignment":
+
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*HistoryEntryModelUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *historyEntryModelUnionBuilder) Preload(rel builderWrapperI) *historyEntryModelUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *historyEntryBuilder) Position() *historyPositionBuilder {
 	return &historyPositionBuilder{
@@ -1242,7 +1408,8 @@ type historyPositionBuilder struct {
 	builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]
 }
 
-func (b *historyPositionBuilder) lazy(ds *Fetch, id int) *HistoryPosition {
+func (b *historyPositionBuilder) lazy(ds *Fetch, idI any) *HistoryPosition {
+	id := idI.(int)
 	c := HistoryPosition{}
 	ds.HistoryPosition_EntryIDs(id).Lazy(&c.EntryIDs)
 	ds.HistoryPosition_ID(id).Lazy(&c.ID)
@@ -1302,7 +1469,8 @@ type importPreviewBuilder struct {
 	builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview]
 }
 
-func (b *importPreviewBuilder) lazy(ds *Fetch, id int) *ImportPreview {
+func (b *importPreviewBuilder) lazy(ds *Fetch, idI any) *ImportPreview {
+	id := idI.(int)
 	c := ImportPreview{}
 	ds.ImportPreview_Created(id).Lazy(&c.Created)
 	ds.ImportPreview_ID(id).Lazy(&c.ID)
@@ -1326,16 +1494,6 @@ func (r *Fetch) ImportPreview(ids ...int) *importPreviewBuilder {
 	}
 }
 
-type ListOfSpeakersContentObjectUnion interface {
-	isListOfSpeakersContentObjectUnion()
-}
-
-func (*Motion) isListOfSpeakersContentObjectUnion()           {}
-func (*MotionBlock) isListOfSpeakersContentObjectUnion()      {}
-func (*Assignment) isListOfSpeakersContentObjectUnion()       {}
-func (*Topic) isListOfSpeakersContentObjectUnion()            {}
-func (*MeetingMediafile) isListOfSpeakersContentObjectUnion() {}
-
 // ListOfSpeakers has all fields from list_of_speakers.
 type ListOfSpeakers struct {
 	Closed                           bool
@@ -1358,7 +1516,8 @@ type listOfSpeakersBuilder struct {
 	builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]
 }
 
-func (b *listOfSpeakersBuilder) lazy(ds *Fetch, id int) *ListOfSpeakers {
+func (b *listOfSpeakersBuilder) lazy(ds *Fetch, idI any) *ListOfSpeakers {
+	id := idI.(int)
 	c := ListOfSpeakers{}
 	ds.ListOfSpeakers_Closed(id).Lazy(&c.Closed)
 	ds.ListOfSpeakers_ContentObjectID(id).Lazy(&c.ContentObjectID)
@@ -1377,7 +1536,108 @@ func (b *listOfSpeakersBuilder) Preload(rel builderWrapperI) *listOfSpeakersBuil
 	return b
 }
 
-// TODO: func (b *listOfSpeakersBuilder) ContentObject()
+func (b *listOfSpeakersBuilder) ContentObject() *listOfSpeakersContentObjectUnionBuilder {
+	return &listOfSpeakersContentObjectUnionBuilder{
+		builder: builder[listOfSpeakersContentObjectUnionBuilder, *listOfSpeakersContentObjectUnionBuilder, ListOfSpeakersContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+		},
+	}
+}
+
+type ListOfSpeakersContentObjectUnion interface {
+	isListOfSpeakersContentObjectUnion()
+}
+
+func (*Motion) isListOfSpeakersContentObjectUnion()           {}
+func (*MotionBlock) isListOfSpeakersContentObjectUnion()      {}
+func (*Assignment) isListOfSpeakersContentObjectUnion()       {}
+func (*Topic) isListOfSpeakersContentObjectUnion()            {}
+func (*MeetingMediafile) isListOfSpeakersContentObjectUnion() {}
+
+type listOfSpeakersContentObjectUnionBuilder struct {
+	builder[listOfSpeakersContentObjectUnionBuilder, *listOfSpeakersContentObjectUnionBuilder, ListOfSpeakersContentObjectUnion]
+}
+
+func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListOfSpeakersContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "motion":
+
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+
+	case "motion_block":
+
+		builder := &motionBlockBuilder{
+			builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+
+	case "assignment":
+
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+
+	case "topic":
+
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+
+	case "meeting_mediafile":
+
+		builder := &meetingMediafileBuilder{
+			builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *listOfSpeakersContentObjectUnionBuilder) Preload(rel builderWrapperI) *listOfSpeakersContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *listOfSpeakersBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
@@ -1435,13 +1695,6 @@ func (r *Fetch) ListOfSpeakers(ids ...int) *listOfSpeakersBuilder {
 	}
 }
 
-type MediafileOwnerUnion interface {
-	isMediafileOwnerUnion()
-}
-
-func (*Meeting) isMediafileOwnerUnion()      {}
-func (*Organization) isMediafileOwnerUnion() {}
-
 // Mediafile has all fields from mediafile.
 type Mediafile struct {
 	ChildIDs                            []int
@@ -1469,7 +1722,8 @@ type mediafileBuilder struct {
 	builder[mediafileBuilder, *mediafileBuilder, Mediafile]
 }
 
-func (b *mediafileBuilder) lazy(ds *Fetch, id int) *Mediafile {
+func (b *mediafileBuilder) lazy(ds *Fetch, idI any) *Mediafile {
+	id := idI.(int)
 	c := Mediafile{}
 	ds.Mediafile_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.Mediafile_CreateTimestamp(id).Lazy(&c.CreateTimestamp)
@@ -1517,7 +1771,75 @@ func (b *mediafileBuilder) MeetingMediafileList() *meetingMediafileBuilder {
 	}
 }
 
-// TODO: func (b *mediafileBuilder) Owner()
+func (b *mediafileBuilder) Owner() *mediafileOwnerUnionBuilder {
+	return &mediafileOwnerUnionBuilder{
+		builder: builder[mediafileOwnerUnionBuilder, *mediafileOwnerUnionBuilder, MediafileOwnerUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "OwnerID",
+			relField: "Owner",
+		},
+	}
+}
+
+type MediafileOwnerUnion interface {
+	isMediafileOwnerUnion()
+}
+
+func (*Meeting) isMediafileOwnerUnion()      {}
+func (*Organization) isMediafileOwnerUnion() {}
+
+type mediafileOwnerUnionBuilder struct {
+	builder[mediafileOwnerUnionBuilder, *mediafileOwnerUnionBuilder, MediafileOwnerUnion]
+}
+
+func (b *mediafileOwnerUnionBuilder) lazy(ds *Fetch, id any) *MediafileOwnerUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "meeting":
+
+		builder := &meetingBuilder{
+			builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*MediafileOwnerUnion)(unsafe.Pointer(result))
+
+	case "organization":
+
+		builder := &organizationBuilder{
+			builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*MediafileOwnerUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *mediafileOwnerUnionBuilder) Preload(rel builderWrapperI) *mediafileOwnerUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *mediafileBuilder) Parent() *mediafileBuilder {
 	return &mediafileBuilder{
@@ -1885,7 +2207,8 @@ type meetingBuilder struct {
 	builder[meetingBuilder, *meetingBuilder, Meeting]
 }
 
-func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
+func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
+	id := idI.(int)
 	c := Meeting{}
 	ds.Meeting_AdminGroupID(id).Lazy(&c.AdminGroupID)
 	ds.Meeting_AgendaEnableNumbering(id).Lazy(&c.AgendaEnableNumbering)
@@ -3214,7 +3537,8 @@ type meetingMediafileBuilder struct {
 	builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]
 }
 
-func (b *meetingMediafileBuilder) lazy(ds *Fetch, id int) *MeetingMediafile {
+func (b *meetingMediafileBuilder) lazy(ds *Fetch, idI any) *MeetingMediafile {
+	id := idI.(int)
 	c := MeetingMediafile{}
 	ds.MeetingMediafile_AccessGroupIDs(id).Lazy(&c.AccessGroupIDs)
 	ds.MeetingMediafile_AttachmentIDs(id).Lazy(&c.AttachmentIDs)
@@ -3553,7 +3877,8 @@ type meetingUserBuilder struct {
 	builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]
 }
 
-func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
+func (b *meetingUserBuilder) lazy(ds *Fetch, idI any) *MeetingUser {
+	id := idI.(int)
 	c := MeetingUser{}
 	ds.MeetingUser_AboutMe(id).Lazy(&c.AboutMe)
 	ds.MeetingUser_ActingBallotIDs(id).Lazy(&c.ActingBallotIDs)
@@ -3903,7 +4228,8 @@ type motionBuilder struct {
 	builder[motionBuilder, *motionBuilder, Motion]
 }
 
-func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
+func (b *motionBuilder) lazy(ds *Fetch, idI any) *Motion {
+	id := idI.(int)
 	c := Motion{}
 	ds.Motion_AdditionalSubmitter(id).Lazy(&c.AdditionalSubmitter)
 	ds.Motion_AgendaItemID(id).Lazy(&c.AgendaItemID)
@@ -4360,7 +4686,8 @@ type motionBlockBuilder struct {
 	builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]
 }
 
-func (b *motionBlockBuilder) lazy(ds *Fetch, id int) *MotionBlock {
+func (b *motionBlockBuilder) lazy(ds *Fetch, idI any) *MotionBlock {
+	id := idI.(int)
 	c := MotionBlock{}
 	ds.MotionBlock_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.MotionBlock_ID(id).Lazy(&c.ID)
@@ -4467,7 +4794,8 @@ type motionCategoryBuilder struct {
 	builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]
 }
 
-func (b *motionCategoryBuilder) lazy(ds *Fetch, id int) *MotionCategory {
+func (b *motionCategoryBuilder) lazy(ds *Fetch, idI any) *MotionCategory {
+	id := idI.(int)
 	c := MotionCategory{}
 	ds.MotionCategory_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.MotionCategory_ID(id).Lazy(&c.ID)
@@ -4563,7 +4891,8 @@ type motionChangeRecommendationBuilder struct {
 	builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]
 }
 
-func (b *motionChangeRecommendationBuilder) lazy(ds *Fetch, id int) *MotionChangeRecommendation {
+func (b *motionChangeRecommendationBuilder) lazy(ds *Fetch, idI any) *MotionChangeRecommendation {
+	id := idI.(int)
 	c := MotionChangeRecommendation{}
 	ds.MotionChangeRecommendation_CreationTime(id).Lazy(&c.CreationTime)
 	ds.MotionChangeRecommendation_ID(id).Lazy(&c.ID)
@@ -4631,7 +4960,8 @@ type motionCommentBuilder struct {
 	builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]
 }
 
-func (b *motionCommentBuilder) lazy(ds *Fetch, id int) *MotionComment {
+func (b *motionCommentBuilder) lazy(ds *Fetch, idI any) *MotionComment {
+	id := idI.(int)
 	c := MotionComment{}
 	ds.MotionComment_Comment(id).Lazy(&c.Comment)
 	ds.MotionComment_ID(id).Lazy(&c.ID)
@@ -4709,7 +5039,8 @@ type motionCommentSectionBuilder struct {
 	builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]
 }
 
-func (b *motionCommentSectionBuilder) lazy(ds *Fetch, id int) *MotionCommentSection {
+func (b *motionCommentSectionBuilder) lazy(ds *Fetch, idI any) *MotionCommentSection {
+	id := idI.(int)
 	c := MotionCommentSection{}
 	ds.MotionCommentSection_CommentIDs(id).Lazy(&c.CommentIDs)
 	ds.MotionCommentSection_ID(id).Lazy(&c.ID)
@@ -4800,7 +5131,8 @@ type motionEditorBuilder struct {
 	builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]
 }
 
-func (b *motionEditorBuilder) lazy(ds *Fetch, id int) *MotionEditor {
+func (b *motionEditorBuilder) lazy(ds *Fetch, idI any) *MotionEditor {
+	id := idI.(int)
 	c := MotionEditor{}
 	ds.MotionEditor_ID(id).Lazy(&c.ID)
 	ds.MotionEditor_MeetingID(id).Lazy(&c.MeetingID)
@@ -4901,7 +5233,8 @@ type motionStateBuilder struct {
 	builder[motionStateBuilder, *motionStateBuilder, MotionState]
 }
 
-func (b *motionStateBuilder) lazy(ds *Fetch, id int) *MotionState {
+func (b *motionStateBuilder) lazy(ds *Fetch, idI any) *MotionState {
+	id := idI.(int)
 	c := MotionState{}
 	ds.MotionState_AllowAmendmentForwarding(id).Lazy(&c.AllowAmendmentForwarding)
 	ds.MotionState_AllowCreatePoll(id).Lazy(&c.AllowCreatePoll)
@@ -5067,7 +5400,8 @@ type motionSubmitterBuilder struct {
 	builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]
 }
 
-func (b *motionSubmitterBuilder) lazy(ds *Fetch, id int) *MotionSubmitter {
+func (b *motionSubmitterBuilder) lazy(ds *Fetch, idI any) *MotionSubmitter {
+	id := idI.(int)
 	c := MotionSubmitter{}
 	ds.MotionSubmitter_ID(id).Lazy(&c.ID)
 	ds.MotionSubmitter_MeetingID(id).Lazy(&c.MeetingID)
@@ -5139,7 +5473,8 @@ type motionSupporterBuilder struct {
 	builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]
 }
 
-func (b *motionSupporterBuilder) lazy(ds *Fetch, id int) *MotionSupporter {
+func (b *motionSupporterBuilder) lazy(ds *Fetch, idI any) *MotionSupporter {
+	id := idI.(int)
 	c := MotionSupporter{}
 	ds.MotionSupporter_ID(id).Lazy(&c.ID)
 	ds.MotionSupporter_MeetingID(id).Lazy(&c.MeetingID)
@@ -5216,7 +5551,8 @@ type motionWorkflowBuilder struct {
 	builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]
 }
 
-func (b *motionWorkflowBuilder) lazy(ds *Fetch, id int) *MotionWorkflow {
+func (b *motionWorkflowBuilder) lazy(ds *Fetch, idI any) *MotionWorkflow {
+	id := idI.(int)
 	c := MotionWorkflow{}
 	ds.MotionWorkflow_DefaultAmendmentWorkflowMeetingID(id).Lazy(&c.DefaultAmendmentWorkflowMeetingID)
 	ds.MotionWorkflow_DefaultWorkflowMeetingID(id).Lazy(&c.DefaultWorkflowMeetingID)
@@ -5315,7 +5651,8 @@ type motionWorkingGroupSpeakerBuilder struct {
 	builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]
 }
 
-func (b *motionWorkingGroupSpeakerBuilder) lazy(ds *Fetch, id int) *MotionWorkingGroupSpeaker {
+func (b *motionWorkingGroupSpeakerBuilder) lazy(ds *Fetch, idI any) *MotionWorkingGroupSpeaker {
+	id := idI.(int)
 	c := MotionWorkingGroupSpeaker{}
 	ds.MotionWorkingGroupSpeaker_ID(id).Lazy(&c.ID)
 	ds.MotionWorkingGroupSpeaker_MeetingID(id).Lazy(&c.MeetingID)
@@ -5431,7 +5768,8 @@ type organizationBuilder struct {
 	builder[organizationBuilder, *organizationBuilder, Organization]
 }
 
-func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
+func (b *organizationBuilder) lazy(ds *Fetch, idI any) *Organization {
+	id := idI.(int)
 	c := Organization{}
 	ds.Organization_ActiveMeetingIDs(id).Lazy(&c.ActiveMeetingIDs)
 	ds.Organization_ArchivedMeetingIDs(id).Lazy(&c.ArchivedMeetingIDs)
@@ -5635,7 +5973,8 @@ type organizationTagBuilder struct {
 	builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]
 }
 
-func (b *organizationTagBuilder) lazy(ds *Fetch, id int) *OrganizationTag {
+func (b *organizationTagBuilder) lazy(ds *Fetch, idI any) *OrganizationTag {
+	id := idI.(int)
 	c := OrganizationTag{}
 	ds.OrganizationTag_Color(id).Lazy(&c.Color)
 	ds.OrganizationTag_ID(id).Lazy(&c.ID)
@@ -5670,12 +6009,6 @@ func (r *Fetch) OrganizationTag(ids ...int) *organizationTagBuilder {
 	}
 }
 
-type PersonalNoteContentObjectUnion interface {
-	isPersonalNoteContentObjectUnion()
-}
-
-func (*Motion) isPersonalNoteContentObjectUnion() {}
-
 // PersonalNote has all fields from personal_note.
 type PersonalNote struct {
 	ContentObjectID string
@@ -5693,7 +6026,8 @@ type personalNoteBuilder struct {
 	builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]
 }
 
-func (b *personalNoteBuilder) lazy(ds *Fetch, id int) *PersonalNote {
+func (b *personalNoteBuilder) lazy(ds *Fetch, idI any) *PersonalNote {
+	id := idI.(int)
 	c := PersonalNote{}
 	ds.PersonalNote_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.PersonalNote_ID(id).Lazy(&c.ID)
@@ -5709,7 +6043,64 @@ func (b *personalNoteBuilder) Preload(rel builderWrapperI) *personalNoteBuilder 
 	return b
 }
 
-// TODO: func (b *personalNoteBuilder) ContentObject()
+func (b *personalNoteBuilder) ContentObject() *personalNoteContentObjectUnionBuilder {
+	return &personalNoteContentObjectUnionBuilder{
+		builder: builder[personalNoteContentObjectUnionBuilder, *personalNoteContentObjectUnionBuilder, PersonalNoteContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+		},
+	}
+}
+
+type PersonalNoteContentObjectUnion interface {
+	isPersonalNoteContentObjectUnion()
+}
+
+func (*Motion) isPersonalNoteContentObjectUnion() {}
+
+type personalNoteContentObjectUnionBuilder struct {
+	builder[personalNoteContentObjectUnionBuilder, *personalNoteContentObjectUnionBuilder, PersonalNoteContentObjectUnion]
+}
+
+func (b *personalNoteContentObjectUnionBuilder) lazy(ds *Fetch, id any) *PersonalNoteContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "motion":
+
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PersonalNoteContentObjectUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *personalNoteContentObjectUnionBuilder) Preload(rel builderWrapperI) *personalNoteContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *personalNoteBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
@@ -5757,7 +6148,8 @@ type pointOfOrderCategoryBuilder struct {
 	builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]
 }
 
-func (b *pointOfOrderCategoryBuilder) lazy(ds *Fetch, id int) *PointOfOrderCategory {
+func (b *pointOfOrderCategoryBuilder) lazy(ds *Fetch, idI any) *PointOfOrderCategory {
+	id := idI.(int)
 	c := PointOfOrderCategory{}
 	ds.PointOfOrderCategory_ID(id).Lazy(&c.ID)
 	ds.PointOfOrderCategory_MeetingID(id).Lazy(&c.MeetingID)
@@ -5804,24 +6196,6 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 	}
 }
 
-type PollConfigUnion interface {
-	isPollConfigUnion()
-}
-
-func (*PollConfigApproval) isPollConfigUnion()       {}
-func (*PollConfigSelection) isPollConfigUnion()      {}
-func (*PollConfigRatingScore) isPollConfigUnion()    {}
-func (*PollConfigRatingApproval) isPollConfigUnion() {}
-func (*PollConfigStvScottish) isPollConfigUnion()    {}
-
-type PollContentObjectUnion interface {
-	isPollContentObjectUnion()
-}
-
-func (*Motion) isPollContentObjectUnion()     {}
-func (*Assignment) isPollContentObjectUnion() {}
-func (*Topic) isPollContentObjectUnion()      {}
-
 // Poll has all fields from poll.
 type Poll struct {
 	AllowInvalid      bool
@@ -5857,7 +6231,8 @@ type pollBuilder struct {
 	builder[pollBuilder, *pollBuilder, Poll]
 }
 
-func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
+func (b *pollBuilder) lazy(ds *Fetch, idI any) *Poll {
+	id := idI.(int)
 	c := Poll{}
 	ds.Poll_AllowInvalid(id).Lazy(&c.AllowInvalid)
 	ds.Poll_AllowVoteSplit(id).Lazy(&c.AllowVoteSplit)
@@ -5898,9 +6273,189 @@ func (b *pollBuilder) BallotList() *pollBallotBuilder {
 	}
 }
 
-// TODO: func (b *pollBuilder) Config()
+func (b *pollBuilder) Config() *pollConfigUnionBuilder {
+	return &pollConfigUnionBuilder{
+		builder: builder[pollConfigUnionBuilder, *pollConfigUnionBuilder, PollConfigUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ConfigID",
+			relField: "Config",
+		},
+	}
+}
 
-// TODO: func (b *pollBuilder) ContentObject()
+type PollConfigUnion interface {
+	isPollConfigUnion()
+}
+
+func (*PollConfigApproval) isPollConfigUnion()       {}
+func (*PollConfigSelection) isPollConfigUnion()      {}
+func (*PollConfigRatingScore) isPollConfigUnion()    {}
+func (*PollConfigRatingApproval) isPollConfigUnion() {}
+func (*PollConfigStvScottish) isPollConfigUnion()    {}
+
+type pollConfigUnionBuilder struct {
+	builder[pollConfigUnionBuilder, *pollConfigUnionBuilder, PollConfigUnion]
+}
+
+func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "poll_config_approval":
+
+		builder := &pollConfigApprovalBuilder{
+			builder: builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollConfigUnion)(unsafe.Pointer(result))
+
+	case "poll_config_selection":
+
+		builder := &pollConfigSelectionBuilder{
+			builder: builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollConfigUnion)(unsafe.Pointer(result))
+
+	case "poll_config_rating_score":
+
+		builder := &pollConfigRatingScoreBuilder{
+			builder: builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollConfigUnion)(unsafe.Pointer(result))
+
+	case "poll_config_rating_approval":
+
+		builder := &pollConfigRatingApprovalBuilder{
+			builder: builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollConfigUnion)(unsafe.Pointer(result))
+
+	case "poll_config_stv_scottish":
+
+		builder := &pollConfigStvScottishBuilder{
+			builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollConfigUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *pollConfigUnionBuilder) Preload(rel builderWrapperI) *pollConfigUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollBuilder) ContentObject() *pollContentObjectUnionBuilder {
+	return &pollContentObjectUnionBuilder{
+		builder: builder[pollContentObjectUnionBuilder, *pollContentObjectUnionBuilder, PollContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+		},
+	}
+}
+
+type PollContentObjectUnion interface {
+	isPollContentObjectUnion()
+}
+
+func (*Motion) isPollContentObjectUnion()     {}
+func (*Assignment) isPollContentObjectUnion() {}
+func (*Topic) isPollContentObjectUnion()      {}
+
+type pollContentObjectUnionBuilder struct {
+	builder[pollContentObjectUnionBuilder, *pollContentObjectUnionBuilder, PollContentObjectUnion]
+}
+
+func (b *pollContentObjectUnionBuilder) lazy(ds *Fetch, id any) *PollContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "motion":
+
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollContentObjectUnion)(unsafe.Pointer(result))
+
+	case "assignment":
+
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollContentObjectUnion)(unsafe.Pointer(result))
+
+	case "topic":
+
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*PollContentObjectUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *pollContentObjectUnionBuilder) Preload(rel builderWrapperI) *pollContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 	return &groupBuilder{
@@ -5988,7 +6543,8 @@ type pollBallotBuilder struct {
 	builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]
 }
 
-func (b *pollBallotBuilder) lazy(ds *Fetch, id int) *PollBallot {
+func (b *pollBallotBuilder) lazy(ds *Fetch, idI any) *PollBallot {
+	id := idI.(int)
 	c := PollBallot{}
 	ds.PollBallot_ActingMeetingUserID(id).Lazy(&c.ActingMeetingUserID)
 	ds.PollBallot_ID(id).Lazy(&c.ID)
@@ -6060,7 +6616,8 @@ type pollConfigApprovalBuilder struct {
 	builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval]
 }
 
-func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigApproval {
+func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigApproval {
+	id := idI.(int)
 	c := PollConfigApproval{}
 	ds.PollConfigApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigApproval_ID(id).Lazy(&c.ID)
@@ -6109,7 +6666,8 @@ type pollConfigRatingApprovalBuilder struct {
 	builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval]
 }
 
-func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigRatingApproval {
+func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigRatingApproval {
+	id := idI.(int)
 	c := PollConfigRatingApproval{}
 	ds.PollConfigRatingApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigRatingApproval_ID(id).Lazy(&c.ID)
@@ -6162,7 +6720,8 @@ type pollConfigRatingScoreBuilder struct {
 	builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore]
 }
 
-func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, id int) *PollConfigRatingScore {
+func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, idI any) *PollConfigRatingScore {
+	id := idI.(int)
 	c := PollConfigRatingScore{}
 	ds.PollConfigRatingScore_ID(id).Lazy(&c.ID)
 	ds.PollConfigRatingScore_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
@@ -6217,7 +6776,8 @@ type pollConfigSelectionBuilder struct {
 	builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]
 }
 
-func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, id int) *PollConfigSelection {
+func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, idI any) *PollConfigSelection {
+	id := idI.(int)
 	c := PollConfigSelection{}
 	ds.PollConfigSelection_AllowNota(id).Lazy(&c.AllowNota)
 	ds.PollConfigSelection_DisplayChart(id).Lazy(&c.DisplayChart)
@@ -6267,7 +6827,8 @@ type pollConfigStvScottishBuilder struct {
 	builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]
 }
 
-func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, id int) *PollConfigStvScottish {
+func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, idI any) *PollConfigStvScottish {
+	id := idI.(int)
 	c := PollConfigStvScottish{}
 	ds.PollConfigStvScottish_ID(id).Lazy(&c.ID)
 	ds.PollConfigStvScottish_PollID(id).Lazy(&c.PollID)
@@ -6315,7 +6876,8 @@ type pollOptionBuilder struct {
 	builder[pollOptionBuilder, *pollOptionBuilder, PollOption]
 }
 
-func (b *pollOptionBuilder) lazy(ds *Fetch, id int) *PollOption {
+func (b *pollOptionBuilder) lazy(ds *Fetch, idI any) *PollOption {
+	id := idI.(int)
 	c := PollOption{}
 	ds.PollOption_ID(id).Lazy(&c.ID)
 	ds.PollOption_MeetingUserID(id).Lazy(&c.MeetingUserID)
@@ -6361,22 +6923,6 @@ func (r *Fetch) PollOption(ids ...int) *pollOptionBuilder {
 	}
 }
 
-type ProjectionContentObjectUnion interface {
-	isProjectionContentObjectUnion()
-}
-
-func (*Meeting) isProjectionContentObjectUnion()            {}
-func (*Motion) isProjectionContentObjectUnion()             {}
-func (*MeetingMediafile) isProjectionContentObjectUnion()   {}
-func (*ListOfSpeakers) isProjectionContentObjectUnion()     {}
-func (*MotionBlock) isProjectionContentObjectUnion()        {}
-func (*Assignment) isProjectionContentObjectUnion()         {}
-func (*AgendaItem) isProjectionContentObjectUnion()         {}
-func (*Topic) isProjectionContentObjectUnion()              {}
-func (*Poll) isProjectionContentObjectUnion()               {}
-func (*ProjectorMessage) isProjectionContentObjectUnion()   {}
-func (*ProjectorCountdown) isProjectionContentObjectUnion() {}
-
 // Projection has all fields from projection.
 type Projection struct {
 	ContentObjectID    string
@@ -6400,7 +6946,8 @@ type projectionBuilder struct {
 	builder[projectionBuilder, *projectionBuilder, Projection]
 }
 
-func (b *projectionBuilder) lazy(ds *Fetch, id int) *Projection {
+func (b *projectionBuilder) lazy(ds *Fetch, idI any) *Projection {
+	id := idI.(int)
 	c := Projection{}
 	ds.Projection_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Projection_CurrentProjectorID(id).Lazy(&c.CurrentProjectorID)
@@ -6420,7 +6967,174 @@ func (b *projectionBuilder) Preload(rel builderWrapperI) *projectionBuilder {
 	return b
 }
 
-// TODO: func (b *projectionBuilder) ContentObject()
+func (b *projectionBuilder) ContentObject() *projectionContentObjectUnionBuilder {
+	return &projectionContentObjectUnionBuilder{
+		builder: builder[projectionContentObjectUnionBuilder, *projectionContentObjectUnionBuilder, ProjectionContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+		},
+	}
+}
+
+type ProjectionContentObjectUnion interface {
+	isProjectionContentObjectUnion()
+}
+
+func (*Meeting) isProjectionContentObjectUnion()            {}
+func (*Motion) isProjectionContentObjectUnion()             {}
+func (*MeetingMediafile) isProjectionContentObjectUnion()   {}
+func (*ListOfSpeakers) isProjectionContentObjectUnion()     {}
+func (*MotionBlock) isProjectionContentObjectUnion()        {}
+func (*Assignment) isProjectionContentObjectUnion()         {}
+func (*AgendaItem) isProjectionContentObjectUnion()         {}
+func (*Topic) isProjectionContentObjectUnion()              {}
+func (*Poll) isProjectionContentObjectUnion()               {}
+func (*ProjectorMessage) isProjectionContentObjectUnion()   {}
+func (*ProjectorCountdown) isProjectionContentObjectUnion() {}
+
+type projectionContentObjectUnionBuilder struct {
+	builder[projectionContentObjectUnionBuilder, *projectionContentObjectUnionBuilder, ProjectionContentObjectUnion]
+}
+
+func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ProjectionContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+
+	case "meeting":
+
+		builder := &meetingBuilder{
+			builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "motion":
+
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "meeting_mediafile":
+
+		builder := &meetingMediafileBuilder{
+			builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "list_of_speakers":
+
+		builder := &listOfSpeakersBuilder{
+			builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "motion_block":
+
+		builder := &motionBlockBuilder{
+			builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "assignment":
+
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "agenda_item":
+
+		builder := &agendaItemBuilder{
+			builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "topic":
+
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "poll":
+
+		builder := &pollBuilder{
+			builder: builder[pollBuilder, *pollBuilder, Poll]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "projector_message":
+
+		builder := &projectorMessageBuilder{
+			builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	case "projector_countdown":
+
+		builder := &projectorCountdownBuilder{
+			builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+				fetch: ds,
+			},
+		}
+		result := builder.lazy(ds, intId)
+		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+
+	}
+
+	return nil
+}
+
+func (b *projectionContentObjectUnionBuilder) Preload(rel builderWrapperI) *projectionContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
 
 func (b *projectionBuilder) CurrentProjector() *projectorBuilder {
 	return &projectorBuilder{
@@ -6543,7 +7257,8 @@ type projectorBuilder struct {
 	builder[projectorBuilder, *projectorBuilder, Projector]
 }
 
-func (b *projectorBuilder) lazy(ds *Fetch, id int) *Projector {
+func (b *projectorBuilder) lazy(ds *Fetch, idI any) *Projector {
+	id := idI.(int)
 	c := Projector{}
 	ds.Projector_AspectRatioDenominator(id).Lazy(&c.AspectRatioDenominator)
 	ds.Projector_AspectRatioNumerator(id).Lazy(&c.AspectRatioNumerator)
@@ -6837,7 +7552,8 @@ type projectorCountdownBuilder struct {
 	builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]
 }
 
-func (b *projectorCountdownBuilder) lazy(ds *Fetch, id int) *ProjectorCountdown {
+func (b *projectorCountdownBuilder) lazy(ds *Fetch, idI any) *ProjectorCountdown {
+	id := idI.(int)
 	c := ProjectorCountdown{}
 	ds.ProjectorCountdown_CountdownTime(id).Lazy(&c.CountdownTime)
 	ds.ProjectorCountdown_DefaultTime(id).Lazy(&c.DefaultTime)
@@ -6925,7 +7641,8 @@ type projectorMessageBuilder struct {
 	builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]
 }
 
-func (b *projectorMessageBuilder) lazy(ds *Fetch, id int) *ProjectorMessage {
+func (b *projectorMessageBuilder) lazy(ds *Fetch, idI any) *ProjectorMessage {
+	id := idI.(int)
 	c := ProjectorMessage{}
 	ds.ProjectorMessage_ID(id).Lazy(&c.ID)
 	ds.ProjectorMessage_MeetingID(id).Lazy(&c.MeetingID)
@@ -7000,7 +7717,8 @@ type speakerBuilder struct {
 	builder[speakerBuilder, *speakerBuilder, Speaker]
 }
 
-func (b *speakerBuilder) lazy(ds *Fetch, id int) *Speaker {
+func (b *speakerBuilder) lazy(ds *Fetch, idI any) *Speaker {
+	id := idI.(int)
 	c := Speaker{}
 	ds.Speaker_Answer(id).Lazy(&c.Answer)
 	ds.Speaker_BeginTime(id).Lazy(&c.BeginTime)
@@ -7108,7 +7826,8 @@ type structureLevelBuilder struct {
 	builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]
 }
 
-func (b *structureLevelBuilder) lazy(ds *Fetch, id int) *StructureLevel {
+func (b *structureLevelBuilder) lazy(ds *Fetch, idI any) *StructureLevel {
+	id := idI.(int)
 	c := StructureLevel{}
 	ds.StructureLevel_Color(id).Lazy(&c.Color)
 	ds.StructureLevel_DefaultTime(id).Lazy(&c.DefaultTime)
@@ -7190,7 +7909,8 @@ type structureLevelListOfSpeakersBuilder struct {
 	builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]
 }
 
-func (b *structureLevelListOfSpeakersBuilder) lazy(ds *Fetch, id int) *StructureLevelListOfSpeakers {
+func (b *structureLevelListOfSpeakersBuilder) lazy(ds *Fetch, idI any) *StructureLevelListOfSpeakers {
+	id := idI.(int)
 	c := StructureLevelListOfSpeakers{}
 	ds.StructureLevelListOfSpeakers_AdditionalTime(id).Lazy(&c.AdditionalTime)
 	ds.StructureLevelListOfSpeakers_CurrentStartTime(id).Lazy(&c.CurrentStartTime)
@@ -7276,7 +7996,8 @@ type tagBuilder struct {
 	builder[tagBuilder, *tagBuilder, Tag]
 }
 
-func (b *tagBuilder) lazy(ds *Fetch, id int) *Tag {
+func (b *tagBuilder) lazy(ds *Fetch, idI any) *Tag {
+	id := idI.(int)
 	c := Tag{}
 	ds.Tag_ID(id).Lazy(&c.ID)
 	ds.Tag_MeetingID(id).Lazy(&c.MeetingID)
@@ -7370,7 +8091,8 @@ type themeBuilder struct {
 	builder[themeBuilder, *themeBuilder, Theme]
 }
 
-func (b *themeBuilder) lazy(ds *Fetch, id int) *Theme {
+func (b *themeBuilder) lazy(ds *Fetch, idI any) *Theme {
+	id := idI.(int)
 	c := Theme{}
 	ds.Theme_Abstain(id).Lazy(&c.Abstain)
 	ds.Theme_Accent100(id).Lazy(&c.Accent100)
@@ -7485,7 +8207,8 @@ type topicBuilder struct {
 	builder[topicBuilder, *topicBuilder, Topic]
 }
 
-func (b *topicBuilder) lazy(ds *Fetch, id int) *Topic {
+func (b *topicBuilder) lazy(ds *Fetch, idI any) *Topic {
+	id := idI.(int)
 	c := Topic{}
 	ds.Topic_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Topic_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
@@ -7631,7 +8354,8 @@ type userBuilder struct {
 	builder[userBuilder, *userBuilder, User]
 }
 
-func (b *userBuilder) lazy(ds *Fetch, id int) *User {
+func (b *userBuilder) lazy(ds *Fetch, idI any) *User {
+	id := idI.(int)
 	c := User{}
 	ds.User_CanChangeOwnPassword(id).Lazy(&c.CanChangeOwnPassword)
 	ds.User_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
