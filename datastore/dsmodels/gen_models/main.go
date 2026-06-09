@@ -30,9 +30,6 @@ var tmplHeader string
 //go:embed collection.go.tmpl
 var tmplCollection string
 
-//go:embed generic_union.go.tmpl
-var tmplGenericUnion string
-
 func main() {
 	if err := run(os.Stdout); err != nil {
 		log.Fatalf("Error: %v", err)
