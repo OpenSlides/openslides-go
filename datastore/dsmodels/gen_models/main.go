@@ -12,7 +12,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -306,15 +305,6 @@ func goName(name string) string {
 
 	name = strings.ReplaceAll(name, "Id", "ID")
 	return name
-}
-
-func dbName(inputCamelCaseStr string) string {
-	re := regexp.MustCompile(`[A-z][^A-Z]*`)
-	parts := re.FindAllString(inputCamelCaseStr, -1)
-	for index := range parts {
-		parts[index] = strings.ToLower(parts[index])
-	}
-	return strings.Join(parts, "_")
 }
 
 func withoutID(in string) string {
