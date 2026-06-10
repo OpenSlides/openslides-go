@@ -70,6 +70,7 @@ func (b *{{.GoNameLc}}Builder) Preload(rel builderWrapperI) *{{.GoNameLc}}Builde
 				return nil
 			}
 
+			var iface {{.Type}}
 			switch collection {
 			{{ $genericTypesLc := .GenericTypesLc }}
 			{{ $genericTypesCc := .GenericTypesCc }}
@@ -82,7 +83,8 @@ func (b *{{.GoNameLc}}Builder) Preload(rel builderWrapperI) *{{.GoNameLc}}Builde
 					},
 				}
 				result := builder.lazy(ds, intId)
-				return (*{{$type}})(unsafe.Pointer(result))
+				iface = result
+				return &iface
 			{{ end }}
 			}
 					

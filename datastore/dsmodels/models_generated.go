@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/shopspring/decimal"
@@ -162,6 +161,7 @@ func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) *AgendaIte
 		return nil
 	}
 
+	var iface AgendaItemContentObjectUnion
 	switch collection {
 
 	case "motion":
@@ -172,7 +172,8 @@ func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) *AgendaIte
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "motion_block":
 
@@ -182,7 +183,8 @@ func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) *AgendaIte
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "assignment":
 
@@ -192,7 +194,8 @@ func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) *AgendaIte
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "topic":
 
@@ -202,7 +205,8 @@ func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) *AgendaIte
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*AgendaItemContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -1331,6 +1335,7 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) *HistoryEntryMod
 		return nil
 	}
 
+	var iface HistoryEntryModelUnion
 	switch collection {
 
 	case "user":
@@ -1341,7 +1346,8 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) *HistoryEntryMod
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*HistoryEntryModelUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "motion":
 
@@ -1351,7 +1357,8 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) *HistoryEntryMod
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*HistoryEntryModelUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "assignment":
 
@@ -1361,7 +1368,8 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) *HistoryEntryMod
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*HistoryEntryModelUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -1577,6 +1585,7 @@ func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListO
 		return nil
 	}
 
+	var iface ListOfSpeakersContentObjectUnion
 	switch collection {
 
 	case "motion":
@@ -1587,7 +1596,8 @@ func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListO
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "motion_block":
 
@@ -1597,7 +1607,8 @@ func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListO
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "assignment":
 
@@ -1607,7 +1618,8 @@ func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListO
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "topic":
 
@@ -1617,7 +1629,8 @@ func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListO
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "meeting_mediafile":
 
@@ -1627,7 +1640,8 @@ func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) *ListO
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ListOfSpeakersContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -1809,6 +1823,7 @@ func (b *mediafileOwnerUnionBuilder) lazy(ds *Fetch, id any) *MediafileOwnerUnio
 		return nil
 	}
 
+	var iface MediafileOwnerUnion
 	switch collection {
 
 	case "meeting":
@@ -1819,7 +1834,8 @@ func (b *mediafileOwnerUnionBuilder) lazy(ds *Fetch, id any) *MediafileOwnerUnio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*MediafileOwnerUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "organization":
 
@@ -1829,7 +1845,8 @@ func (b *mediafileOwnerUnionBuilder) lazy(ds *Fetch, id any) *MediafileOwnerUnio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*MediafileOwnerUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -6080,6 +6097,7 @@ func (b *personalNoteContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Persona
 		return nil
 	}
 
+	var iface PersonalNoteContentObjectUnion
 	switch collection {
 
 	case "motion":
@@ -6090,7 +6108,8 @@ func (b *personalNoteContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Persona
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PersonalNoteContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -6314,6 +6333,7 @@ func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
 		return nil
 	}
 
+	var iface PollConfigUnion
 	switch collection {
 
 	case "poll_config_approval":
@@ -6324,7 +6344,8 @@ func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollConfigUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "poll_config_selection":
 
@@ -6334,7 +6355,8 @@ func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollConfigUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "poll_config_rating_score":
 
@@ -6344,7 +6366,8 @@ func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollConfigUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "poll_config_rating_approval":
 
@@ -6354,7 +6377,8 @@ func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollConfigUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "poll_config_stv_scottish":
 
@@ -6364,7 +6388,8 @@ func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) *PollConfigUnion {
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollConfigUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -6415,6 +6440,7 @@ func (b *pollContentObjectUnionBuilder) lazy(ds *Fetch, id any) *PollContentObje
 		return nil
 	}
 
+	var iface PollContentObjectUnion
 	switch collection {
 
 	case "motion":
@@ -6425,7 +6451,8 @@ func (b *pollContentObjectUnionBuilder) lazy(ds *Fetch, id any) *PollContentObje
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "assignment":
 
@@ -6435,7 +6462,8 @@ func (b *pollContentObjectUnionBuilder) lazy(ds *Fetch, id any) *PollContentObje
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "topic":
 
@@ -6445,7 +6473,8 @@ func (b *pollContentObjectUnionBuilder) lazy(ds *Fetch, id any) *PollContentObje
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*PollContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
@@ -7014,6 +7043,7 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 		return nil
 	}
 
+	var iface ProjectionContentObjectUnion
 	switch collection {
 
 	case "meeting":
@@ -7024,7 +7054,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "motion":
 
@@ -7034,7 +7065,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "meeting_mediafile":
 
@@ -7044,7 +7076,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "list_of_speakers":
 
@@ -7054,7 +7087,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "motion_block":
 
@@ -7064,7 +7098,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "assignment":
 
@@ -7074,7 +7109,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "agenda_item":
 
@@ -7084,7 +7120,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "topic":
 
@@ -7094,7 +7131,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "poll":
 
@@ -7104,7 +7142,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "projector_message":
 
@@ -7114,7 +7153,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	case "projector_countdown":
 
@@ -7124,7 +7164,8 @@ func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) *Projectio
 			},
 		}
 		result := builder.lazy(ds, intId)
-		return (*ProjectionContentObjectUnion)(unsafe.Pointer(result))
+		iface = result
+		return &iface
 
 	}
 
