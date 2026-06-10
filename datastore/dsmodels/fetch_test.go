@@ -1,6 +1,7 @@
 package dsmodels_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsmock"
@@ -244,5 +245,37 @@ func TestRequestSinglePreloadMulti(t *testing.T) {
 
 	if res.ListOfSpeakers.ContentObjectID != "topic/1" {
 		t.Errorf("res.ListOfSpeakers.ContentObjectID = %s, expected topic/1", res.ListOfSpeakers.ContentObjectID)
+	}
+}
+
+func TestPolymorphicPreload(t *testing.T) {
+	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	topic/1:
+		sequential_number: 1
+		title: foo
+		meeting_id: 1
+		agenda_item_id: 1
+		list_of_speakers_id: 1
+	agenda_item/1/content_object_id: topic/1
+	agenda_item/1/meeting_id: 1
+	list_of_speakers/1:
+		sequential_number: 1
+		content_object_id: topic/1
+		meeting_id: 1
+	`)))
+
+	tQ := ds.AgendaItem(1)
+	res, err := tQ.Preload(tQ.ContentObject()).First(t.Context())
+	if err != nil {
+		t.Errorf("Topic 1 with agenda item returned unexpected error: %v", err)
+	}
+
+	topic, isTopic := res.ContentObject.(*dsmodels.Topic)
+	if !isTopic {
+		t.Errorf("type of res.ContentObject = %s, expected *dsmodels.Topic", reflect.TypeOf(res.ContentObject))
+	}
+
+	if topic.Title != "foo" {
+		t.Errorf("res.ContentObject.Title = %s, expected 'foo'", topic.Title)
 	}
 }
