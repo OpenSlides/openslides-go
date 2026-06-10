@@ -9,6 +9,7 @@ import (
 
 type builderWrapperI interface {
 	SetIds(ids []int)
+	SetFqids(fqids []string)
 	setChild(builder builderWrapperI) builderWrapperI
 	getParent() builderWrapperI
 	getIDField() string
@@ -26,6 +27,7 @@ type builderPtr[T any, M any] interface {
 
 type builder[C any, T builderPtr[C, M], M any] struct {
 	ids      []int
+	fqids    []string
 	value    T
 	parent   builderWrapperI
 	children map[string]builderWrapperI
@@ -37,6 +39,10 @@ type builder[C any, T builderPtr[C, M], M any] struct {
 
 func (b *builder[C, T, M]) SetIds(ids []int) {
 	b.ids = ids
+}
+
+func (b *builder[C, T, M]) SetFqids(fqids []string) {
+	b.fqids = fqids
 }
 
 func (b *builder[C, T, M]) setChild(builder builderWrapperI) builderWrapperI {
@@ -72,6 +78,11 @@ func (b *builder[C, T, M]) lazyAll(ctx context.Context) []any {
 	for _, id := range b.ids {
 		items = append(items, b.value.lazy(b.fetch, id))
 	}
+
+	for _, id := range b.fqids {
+		items = append(items, b.value.lazy(b.fetch, id))
+	}
+
 	return items
 }
 
@@ -89,12 +100,15 @@ func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 	}
 }
 
-func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) []int {
+func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) ([]int, []string) {
 	ids := []int{}
+	fqids := []string{}
 	if many {
 		ids = idField.Interface().([]int)
 	} else if idField.Kind() == reflect.Int {
 		ids = append(ids, int(idField.Int()))
+	} else if idField.Kind() == reflect.String {
+		fqids = append(fqids, string(idField.String()))
 	} else if idField.Type().Name() == "Maybe[int]" {
 		relMaybeType := targetField.Type().Elem()
 		relValue := reflect.New(relMaybeType)
@@ -107,7 +121,7 @@ func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool)
 		}
 	}
 
-	return ids
+	return ids, fqids
 }
 
 func setRelationField(idField reflect.Value, targetField reflect.Value, item any, many bool) {
@@ -134,8 +148,9 @@ func (b *builder[C, T, M]) prepareChildren(ctx context.Context, parents ...any) 
 		for _, child := range b.children {
 			idField := rParent.FieldByName(child.getIDField())
 			targetField := rParent.FieldByName(child.getRelField())
-			ids := getRelationIds(idField, targetField, child.getMany())
+			ids, fqids := getRelationIds(idField, targetField, child.getMany())
 			child.SetIds(ids)
+			child.SetFqids(fqids)
 			items := child.lazyAll(ctx)
 			childInfos = append(childInfos, childInfo{
 				child:       child,
