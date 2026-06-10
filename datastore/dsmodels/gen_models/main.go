@@ -240,6 +240,9 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 			if !relation.List() && !collectionField.Required {
 				resultType = fmt.Sprintf("*dsfetch.Maybe[%s]", toType)
 			}
+			if isGeneric {
+				resultType = fmt.Sprintf("%s", toType)
+			}
 			if relation.List() {
 				if isGeneric {
 					// TODO: Generic lists are currently skipped
