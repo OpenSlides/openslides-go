@@ -12,6 +12,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Environment variables used to configure the environment.
+var (
+	EnvLogLevel = environment.NewVariable("OPENSLIDES_LOG_LEVEL", "", "Set the log level for oslog trace for prod available values are (trace, debug, info, warn, error, fatal, panic)")
+)
+
 var isDev bool
 
 // InitLog has to be called at startup to set the log format.
@@ -21,6 +26,7 @@ func InitLog(lookup environment.Environmenter) {
 	cw := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: "2006-01-02T15:04:05:000",
+		NoColor:    !devmode,
 		FormatLevel: func(i any) string {
 			level := strings.ToUpper(fmt.Sprintf("%-6s", i))
 			if !isDev {
@@ -49,6 +55,7 @@ func InitLog(lookup environment.Environmenter) {
 		cw.Out = os.Stderr
 	}
 
+	setLogLevel(lookup)
 	log.Logger = log.Output(cw)
 }
 
@@ -87,4 +94,16 @@ func msg(e *zerolog.Event, format string, a ...any) {
 		return
 	}
 	e.Str("msg", fmt.Sprintf(format, a...)).Msg("")
+}
+
+func setLogLevel(lookup environment.Environmenter) {
+	logLevel := zerolog.TraceLevel
+	logLevelParsed, err := zerolog.ParseLevel(EnvLogLevel.Value(lookup))
+	if err == nil {
+		logLevel = logLevelParsed
+	} else if !isDev {
+		logLevel = zerolog.InfoLevel
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
 }
