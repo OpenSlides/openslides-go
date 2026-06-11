@@ -35,7 +35,7 @@ var collectionFields = map[string][]string{
 	"organization_tag":                 {"color", "id", "name", "organization_id", "tagged_ids"},
 	"personal_note":                    {"content_object_id", "id", "meeting_id", "meeting_user_id", "note", "star"},
 	"point_of_order_category":          {"id", "meeting_id", "rank", "speaker_ids", "text"},
-	"poll":                             {"allow_invalid", "allow_vote_split", "anonymized", "ballot_ids", "config_id", "content_object_id", "entitled_group_ids", "id", "live_voting_enabled", "meeting_id", "option_ids", "projection_ids", "published", "result", "sequential_number", "state", "title", "visibility", "voted_ids"},
+	"poll":                             {"allow_invalid", "allow_vote_split", "anonymized", "ballot_ids", "config_id", "content_object_id", "entitled_group_ids", "history_entry_ids", "id", "live_voting_enabled", "meeting_id", "option_ids", "projection_ids", "published", "result", "sequential_number", "state", "title", "visibility", "voted_ids"},
 	"poll_ballot":                      {"acting_meeting_user_id", "id", "poll_id", "represented_meeting_user_id", "split", "value", "weight"},
 	"poll_config_approval":             {"allow_abstain", "id", "onehundred_percent_base", "poll_id"},
 	"poll_config_rating_approval":      {"allow_abstain", "id", "max_options_amount", "min_options_amount", "onehundred_percent_base", "poll_id"},

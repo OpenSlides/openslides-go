@@ -5758,6 +5758,7 @@ type Poll struct {
 	ConfigID          string
 	ContentObjectID   string
 	EntitledGroupIDs  []int
+	HistoryEntryIDs   []int
 	ID                int
 	LiveVotingEnabled bool
 	MeetingID         int
@@ -5772,6 +5773,7 @@ type Poll struct {
 	VotedIDs          []int
 	BallotList        []PollBallot
 	EntitledGroupList []Group
+	HistoryEntryList  []HistoryEntry
 	Meeting           *Meeting
 	OptionList        []PollOption
 	ProjectionList    []Projection
@@ -5791,6 +5793,7 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_ConfigID(id).Lazy(&c.ConfigID)
 	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Poll_EntitledGroupIDs(id).Lazy(&c.EntitledGroupIDs)
+	ds.Poll_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
 	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
 	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)
@@ -5830,6 +5833,18 @@ func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 			parent:   b,
 			idField:  "EntitledGroupIDs",
 			relField: "EntitledGroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *pollBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
 			many:     true,
 		},
 	}

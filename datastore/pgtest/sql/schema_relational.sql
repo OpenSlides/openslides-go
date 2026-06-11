@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '0aaaf5eb39a57452f1622649418e3d8e'
+-- MODELS_YML_CHECKSUM = '51e6dde20f32a81e6624f27da3c903a6'
 
 
 -- ENUM definitions
@@ -1065,13 +1065,15 @@ CREATE TABLE history_entry_t (
     entries text[],
     original_model_id varchar(256),
     model_id varchar(100),
-    model_id_user_id integer
-        CONSTRAINT generated_always_as_history_entry_model_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    model_id_motion_id integer
-        CONSTRAINT generated_always_as_history_entry_model_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'motion' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     model_id_assignment_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_assignment_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'assignment' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('user','motion','assignment')),
+    model_id_motion_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'motion' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    model_id_poll_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_poll_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'poll' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    model_id_user_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','poll','user')),
     position_id integer
         CONSTRAINT required_history_entry_position_id NOT NULL,
     meeting_id integer
@@ -3277,7 +3279,8 @@ CREATE VIEW "poll" AS SELECT *,
 (select array_agg(pb.id ORDER BY pb.id) from poll_ballot_t pb where pb.poll_id = p.id) as ballot_ids,
 (select array_agg(n.meeting_user_id ORDER BY n.meeting_user_id) from nm_meeting_user_poll_voted_ids_poll_t n where n.poll_id = p.id) as voted_ids,
 (select array_agg(n.group_id ORDER BY n.group_id) from nm_group_poll_ids_poll_t n where n.poll_id = p.id) as entitled_group_ids,
-(select array_agg(pt.id ORDER BY pt.id) from projection_t pt where pt.content_object_id_poll_id = p.id) as projection_ids
+(select array_agg(pt.id ORDER BY pt.id) from projection_t pt where pt.content_object_id_poll_id = p.id) as projection_ids,
+(select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_poll_id = p.id) as history_entry_ids
 FROM poll_t p;
 
 
@@ -3466,12 +3469,14 @@ CREATE INDEX idx_group_t_used_as_poll_default_id ON group_t (used_as_poll_defaul
 ALTER TABLE group_t ADD CONSTRAINT fk_group_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_group_t_meeting_id ON group_t (meeting_id);
 
-ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_user_id_user_t_id FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_history_entry_t_model_id_user_id ON history_entry_t (model_id_user_id);
-ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_motion_id_motion_t_id FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_history_entry_t_model_id_motion_id ON history_entry_t (model_id_motion_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_assignment_id_assignment_t_id FOREIGN KEY(model_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_model_id_assignment_id ON history_entry_t (model_id_assignment_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_motion_id_motion_t_id FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_motion_id ON history_entry_t (model_id_motion_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_poll_id_poll_t_id FOREIGN KEY(model_id_poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_poll_id ON history_entry_t (model_id_poll_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_user_id_user_t_id FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_user_id ON history_entry_t (model_id_user_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_position_id_history_position_t_id FOREIGN KEY(position_id) REFERENCES history_position_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_position_id ON history_entry_t (position_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
@@ -4605,14 +4610,17 @@ CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELET
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
-CREATE TRIGGER tr_log_user_model_id_user_id AFTER INSERT OR UPDATE OF model_id_user_id OR DELETE ON history_entry_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_id','history_entry_ids');
+CREATE TRIGGER tr_log_assignment_model_id_assignment_id AFTER INSERT OR UPDATE OF model_id_assignment_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','model_id_assignment_id','history_entry_ids');
 
 CREATE TRIGGER tr_log_motion_model_id_motion_id AFTER INSERT OR UPDATE OF model_id_motion_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','model_id_motion_id','history_entry_ids');
 
-CREATE TRIGGER tr_log_assignment_model_id_assignment_id AFTER INSERT OR UPDATE OF model_id_assignment_id OR DELETE ON history_entry_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','model_id_assignment_id','history_entry_ids');
+CREATE TRIGGER tr_log_poll_model_id_poll_id AFTER INSERT OR UPDATE OF model_id_poll_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll','model_id_poll_id','history_entry_ids');
+
+CREATE TRIGGER tr_log_user_model_id_user_id AFTER INSERT OR UPDATE OF model_id_user_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_id','history_entry_ids');
 CREATE TRIGGER tr_log_history_entry_t_position_id AFTER INSERT OR UPDATE OF position_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('history_position', 'position_id', 'entry_ids');
 CREATE TRIGGER tr_log_history_entry_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON history_entry_t
@@ -5911,7 +5919,7 @@ FIELD 1r:nt => group/used_as_topic_poll_default_id:-> meeting/topic_poll_default
 FIELD 1r:nt => group/used_as_poll_default_id:-> meeting/poll_default_group_ids
 FIELD 1rR:nt => group/meeting_id:-> meeting/group_ids
 
-FIELD 1Gr:nt,nt,nt => history_entry/model_id:-> user/history_entry_ids,motion/history_entry_ids,assignment/history_entry_ids
+FIELD 1Gr:nt,nt,nt,nt => history_entry/model_id:-> assignment/history_entry_ids,motion/history_entry_ids,poll/history_entry_ids,user/history_entry_ids
 FIELD 1rR:nt => history_entry/position_id:-> history_position/entry_ids
 FIELD 1r:nt => history_entry/meeting_id:-> meeting/relevant_history_entry_ids
 
@@ -6180,6 +6188,7 @@ SQL nt:nt => poll/voted_ids:-> meeting_user/poll_voted_ids
 SQL nt:nt => poll/entitled_group_ids:-> group/poll_ids
 SQL nt:1GrR => poll/projection_ids:-> projection/content_object_id
 FIELD 1rR:nr => poll/meeting_id:-> meeting/poll_ids
+SQL nt:1Gr => poll/history_entry_ids:-> history_entry/model_id
 
 FIELD 1rR:nr => poll_ballot/poll_id:-> poll/ballot_ids
 FIELD 1r:nt => poll_ballot/acting_meeting_user_id:-> meeting_user/acting_ballot_ids
