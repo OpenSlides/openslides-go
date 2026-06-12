@@ -3,6 +3,9 @@ package dsmodels
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
+
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/shopspring/decimal"
 )
@@ -19,10 +22,11 @@ type ActionWorker struct {
 }
 
 type actionWorkerBuilder struct {
-	builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker]
+	builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker, *ActionWorker]
 }
 
-func (b *actionWorkerBuilder) lazy(ds *Fetch, id int) *ActionWorker {
+func (b *actionWorkerBuilder) lazy(ds *Fetch, idI any) *ActionWorker {
+	id := idI.(int)
 	c := ActionWorker{}
 	ds.ActionWorker_Created(id).Lazy(&c.Created)
 	ds.ActionWorker_ID(id).Lazy(&c.ID)
@@ -41,9 +45,10 @@ func (b *actionWorkerBuilder) Preload(rel builderWrapperI) *actionWorkerBuilder 
 
 func (r *Fetch) ActionWorker(ids ...int) *actionWorkerBuilder {
 	return &actionWorkerBuilder{
-		builder: builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker]{
+		builder: builder[actionWorkerBuilder, *actionWorkerBuilder, ActionWorker, *ActionWorker]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ActionWorker) ActionWorker { return *p },
 		},
 	}
 }
@@ -67,6 +72,7 @@ type AgendaItem struct {
 	Type            string
 	Weight          int
 	ChildList       []AgendaItem
+	ContentObject   AgendaItemContentObjectUnion
 	Meeting         *Meeting
 	Parent          *dsfetch.Maybe[AgendaItem]
 	ProjectionList  []Projection
@@ -74,10 +80,11 @@ type AgendaItem struct {
 }
 
 type agendaItemBuilder struct {
-	builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]
+	builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]
 }
 
-func (b *agendaItemBuilder) lazy(ds *Fetch, id int) *AgendaItem {
+func (b *agendaItemBuilder) lazy(ds *Fetch, idI any) *AgendaItem {
+	id := idI.(int)
 	c := AgendaItem{}
 	ds.AgendaItem_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.AgendaItem_Closed(id).Lazy(&c.Closed)
@@ -105,67 +112,157 @@ func (b *agendaItemBuilder) Preload(rel builderWrapperI) *agendaItemBuilder {
 
 func (b *agendaItemBuilder) ChildList() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
+func (b *agendaItemBuilder) ContentObject() *agendaItemContentObjectUnionBuilder {
+	return &agendaItemContentObjectUnionBuilder{
+		builder: builder[agendaItemContentObjectUnionBuilder, *agendaItemContentObjectUnionBuilder, AgendaItemContentObjectUnion, AgendaItemContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+			conv:     func(u AgendaItemContentObjectUnion) AgendaItemContentObjectUnion { return u },
+		},
+	}
+}
+
+type AgendaItemContentObjectUnion interface {
+	isAgendaItemContentObjectUnion()
+}
+
+func (*Motion) isAgendaItemContentObjectUnion()      {}
+func (*MotionBlock) isAgendaItemContentObjectUnion() {}
+func (*Assignment) isAgendaItemContentObjectUnion()  {}
+func (*Topic) isAgendaItemContentObjectUnion()       {}
+
+type agendaItemContentObjectUnionBuilder struct {
+	builder[agendaItemContentObjectUnionBuilder, *agendaItemContentObjectUnionBuilder, AgendaItemContentObjectUnion, AgendaItemContentObjectUnion]
+}
+
+func (b *agendaItemContentObjectUnionBuilder) lazy(ds *Fetch, id any) AgendaItemContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "motion":
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
+				fetch: ds,
+				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "motion_block":
+		builder := &motionBlockBuilder{
+			builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]{
+				fetch: ds,
+				conv:  func(p *MotionBlock) MotionBlock { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "assignment":
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
+				fetch: ds,
+				conv:  func(p *Assignment) Assignment { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "topic":
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
+				fetch: ds,
+				conv:  func(p *Topic) Topic { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *agendaItemContentObjectUnionBuilder) Preload(rel builderWrapperI) *agendaItemContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *agendaItemBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *agendaItemBuilder) Parent() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
 func (b *agendaItemBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *agendaItemBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
-		builder: builder[tagBuilder, *tagBuilder, Tag]{
+		builder: builder[tagBuilder, *tagBuilder, Tag, *Tag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
+			conv:     func(p *Tag) Tag { return *p },
 		},
 	}
 }
 
 func (r *Fetch) AgendaItem(ids ...int) *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
@@ -201,10 +298,11 @@ type Assignment struct {
 }
 
 type assignmentBuilder struct {
-	builder[assignmentBuilder, *assignmentBuilder, Assignment]
+	builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]
 }
 
-func (b *assignmentBuilder) lazy(ds *Fetch, id int) *Assignment {
+func (b *assignmentBuilder) lazy(ds *Fetch, idI any) *Assignment {
+	id := idI.(int)
 	c := Assignment{}
 	ds.Assignment_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Assignment_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
@@ -233,114 +331,124 @@ func (b *assignmentBuilder) Preload(rel builderWrapperI) *assignmentBuilder {
 
 func (b *assignmentBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AttachmentMeetingMediafileIDs",
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) CandidateList() *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
-		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate, *AssignmentCandidate]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CandidateIDs",
 			relField: "CandidateList",
 			many:     true,
+			conv:     func(p *AssignmentCandidate) AssignmentCandidate { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) HistoryEntryList() *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryEntryIDs",
 			relField: "HistoryEntryList",
 			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *assignmentBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
-		builder: builder[tagBuilder, *tagBuilder, Tag]{
+		builder: builder[tagBuilder, *tagBuilder, Tag, *Tag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
+			conv:     func(p *Tag) Tag { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Assignment(ids ...int) *assignmentBuilder {
 	return &assignmentBuilder{
-		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Assignment) Assignment { return *p },
 		},
 	}
 }
@@ -358,10 +466,11 @@ type AssignmentCandidate struct {
 }
 
 type assignmentCandidateBuilder struct {
-	builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]
+	builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate, *AssignmentCandidate]
 }
 
-func (b *assignmentCandidateBuilder) lazy(ds *Fetch, id int) *AssignmentCandidate {
+func (b *assignmentCandidateBuilder) lazy(ds *Fetch, idI any) *AssignmentCandidate {
+	id := idI.(int)
 	c := AssignmentCandidate{}
 	ds.AssignmentCandidate_AssignmentID(id).Lazy(&c.AssignmentID)
 	ds.AssignmentCandidate_ID(id).Lazy(&c.ID)
@@ -378,42 +487,46 @@ func (b *assignmentCandidateBuilder) Preload(rel builderWrapperI) *assignmentCan
 
 func (b *assignmentCandidateBuilder) Assignment() *assignmentBuilder {
 	return &assignmentBuilder{
-		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AssignmentID",
 			relField: "Assignment",
+			conv:     func(p *Assignment) Assignment { return *p },
 		},
 	}
 }
 
 func (b *assignmentCandidateBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *assignmentCandidateBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (r *Fetch) AssignmentCandidate(ids ...int) *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
-		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate, *AssignmentCandidate]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *AssignmentCandidate) AssignmentCandidate { return *p },
 		},
 	}
 }
@@ -434,10 +547,11 @@ type ChatGroup struct {
 }
 
 type chatGroupBuilder struct {
-	builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]
+	builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup, *ChatGroup]
 }
 
-func (b *chatGroupBuilder) lazy(ds *Fetch, id int) *ChatGroup {
+func (b *chatGroupBuilder) lazy(ds *Fetch, idI any) *ChatGroup {
+	id := idI.(int)
 	c := ChatGroup{}
 	ds.ChatGroup_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
 	ds.ChatGroup_ID(id).Lazy(&c.ID)
@@ -456,56 +570,61 @@ func (b *chatGroupBuilder) Preload(rel builderWrapperI) *chatGroupBuilder {
 
 func (b *chatGroupBuilder) ChatMessageList() *chatMessageBuilder {
 	return &chatMessageBuilder{
-		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage, *ChatMessage]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChatMessageIDs",
 			relField: "ChatMessageList",
 			many:     true,
+			conv:     func(p *ChatMessage) ChatMessage { return *p },
 		},
 	}
 }
 
 func (b *chatGroupBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *chatGroupBuilder) ReadGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReadGroupIDs",
 			relField: "ReadGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *chatGroupBuilder) WriteGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "WriteGroupIDs",
 			relField: "WriteGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (r *Fetch) ChatGroup(ids ...int) *chatGroupBuilder {
 	return &chatGroupBuilder{
-		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup, *ChatGroup]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ChatGroup) ChatGroup { return *p },
 		},
 	}
 }
@@ -524,10 +643,11 @@ type ChatMessage struct {
 }
 
 type chatMessageBuilder struct {
-	builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]
+	builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage, *ChatMessage]
 }
 
-func (b *chatMessageBuilder) lazy(ds *Fetch, id int) *ChatMessage {
+func (b *chatMessageBuilder) lazy(ds *Fetch, idI any) *ChatMessage {
+	id := idI.(int)
 	c := ChatMessage{}
 	ds.ChatMessage_ChatGroupID(id).Lazy(&c.ChatGroupID)
 	ds.ChatMessage_Content(id).Lazy(&c.Content)
@@ -545,42 +665,46 @@ func (b *chatMessageBuilder) Preload(rel builderWrapperI) *chatMessageBuilder {
 
 func (b *chatMessageBuilder) ChatGroup() *chatGroupBuilder {
 	return &chatGroupBuilder{
-		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup, *ChatGroup]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChatGroupID",
 			relField: "ChatGroup",
+			conv:     func(p *ChatGroup) ChatGroup { return *p },
 		},
 	}
 }
 
 func (b *chatMessageBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *chatMessageBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (r *Fetch) ChatMessage(ids ...int) *chatMessageBuilder {
 	return &chatMessageBuilder{
-		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage, *ChatMessage]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ChatMessage) ChatMessage { return *p },
 		},
 	}
 }
@@ -620,10 +744,11 @@ type Committee struct {
 }
 
 type committeeBuilder struct {
-	builder[committeeBuilder, *committeeBuilder, Committee]
+	builder[committeeBuilder, *committeeBuilder, Committee, *Committee]
 }
 
-func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
+func (b *committeeBuilder) lazy(ds *Fetch, idI any) *Committee {
+	id := idI.(int)
 	c := Committee{}
 	ds.Committee_AllChildIDs(id).Lazy(&c.AllChildIDs)
 	ds.Committee_AllParentIDs(id).Lazy(&c.AllParentIDs)
@@ -652,162 +777,176 @@ func (b *committeeBuilder) Preload(rel builderWrapperI) *committeeBuilder {
 
 func (b *committeeBuilder) AllChildList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AllChildIDs",
 			relField: "AllChildList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) AllParentList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AllParentIDs",
 			relField: "AllParentList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) ChildList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) DefaultMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultMeetingID",
 			relField: "DefaultMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) ForwardToCommitteeList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ForwardToCommitteeIDs",
 			relField: "ForwardToCommitteeList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) ManagerList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ManagerIDs",
 			relField: "ManagerList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) MeetingList() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingIDs",
 			relField: "MeetingList",
 			many:     true,
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) NativeUserList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "NativeUserIDs",
 			relField: "NativeUserList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
-		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag, *OrganizationTag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
+			conv:     func(p *OrganizationTag) OrganizationTag { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) Parent() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) ReceiveForwardingsFromCommitteeList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReceiveForwardingsFromCommitteeIDs",
 			relField: "ReceiveForwardingsFromCommitteeList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *committeeBuilder) UserList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Committee(ids ...int) *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Committee) Committee { return *p },
 		},
 	}
 }
@@ -823,10 +962,11 @@ type Gender struct {
 }
 
 type genderBuilder struct {
-	builder[genderBuilder, *genderBuilder, Gender]
+	builder[genderBuilder, *genderBuilder, Gender, *Gender]
 }
 
-func (b *genderBuilder) lazy(ds *Fetch, id int) *Gender {
+func (b *genderBuilder) lazy(ds *Fetch, idI any) *Gender {
+	id := idI.(int)
 	c := Gender{}
 	ds.Gender_ID(id).Lazy(&c.ID)
 	ds.Gender_Name(id).Lazy(&c.Name)
@@ -842,32 +982,35 @@ func (b *genderBuilder) Preload(rel builderWrapperI) *genderBuilder {
 
 func (b *genderBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (b *genderBuilder) UserList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Gender(ids ...int) *genderBuilder {
 	return &genderBuilder{
-		builder: builder[genderBuilder, *genderBuilder, Gender]{
+		builder: builder[genderBuilder, *genderBuilder, Gender, *Gender]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Gender) Gender { return *p },
 		},
 	}
 }
@@ -914,10 +1057,11 @@ type Group struct {
 }
 
 type groupBuilder struct {
-	builder[groupBuilder, *groupBuilder, Group]
+	builder[groupBuilder, *groupBuilder, Group, *Group]
 }
 
-func (b *groupBuilder) lazy(ds *Fetch, id int) *Group {
+func (b *groupBuilder) lazy(ds *Fetch, idI any) *Group {
+	id := idI.(int)
 	c := Group{}
 	ds.Group_AdminGroupForMeetingID(id).Lazy(&c.AdminGroupForMeetingID)
 	ds.Group_AnonymousGroupForMeetingID(id).Lazy(&c.AnonymousGroupForMeetingID)
@@ -950,193 +1094,210 @@ func (b *groupBuilder) Preload(rel builderWrapperI) *groupBuilder {
 
 func (b *groupBuilder) AdminGroupForMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AdminGroupForMeetingID",
 			relField: "AdminGroupForMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) AnonymousGroupForMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AnonymousGroupForMeetingID",
 			relField: "AnonymousGroupForMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) DefaultGroupForMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultGroupForMeetingID",
 			relField: "DefaultGroupForMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) MeetingMediafileAccessGroupList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingMediafileAccessGroupIDs",
 			relField: "MeetingMediafileAccessGroupList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) MeetingMediafileInheritedAccessGroupList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingMediafileInheritedAccessGroupIDs",
 			relField: "MeetingMediafileInheritedAccessGroupList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) ReadChatGroupList() *chatGroupBuilder {
 	return &chatGroupBuilder{
-		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup, *ChatGroup]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReadChatGroupIDs",
 			relField: "ReadChatGroupList",
 			many:     true,
+			conv:     func(p *ChatGroup) ChatGroup { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) ReadCommentSectionList() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
-		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection, *MotionCommentSection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReadCommentSectionIDs",
 			relField: "ReadCommentSectionList",
 			many:     true,
+			conv:     func(p *MotionCommentSection) MotionCommentSection { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) UsedAsAssignmentPollDefault() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsAssignmentPollDefaultID",
 			relField: "UsedAsAssignmentPollDefault",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) UsedAsMotionPollDefault() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsMotionPollDefaultID",
 			relField: "UsedAsMotionPollDefault",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) UsedAsPollDefault() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsPollDefaultID",
 			relField: "UsedAsPollDefault",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) UsedAsTopicPollDefault() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsTopicPollDefaultID",
 			relField: "UsedAsTopicPollDefault",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) WriteChatGroupList() *chatGroupBuilder {
 	return &chatGroupBuilder{
-		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup, *ChatGroup]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "WriteChatGroupIDs",
 			relField: "WriteChatGroupList",
 			many:     true,
+			conv:     func(p *ChatGroup) ChatGroup { return *p },
 		},
 	}
 }
 
 func (b *groupBuilder) WriteCommentSectionList() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
-		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection, *MotionCommentSection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "WriteCommentSectionIDs",
 			relField: "WriteCommentSectionList",
 			many:     true,
+			conv:     func(p *MotionCommentSection) MotionCommentSection { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Group(ids ...int) *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Group) Group { return *p },
 		},
 	}
 }
@@ -1150,14 +1311,16 @@ type HistoryEntry struct {
 	OriginalModelID string
 	PositionID      int
 	Meeting         *dsfetch.Maybe[Meeting]
+	Model           HistoryEntryModelUnion
 	Position        *HistoryPosition
 }
 
 type historyEntryBuilder struct {
-	builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]
+	builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]
 }
 
-func (b *historyEntryBuilder) lazy(ds *Fetch, id int) *HistoryEntry {
+func (b *historyEntryBuilder) lazy(ds *Fetch, idI any) *HistoryEntry {
+	id := idI.(int)
 	c := HistoryEntry{}
 	ds.HistoryEntry_Entries(id).Lazy(&c.Entries)
 	ds.HistoryEntry_ID(id).Lazy(&c.ID)
@@ -1175,31 +1338,109 @@ func (b *historyEntryBuilder) Preload(rel builderWrapperI) *historyEntryBuilder 
 
 func (b *historyEntryBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
+func (b *historyEntryBuilder) Model() *historyEntryModelUnionBuilder {
+	return &historyEntryModelUnionBuilder{
+		builder: builder[historyEntryModelUnionBuilder, *historyEntryModelUnionBuilder, HistoryEntryModelUnion, HistoryEntryModelUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ModelID",
+			relField: "Model",
+			conv:     func(u HistoryEntryModelUnion) HistoryEntryModelUnion { return u },
+		},
+	}
+}
+
+type HistoryEntryModelUnion interface {
+	isHistoryEntryModelUnion()
+}
+
+func (*User) isHistoryEntryModelUnion()       {}
+func (*Motion) isHistoryEntryModelUnion()     {}
+func (*Assignment) isHistoryEntryModelUnion() {}
+
+type historyEntryModelUnionBuilder struct {
+	builder[historyEntryModelUnionBuilder, *historyEntryModelUnionBuilder, HistoryEntryModelUnion, HistoryEntryModelUnion]
+}
+
+func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) HistoryEntryModelUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "user":
+		builder := &userBuilder{
+			builder: builder[userBuilder, *userBuilder, User, *User]{
+				fetch: ds,
+				conv:  func(p *User) User { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "motion":
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
+				fetch: ds,
+				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "assignment":
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
+				fetch: ds,
+				conv:  func(p *Assignment) Assignment { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *historyEntryModelUnionBuilder) Preload(rel builderWrapperI) *historyEntryModelUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *historyEntryBuilder) Position() *historyPositionBuilder {
 	return &historyPositionBuilder{
-		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]{
+		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition, *HistoryPosition]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PositionID",
 			relField: "Position",
+			conv:     func(p *HistoryPosition) HistoryPosition { return *p },
 		},
 	}
 }
 
 func (r *Fetch) HistoryEntry(ids ...int) *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
@@ -1216,10 +1457,11 @@ type HistoryPosition struct {
 }
 
 type historyPositionBuilder struct {
-	builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]
+	builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition, *HistoryPosition]
 }
 
-func (b *historyPositionBuilder) lazy(ds *Fetch, id int) *HistoryPosition {
+func (b *historyPositionBuilder) lazy(ds *Fetch, idI any) *HistoryPosition {
+	id := idI.(int)
 	c := HistoryPosition{}
 	ds.HistoryPosition_EntryIDs(id).Lazy(&c.EntryIDs)
 	ds.HistoryPosition_ID(id).Lazy(&c.ID)
@@ -1236,32 +1478,35 @@ func (b *historyPositionBuilder) Preload(rel builderWrapperI) *historyPositionBu
 
 func (b *historyPositionBuilder) EntryList() *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "EntryIDs",
 			relField: "EntryList",
 			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
 
 func (b *historyPositionBuilder) User() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UserID",
 			relField: "User",
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (r *Fetch) HistoryPosition(ids ...int) *historyPositionBuilder {
 	return &historyPositionBuilder{
-		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]{
+		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition, *HistoryPosition]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *HistoryPosition) HistoryPosition { return *p },
 		},
 	}
 }
@@ -1276,10 +1521,11 @@ type ImportPreview struct {
 }
 
 type importPreviewBuilder struct {
-	builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview]
+	builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview, *ImportPreview]
 }
 
-func (b *importPreviewBuilder) lazy(ds *Fetch, id int) *ImportPreview {
+func (b *importPreviewBuilder) lazy(ds *Fetch, idI any) *ImportPreview {
+	id := idI.(int)
 	c := ImportPreview{}
 	ds.ImportPreview_Created(id).Lazy(&c.Created)
 	ds.ImportPreview_ID(id).Lazy(&c.ID)
@@ -1296,9 +1542,10 @@ func (b *importPreviewBuilder) Preload(rel builderWrapperI) *importPreviewBuilde
 
 func (r *Fetch) ImportPreview(ids ...int) *importPreviewBuilder {
 	return &importPreviewBuilder{
-		builder: builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview]{
+		builder: builder[importPreviewBuilder, *importPreviewBuilder, ImportPreview, *ImportPreview]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ImportPreview) ImportPreview { return *p },
 		},
 	}
 }
@@ -1314,6 +1561,7 @@ type ListOfSpeakers struct {
 	SequentialNumber                 int
 	SpeakerIDs                       []int
 	StructureLevelListOfSpeakersIDs  []int
+	ContentObject                    ListOfSpeakersContentObjectUnion
 	Meeting                          *Meeting
 	ProjectionList                   []Projection
 	SpeakerList                      []Speaker
@@ -1321,10 +1569,11 @@ type ListOfSpeakers struct {
 }
 
 type listOfSpeakersBuilder struct {
-	builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]
+	builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]
 }
 
-func (b *listOfSpeakersBuilder) lazy(ds *Fetch, id int) *ListOfSpeakers {
+func (b *listOfSpeakersBuilder) lazy(ds *Fetch, idI any) *ListOfSpeakers {
+	id := idI.(int)
 	c := ListOfSpeakers{}
 	ds.ListOfSpeakers_Closed(id).Lazy(&c.Closed)
 	ds.ListOfSpeakers_ContentObjectID(id).Lazy(&c.ContentObjectID)
@@ -1343,58 +1592,156 @@ func (b *listOfSpeakersBuilder) Preload(rel builderWrapperI) *listOfSpeakersBuil
 	return b
 }
 
+func (b *listOfSpeakersBuilder) ContentObject() *listOfSpeakersContentObjectUnionBuilder {
+	return &listOfSpeakersContentObjectUnionBuilder{
+		builder: builder[listOfSpeakersContentObjectUnionBuilder, *listOfSpeakersContentObjectUnionBuilder, ListOfSpeakersContentObjectUnion, ListOfSpeakersContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+			conv:     func(u ListOfSpeakersContentObjectUnion) ListOfSpeakersContentObjectUnion { return u },
+		},
+	}
+}
+
+type ListOfSpeakersContentObjectUnion interface {
+	isListOfSpeakersContentObjectUnion()
+}
+
+func (*Motion) isListOfSpeakersContentObjectUnion()           {}
+func (*MotionBlock) isListOfSpeakersContentObjectUnion()      {}
+func (*Assignment) isListOfSpeakersContentObjectUnion()       {}
+func (*Topic) isListOfSpeakersContentObjectUnion()            {}
+func (*MeetingMediafile) isListOfSpeakersContentObjectUnion() {}
+
+type listOfSpeakersContentObjectUnionBuilder struct {
+	builder[listOfSpeakersContentObjectUnionBuilder, *listOfSpeakersContentObjectUnionBuilder, ListOfSpeakersContentObjectUnion, ListOfSpeakersContentObjectUnion]
+}
+
+func (b *listOfSpeakersContentObjectUnionBuilder) lazy(ds *Fetch, id any) ListOfSpeakersContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "motion":
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
+				fetch: ds,
+				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "motion_block":
+		builder := &motionBlockBuilder{
+			builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]{
+				fetch: ds,
+				conv:  func(p *MotionBlock) MotionBlock { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "assignment":
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
+				fetch: ds,
+				conv:  func(p *Assignment) Assignment { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "topic":
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
+				fetch: ds,
+				conv:  func(p *Topic) Topic { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "meeting_mediafile":
+		builder := &meetingMediafileBuilder{
+			builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
+				fetch: ds,
+				conv:  func(p *MeetingMediafile) MeetingMediafile { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *listOfSpeakersContentObjectUnionBuilder) Preload(rel builderWrapperI) *listOfSpeakersContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *listOfSpeakersBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *listOfSpeakersBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *listOfSpeakersBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
-		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
+			conv:     func(p *Speaker) Speaker { return *p },
 		},
 	}
 }
 
 func (b *listOfSpeakersBuilder) StructureLevelListOfSpeakersList() *structureLevelListOfSpeakersBuilder {
 	return &structureLevelListOfSpeakersBuilder{
-		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelListOfSpeakersIDs",
 			relField: "StructureLevelListOfSpeakersList",
 			many:     true,
+			conv:     func(p *StructureLevelListOfSpeakers) StructureLevelListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (r *Fetch) ListOfSpeakers(ids ...int) *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
@@ -1417,15 +1764,17 @@ type Mediafile struct {
 	Token                               string
 	ChildList                           []Mediafile
 	MeetingMediafileList                []MeetingMediafile
+	Owner                               MediafileOwnerUnion
 	Parent                              *dsfetch.Maybe[Mediafile]
 	PublishedToMeetingsInOrganization   *dsfetch.Maybe[Organization]
 }
 
 type mediafileBuilder struct {
-	builder[mediafileBuilder, *mediafileBuilder, Mediafile]
+	builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]
 }
 
-func (b *mediafileBuilder) lazy(ds *Fetch, id int) *Mediafile {
+func (b *mediafileBuilder) lazy(ds *Fetch, idI any) *Mediafile {
+	id := idI.(int)
 	c := Mediafile{}
 	ds.Mediafile_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.Mediafile_CreateTimestamp(id).Lazy(&c.CreateTimestamp)
@@ -1451,55 +1800,126 @@ func (b *mediafileBuilder) Preload(rel builderWrapperI) *mediafileBuilder {
 
 func (b *mediafileBuilder) ChildList() *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
+			conv:     func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
 
 func (b *mediafileBuilder) MeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingMediafileIDs",
 			relField: "MeetingMediafileList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
+func (b *mediafileBuilder) Owner() *mediafileOwnerUnionBuilder {
+	return &mediafileOwnerUnionBuilder{
+		builder: builder[mediafileOwnerUnionBuilder, *mediafileOwnerUnionBuilder, MediafileOwnerUnion, MediafileOwnerUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "OwnerID",
+			relField: "Owner",
+			conv:     func(u MediafileOwnerUnion) MediafileOwnerUnion { return u },
+		},
+	}
+}
+
+type MediafileOwnerUnion interface {
+	isMediafileOwnerUnion()
+}
+
+func (*Meeting) isMediafileOwnerUnion()      {}
+func (*Organization) isMediafileOwnerUnion() {}
+
+type mediafileOwnerUnionBuilder struct {
+	builder[mediafileOwnerUnionBuilder, *mediafileOwnerUnionBuilder, MediafileOwnerUnion, MediafileOwnerUnion]
+}
+
+func (b *mediafileOwnerUnionBuilder) lazy(ds *Fetch, id any) MediafileOwnerUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "meeting":
+		builder := &meetingBuilder{
+			builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
+				fetch: ds,
+				conv:  func(p *Meeting) Meeting { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "organization":
+		builder := &organizationBuilder{
+			builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
+				fetch: ds,
+				conv:  func(p *Organization) Organization { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *mediafileOwnerUnionBuilder) Preload(rel builderWrapperI) *mediafileOwnerUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *mediafileBuilder) Parent() *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
+			conv:     func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
 
 func (b *mediafileBuilder) PublishedToMeetingsInOrganization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PublishedToMeetingsInOrganizationID",
 			relField: "PublishedToMeetingsInOrganization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Mediafile(ids ...int) *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
@@ -1836,10 +2256,11 @@ type Meeting struct {
 }
 
 type meetingBuilder struct {
-	builder[meetingBuilder, *meetingBuilder, Meeting]
+	builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]
 }
 
-func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
+func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
+	id := idI.(int)
 	c := Meeting{}
 	ds.Meeting_AdminGroupID(id).Lazy(&c.AdminGroupID)
 	ds.Meeting_AgendaEnableNumbering(id).Lazy(&c.AgendaEnableNumbering)
@@ -2091,1024 +2512,1112 @@ func (b *meetingBuilder) Preload(rel builderWrapperI) *meetingBuilder {
 
 func (b *meetingBuilder) AdminGroup() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AdminGroupID",
 			relField: "AdminGroup",
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) AgendaItemList() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AgendaItemIDs",
 			relField: "AgendaItemList",
 			many:     true,
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) AllProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AllProjectionIDs",
 			relField: "AllProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) AnonymousGroup() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AnonymousGroupID",
 			relField: "AnonymousGroup",
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) AssignmentCandidateList() *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
-		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate, *AssignmentCandidate]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AssignmentCandidateIDs",
 			relField: "AssignmentCandidateList",
 			many:     true,
+			conv:     func(p *AssignmentCandidate) AssignmentCandidate { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) AssignmentList() *assignmentBuilder {
 	return &assignmentBuilder{
-		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment]{
+		builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AssignmentIDs",
 			relField: "AssignmentList",
 			many:     true,
+			conv:     func(p *Assignment) Assignment { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) AssignmentPollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AssignmentPollDefaultGroupIDs",
 			relField: "AssignmentPollDefaultGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ChatGroupList() *chatGroupBuilder {
 	return &chatGroupBuilder{
-		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup]{
+		builder: builder[chatGroupBuilder, *chatGroupBuilder, ChatGroup, *ChatGroup]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChatGroupIDs",
 			relField: "ChatGroupList",
 			many:     true,
+			conv:     func(p *ChatGroup) ChatGroup { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ChatMessageList() *chatMessageBuilder {
 	return &chatMessageBuilder{
-		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage, *ChatMessage]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChatMessageIDs",
 			relField: "ChatMessageList",
 			many:     true,
+			conv:     func(p *ChatMessage) ChatMessage { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) Committee() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CommitteeID",
 			relField: "Committee",
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultGroup() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultGroupID",
 			relField: "DefaultGroup",
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultMeetingForCommittee() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultMeetingForCommitteeID",
 			relField: "DefaultMeetingForCommittee",
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorAgendaItemListList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorAgendaItemListIDs",
 			relField: "DefaultProjectorAgendaItemListList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorAmendmentList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorAmendmentIDs",
 			relField: "DefaultProjectorAmendmentList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorAssignmentList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorAssignmentIDs",
 			relField: "DefaultProjectorAssignmentList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorAssignmentPollList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorAssignmentPollIDs",
 			relField: "DefaultProjectorAssignmentPollList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorCountdownList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorCountdownIDs",
 			relField: "DefaultProjectorCountdownList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorCurrentLosList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorCurrentLosIDs",
 			relField: "DefaultProjectorCurrentLosList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorListOfSpeakersList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorListOfSpeakersIDs",
 			relField: "DefaultProjectorListOfSpeakersList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorMediafileList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorMediafileIDs",
 			relField: "DefaultProjectorMediafileList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorMessageList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorMessageIDs",
 			relField: "DefaultProjectorMessageList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorMotionBlockList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorMotionBlockIDs",
 			relField: "DefaultProjectorMotionBlockList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorMotionList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorMotionIDs",
 			relField: "DefaultProjectorMotionList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorMotionPollList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorMotionPollIDs",
 			relField: "DefaultProjectorMotionPollList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorPollList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorPollIDs",
 			relField: "DefaultProjectorPollList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) DefaultProjectorTopicList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultProjectorTopicIDs",
 			relField: "DefaultProjectorTopicList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontBold() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontBoldID",
 			relField: "FontBold",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontBoldItalic() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontBoldItalicID",
 			relField: "FontBoldItalic",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontChyronSpeakerName() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontChyronSpeakerNameID",
 			relField: "FontChyronSpeakerName",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontItalic() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontItalicID",
 			relField: "FontItalic",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontMonospace() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontMonospaceID",
 			relField: "FontMonospace",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontProjectorH1() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontProjectorH1ID",
 			relField: "FontProjectorH1",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontProjectorH2() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontProjectorH2ID",
 			relField: "FontProjectorH2",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) FontRegular() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FontRegularID",
 			relField: "FontRegular",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ForwardedMotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ForwardedMotionIDs",
 			relField: "ForwardedMotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) GroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "GroupIDs",
 			relField: "GroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) IsActiveInOrganization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "IsActiveInOrganizationID",
 			relField: "IsActiveInOrganization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) IsArchivedInOrganization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "IsArchivedInOrganizationID",
 			relField: "IsArchivedInOrganization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ListOfSpeakersCountdown() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
-		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown, *ProjectorCountdown]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersCountdownID",
 			relField: "ListOfSpeakersCountdown",
+			conv:     func(p *ProjectorCountdown) ProjectorCountdown { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ListOfSpeakersList() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersIDs",
 			relField: "ListOfSpeakersList",
 			many:     true,
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoPdfBallotPaper() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoPdfBallotPaperID",
 			relField: "LogoPdfBallotPaper",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoPdfFooterL() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoPdfFooterLID",
 			relField: "LogoPdfFooterL",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoPdfFooterR() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoPdfFooterRID",
 			relField: "LogoPdfFooterR",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoPdfHeaderL() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoPdfHeaderLID",
 			relField: "LogoPdfHeaderL",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoPdfHeaderR() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoPdfHeaderRID",
 			relField: "LogoPdfHeaderR",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoProjectorHeader() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoProjectorHeaderID",
 			relField: "LogoProjectorHeader",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoProjectorMain() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoProjectorMainID",
 			relField: "LogoProjectorMain",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) LogoWebHeader() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LogoWebHeaderID",
 			relField: "LogoWebHeader",
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MediafileList() *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MediafileIDs",
 			relField: "MediafileList",
 			many:     true,
+			conv:     func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingMediafileIDs",
 			relField: "MeetingMediafileList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionBlockList() *motionBlockBuilder {
 	return &motionBlockBuilder{
-		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionBlockIDs",
 			relField: "MotionBlockList",
 			many:     true,
+			conv:     func(p *MotionBlock) MotionBlock { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionCategoryList() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
-		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory, *MotionCategory]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionCategoryIDs",
 			relField: "MotionCategoryList",
 			many:     true,
+			conv:     func(p *MotionCategory) MotionCategory { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionChangeRecommendationList() *motionChangeRecommendationBuilder {
 	return &motionChangeRecommendationBuilder{
-		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
+		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation, *MotionChangeRecommendation]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionChangeRecommendationIDs",
 			relField: "MotionChangeRecommendationList",
 			many:     true,
+			conv:     func(p *MotionChangeRecommendation) MotionChangeRecommendation { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionCommentList() *motionCommentBuilder {
 	return &motionCommentBuilder{
-		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment, *MotionComment]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionCommentIDs",
 			relField: "MotionCommentList",
 			many:     true,
+			conv:     func(p *MotionComment) MotionComment { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionCommentSectionList() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
-		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection, *MotionCommentSection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionCommentSectionIDs",
 			relField: "MotionCommentSectionList",
 			many:     true,
+			conv:     func(p *MotionCommentSection) MotionCommentSection { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionEditorList() *motionEditorBuilder {
 	return &motionEditorBuilder{
-		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor, *MotionEditor]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionEditorIDs",
 			relField: "MotionEditorList",
 			many:     true,
+			conv:     func(p *MotionEditor) MotionEditor { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionPollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionPollDefaultGroupIDs",
 			relField: "MotionPollDefaultGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionStateList() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionStateIDs",
 			relField: "MotionStateList",
 			many:     true,
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
-		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter, *MotionSubmitter]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionSubmitterIDs",
 			relField: "MotionSubmitterList",
 			many:     true,
+			conv:     func(p *MotionSubmitter) MotionSubmitter { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionSupporterList() *motionSupporterBuilder {
 	return &motionSupporterBuilder{
-		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter, *MotionSupporter]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionSupporterIDs",
 			relField: "MotionSupporterList",
 			many:     true,
+			conv:     func(p *MotionSupporter) MotionSupporter { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionWorkflowList() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
-		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionWorkflowIDs",
 			relField: "MotionWorkflowList",
 			many:     true,
+			conv:     func(p *MotionWorkflow) MotionWorkflow { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
-		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionWorkingGroupSpeakerIDs",
 			relField: "MotionWorkingGroupSpeakerList",
 			many:     true,
+			conv:     func(p *MotionWorkingGroupSpeaker) MotionWorkingGroupSpeaker { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionsDefaultAmendmentWorkflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
-		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionsDefaultAmendmentWorkflowID",
 			relField: "MotionsDefaultAmendmentWorkflow",
+			conv:     func(p *MotionWorkflow) MotionWorkflow { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) MotionsDefaultWorkflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
-		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionsDefaultWorkflowID",
 			relField: "MotionsDefaultWorkflow",
+			conv:     func(p *MotionWorkflow) MotionWorkflow { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
-		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag, *OrganizationTag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
+			conv:     func(p *OrganizationTag) OrganizationTag { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) PersonalNoteList() *personalNoteBuilder {
 	return &personalNoteBuilder{
-		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote, *PersonalNote]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PersonalNoteIDs",
 			relField: "PersonalNoteList",
 			many:     true,
+			conv:     func(p *PersonalNote) PersonalNote { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) PointOfOrderCategoryList() *pointOfOrderCategoryBuilder {
 	return &pointOfOrderCategoryBuilder{
-		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
+		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory, *PointOfOrderCategory]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PointOfOrderCategoryIDs",
 			relField: "PointOfOrderCategoryList",
 			many:     true,
+			conv:     func(p *PointOfOrderCategory) PointOfOrderCategory { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) PollCountdown() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
-		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown, *ProjectorCountdown]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollCountdownID",
 			relField: "PollCountdown",
+			conv:     func(p *ProjectorCountdown) ProjectorCountdown { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) PollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollDefaultGroupIDs",
 			relField: "PollDefaultGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) PresentUserList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PresentUserIDs",
 			relField: "PresentUserList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ProjectorCountdownList() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
-		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown, *ProjectorCountdown]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectorCountdownIDs",
 			relField: "ProjectorCountdownList",
 			many:     true,
+			conv:     func(p *ProjectorCountdown) ProjectorCountdown { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ProjectorList() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectorIDs",
 			relField: "ProjectorList",
 			many:     true,
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ProjectorMessageList() *projectorMessageBuilder {
 	return &projectorMessageBuilder{
-		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
+		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage, *ProjectorMessage]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectorMessageIDs",
 			relField: "ProjectorMessageList",
 			many:     true,
+			conv:     func(p *ProjectorMessage) ProjectorMessage { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) ReferenceProjector() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReferenceProjectorID",
 			relField: "ReferenceProjector",
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) RelevantHistoryEntryList() *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "RelevantHistoryEntryIDs",
 			relField: "RelevantHistoryEntryList",
 			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
-		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
+			conv:     func(p *Speaker) Speaker { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) StructureLevelList() *structureLevelBuilder {
 	return &structureLevelBuilder{
-		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel, *StructureLevel]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelIDs",
 			relField: "StructureLevelList",
 			many:     true,
+			conv:     func(p *StructureLevel) StructureLevel { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) StructureLevelListOfSpeakersList() *structureLevelListOfSpeakersBuilder {
 	return &structureLevelListOfSpeakersBuilder{
-		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelListOfSpeakersIDs",
 			relField: "StructureLevelListOfSpeakersList",
 			many:     true,
+			conv:     func(p *StructureLevelListOfSpeakers) StructureLevelListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
-		builder: builder[tagBuilder, *tagBuilder, Tag]{
+		builder: builder[tagBuilder, *tagBuilder, Tag, *Tag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
+			conv:     func(p *Tag) Tag { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) TemplateForOrganization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TemplateForOrganizationID",
 			relField: "TemplateForOrganization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) TopicList() *topicBuilder {
 	return &topicBuilder{
-		builder: builder[topicBuilder, *topicBuilder, Topic]{
+		builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TopicIDs",
 			relField: "TopicList",
 			many:     true,
+			conv:     func(p *Topic) Topic { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TopicPollDefaultGroupIDs",
 			relField: "TopicPollDefaultGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingBuilder) UserList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Meeting(ids ...int) *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
@@ -3165,10 +3674,11 @@ type MeetingMediafile struct {
 }
 
 type meetingMediafileBuilder struct {
-	builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]
+	builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]
 }
 
-func (b *meetingMediafileBuilder) lazy(ds *Fetch, id int) *MeetingMediafile {
+func (b *meetingMediafileBuilder) lazy(ds *Fetch, idI any) *MeetingMediafile {
+	id := idI.(int)
 	c := MeetingMediafile{}
 	ds.MeetingMediafile_AccessGroupIDs(id).Lazy(&c.AccessGroupIDs)
 	ds.MeetingMediafile_AttachmentIDs(id).Lazy(&c.AttachmentIDs)
@@ -3205,254 +3715,277 @@ func (b *meetingMediafileBuilder) Preload(rel builderWrapperI) *meetingMediafile
 
 func (b *meetingMediafileBuilder) AccessGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AccessGroupIDs",
 			relField: "AccessGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) InheritedAccessGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "InheritedAccessGroupIDs",
 			relField: "InheritedAccessGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) Mediafile() *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MediafileID",
 			relField: "Mediafile",
+			conv:     func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontBoldInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontBoldInMeetingID",
 			relField: "UsedAsFontBoldInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontBoldItalicInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontBoldItalicInMeetingID",
 			relField: "UsedAsFontBoldItalicInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontChyronSpeakerNameInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontChyronSpeakerNameInMeetingID",
 			relField: "UsedAsFontChyronSpeakerNameInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontItalicInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontItalicInMeetingID",
 			relField: "UsedAsFontItalicInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontMonospaceInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontMonospaceInMeetingID",
 			relField: "UsedAsFontMonospaceInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontProjectorH1InMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontProjectorH1InMeetingID",
 			relField: "UsedAsFontProjectorH1InMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontProjectorH2InMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontProjectorH2InMeetingID",
 			relField: "UsedAsFontProjectorH2InMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsFontRegularInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsFontRegularInMeetingID",
 			relField: "UsedAsFontRegularInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoPdfBallotPaperInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoPdfBallotPaperInMeetingID",
 			relField: "UsedAsLogoPdfBallotPaperInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoPdfFooterLInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoPdfFooterLInMeetingID",
 			relField: "UsedAsLogoPdfFooterLInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoPdfFooterRInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoPdfFooterRInMeetingID",
 			relField: "UsedAsLogoPdfFooterRInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoPdfHeaderLInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoPdfHeaderLInMeetingID",
 			relField: "UsedAsLogoPdfHeaderLInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoPdfHeaderRInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoPdfHeaderRInMeetingID",
 			relField: "UsedAsLogoPdfHeaderRInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoProjectorHeaderInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoProjectorHeaderInMeetingID",
 			relField: "UsedAsLogoProjectorHeaderInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoProjectorMainInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoProjectorMainInMeetingID",
 			relField: "UsedAsLogoProjectorMainInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingMediafileBuilder) UsedAsLogoWebHeaderInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsLogoWebHeaderInMeetingID",
 			relField: "UsedAsLogoWebHeaderInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MeetingMediafile(ids ...int) *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
@@ -3504,10 +4037,11 @@ type MeetingUser struct {
 }
 
 type meetingUserBuilder struct {
-	builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]
+	builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]
 }
 
-func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
+func (b *meetingUserBuilder) lazy(ds *Fetch, idI any) *MeetingUser {
+	id := idI.(int)
 	c := MeetingUser{}
 	ds.MeetingUser_AboutMe(id).Lazy(&c.AboutMe)
 	ds.MeetingUser_ActingBallotIDs(id).Lazy(&c.ActingBallotIDs)
@@ -3543,222 +4077,241 @@ func (b *meetingUserBuilder) Preload(rel builderWrapperI) *meetingUserBuilder {
 
 func (b *meetingUserBuilder) ActingBallotList() *pollBallotBuilder {
 	return &pollBallotBuilder{
-		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot, *PollBallot]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ActingBallotIDs",
 			relField: "ActingBallotList",
 			many:     true,
+			conv:     func(p *PollBallot) PollBallot { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) AssignmentCandidateList() *assignmentCandidateBuilder {
 	return &assignmentCandidateBuilder{
-		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate]{
+		builder: builder[assignmentCandidateBuilder, *assignmentCandidateBuilder, AssignmentCandidate, *AssignmentCandidate]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AssignmentCandidateIDs",
 			relField: "AssignmentCandidateList",
 			many:     true,
+			conv:     func(p *AssignmentCandidate) AssignmentCandidate { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) ChatMessageList() *chatMessageBuilder {
 	return &chatMessageBuilder{
-		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage]{
+		builder: builder[chatMessageBuilder, *chatMessageBuilder, ChatMessage, *ChatMessage]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChatMessageIDs",
 			relField: "ChatMessageList",
 			many:     true,
+			conv:     func(p *ChatMessage) ChatMessage { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) GroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "GroupIDs",
 			relField: "GroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) MotionEditorList() *motionEditorBuilder {
 	return &motionEditorBuilder{
-		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor, *MotionEditor]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionEditorIDs",
 			relField: "MotionEditorList",
 			many:     true,
+			conv:     func(p *MotionEditor) MotionEditor { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) MotionSubmitterList() *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
-		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter, *MotionSubmitter]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionSubmitterIDs",
 			relField: "MotionSubmitterList",
 			many:     true,
+			conv:     func(p *MotionSubmitter) MotionSubmitter { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) MotionSupporterList() *motionSupporterBuilder {
 	return &motionSupporterBuilder{
-		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter, *MotionSupporter]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionSupporterIDs",
 			relField: "MotionSupporterList",
 			many:     true,
+			conv:     func(p *MotionSupporter) MotionSupporter { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) MotionWorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
-		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionWorkingGroupSpeakerIDs",
 			relField: "MotionWorkingGroupSpeakerList",
 			many:     true,
+			conv:     func(p *MotionWorkingGroupSpeaker) MotionWorkingGroupSpeaker { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) PersonalNoteList() *personalNoteBuilder {
 	return &personalNoteBuilder{
-		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote, *PersonalNote]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PersonalNoteIDs",
 			relField: "PersonalNoteList",
 			many:     true,
+			conv:     func(p *PersonalNote) PersonalNote { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) PollOptionList() *pollOptionBuilder {
 	return &pollOptionBuilder{
-		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption]{
+		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption, *PollOption]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollOptionIDs",
 			relField: "PollOptionList",
 			many:     true,
+			conv:     func(p *PollOption) PollOption { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) PollVotedList() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollVotedIDs",
 			relField: "PollVotedList",
 			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) RepresentedBallotList() *pollBallotBuilder {
 	return &pollBallotBuilder{
-		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot, *PollBallot]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "RepresentedBallotIDs",
 			relField: "RepresentedBallotList",
 			many:     true,
+			conv:     func(p *PollBallot) PollBallot { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
-		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
+			conv:     func(p *Speaker) Speaker { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) StructureLevelList() *structureLevelBuilder {
 	return &structureLevelBuilder{
-		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel, *StructureLevel]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelIDs",
 			relField: "StructureLevelList",
 			many:     true,
+			conv:     func(p *StructureLevel) StructureLevel { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) User() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UserID",
 			relField: "User",
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) VoteDelegatedTo() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "VoteDelegatedToID",
 			relField: "VoteDelegatedTo",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *meetingUserBuilder) VoteDelegationsFromList() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "VoteDelegationsFromIDs",
 			relField: "VoteDelegationsFromList",
 			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MeetingUser(ids ...int) *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
@@ -3854,10 +4407,11 @@ type Motion struct {
 }
 
 type motionBuilder struct {
-	builder[motionBuilder, *motionBuilder, Motion]
+	builder[motionBuilder, *motionBuilder, Motion, *Motion]
 }
 
-func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
+func (b *motionBuilder) lazy(ds *Fetch, idI any) *Motion {
+	id := idI.(int)
 	c := Motion{}
 	ds.Motion_AdditionalSubmitter(id).Lazy(&c.AdditionalSubmitter)
 	ds.Motion_AgendaItemID(id).Lazy(&c.AgendaItemID)
@@ -3924,370 +4478,402 @@ func (b *motionBuilder) Preload(rel builderWrapperI) *motionBuilder {
 
 func (b *motionBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) AllDerivedMotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AllDerivedMotionIDs",
 			relField: "AllDerivedMotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) AllOriginList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AllOriginIDs",
 			relField: "AllOriginList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) AmendmentList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AmendmentIDs",
 			relField: "AmendmentList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AttachmentMeetingMediafileIDs",
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) Block() *motionBlockBuilder {
 	return &motionBlockBuilder{
-		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "BlockID",
 			relField: "Block",
+			conv:     func(p *MotionBlock) MotionBlock { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) Category() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
-		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory, *MotionCategory]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CategoryID",
 			relField: "Category",
+			conv:     func(p *MotionCategory) MotionCategory { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) ChangeRecommendationList() *motionChangeRecommendationBuilder {
 	return &motionChangeRecommendationBuilder{
-		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
+		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation, *MotionChangeRecommendation]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChangeRecommendationIDs",
 			relField: "ChangeRecommendationList",
 			many:     true,
+			conv:     func(p *MotionChangeRecommendation) MotionChangeRecommendation { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) CommentList() *motionCommentBuilder {
 	return &motionCommentBuilder{
-		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment, *MotionComment]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CommentIDs",
 			relField: "CommentList",
 			many:     true,
+			conv:     func(p *MotionComment) MotionComment { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) DerivedMotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DerivedMotionIDs",
 			relField: "DerivedMotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) EditorList() *motionEditorBuilder {
 	return &motionEditorBuilder{
-		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor, *MotionEditor]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "EditorIDs",
 			relField: "EditorList",
 			many:     true,
+			conv:     func(p *MotionEditor) MotionEditor { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) HistoryEntryList() *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryEntryIDs",
 			relField: "HistoryEntryList",
 			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) IDenticalMotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "IDenticalMotionIDs",
 			relField: "IDenticalMotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) LeadMotion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "LeadMotionID",
 			relField: "LeadMotion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) Origin() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OriginID",
 			relField: "Origin",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) OriginMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OriginMeetingID",
 			relField: "OriginMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) PersonalNoteList() *personalNoteBuilder {
 	return &personalNoteBuilder{
-		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote, *PersonalNote]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PersonalNoteIDs",
 			relField: "PersonalNoteList",
 			many:     true,
+			conv:     func(p *PersonalNote) PersonalNote { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) Recommendation() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "RecommendationID",
 			relField: "Recommendation",
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) ReferencedInMotionRecommendationExtensionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReferencedInMotionRecommendationExtensionIDs",
 			relField: "ReferencedInMotionRecommendationExtensionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) ReferencedInMotionStateExtensionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReferencedInMotionStateExtensionIDs",
 			relField: "ReferencedInMotionStateExtensionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) SortChildList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SortChildIDs",
 			relField: "SortChildList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) SortParent() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SortParentID",
 			relField: "SortParent",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) State() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StateID",
 			relField: "State",
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) SubmitterList() *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
-		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter, *MotionSubmitter]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SubmitterIDs",
 			relField: "SubmitterList",
 			many:     true,
+			conv:     func(p *MotionSubmitter) MotionSubmitter { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) SupporterList() *motionSupporterBuilder {
 	return &motionSupporterBuilder{
-		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter, *MotionSupporter]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SupporterIDs",
 			relField: "SupporterList",
 			many:     true,
+			conv:     func(p *MotionSupporter) MotionSupporter { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) TagList() *tagBuilder {
 	return &tagBuilder{
-		builder: builder[tagBuilder, *tagBuilder, Tag]{
+		builder: builder[tagBuilder, *tagBuilder, Tag, *Tag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TagIDs",
 			relField: "TagList",
 			many:     true,
+			conv:     func(p *Tag) Tag { return *p },
 		},
 	}
 }
 
 func (b *motionBuilder) WorkingGroupSpeakerList() *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
-		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "WorkingGroupSpeakerIDs",
 			relField: "WorkingGroupSpeakerList",
 			many:     true,
+			conv:     func(p *MotionWorkingGroupSpeaker) MotionWorkingGroupSpeaker { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Motion(ids ...int) *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Motion) Motion { return *p },
 		},
 	}
 }
@@ -4311,10 +4897,11 @@ type MotionBlock struct {
 }
 
 type motionBlockBuilder struct {
-	builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]
+	builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]
 }
 
-func (b *motionBlockBuilder) lazy(ds *Fetch, id int) *MotionBlock {
+func (b *motionBlockBuilder) lazy(ds *Fetch, idI any) *MotionBlock {
+	id := idI.(int)
 	c := MotionBlock{}
 	ds.MotionBlock_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.MotionBlock_ID(id).Lazy(&c.ID)
@@ -4335,66 +4922,72 @@ func (b *motionBlockBuilder) Preload(rel builderWrapperI) *motionBlockBuilder {
 
 func (b *motionBlockBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
 func (b *motionBlockBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *motionBlockBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionBlockBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionBlockBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionBlock(ids ...int) *motionBlockBuilder {
 	return &motionBlockBuilder{
-		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock]{
+		builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionBlock) MotionBlock { return *p },
 		},
 	}
 }
@@ -4418,10 +5011,11 @@ type MotionCategory struct {
 }
 
 type motionCategoryBuilder struct {
-	builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]
+	builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory, *MotionCategory]
 }
 
-func (b *motionCategoryBuilder) lazy(ds *Fetch, id int) *MotionCategory {
+func (b *motionCategoryBuilder) lazy(ds *Fetch, idI any) *MotionCategory {
+	id := idI.(int)
 	c := MotionCategory{}
 	ds.MotionCategory_ChildIDs(id).Lazy(&c.ChildIDs)
 	ds.MotionCategory_ID(id).Lazy(&c.ID)
@@ -4443,55 +5037,60 @@ func (b *motionCategoryBuilder) Preload(rel builderWrapperI) *motionCategoryBuil
 
 func (b *motionCategoryBuilder) ChildList() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
-		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory, *MotionCategory]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ChildIDs",
 			relField: "ChildList",
 			many:     true,
+			conv:     func(p *MotionCategory) MotionCategory { return *p },
 		},
 	}
 }
 
 func (b *motionCategoryBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionCategoryBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionCategoryBuilder) Parent() *motionCategoryBuilder {
 	return &motionCategoryBuilder{
-		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory, *MotionCategory]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ParentID",
 			relField: "Parent",
+			conv:     func(p *MotionCategory) MotionCategory { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionCategory(ids ...int) *motionCategoryBuilder {
 	return &motionCategoryBuilder{
-		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory]{
+		builder: builder[motionCategoryBuilder, *motionCategoryBuilder, MotionCategory, *MotionCategory]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionCategory) MotionCategory { return *p },
 		},
 	}
 }
@@ -4514,10 +5113,11 @@ type MotionChangeRecommendation struct {
 }
 
 type motionChangeRecommendationBuilder struct {
-	builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]
+	builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation, *MotionChangeRecommendation]
 }
 
-func (b *motionChangeRecommendationBuilder) lazy(ds *Fetch, id int) *MotionChangeRecommendation {
+func (b *motionChangeRecommendationBuilder) lazy(ds *Fetch, idI any) *MotionChangeRecommendation {
+	id := idI.(int)
 	c := MotionChangeRecommendation{}
 	ds.MotionChangeRecommendation_CreationTime(id).Lazy(&c.CreationTime)
 	ds.MotionChangeRecommendation_ID(id).Lazy(&c.ID)
@@ -4540,31 +5140,34 @@ func (b *motionChangeRecommendationBuilder) Preload(rel builderWrapperI) *motion
 
 func (b *motionChangeRecommendationBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionChangeRecommendationBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionChangeRecommendation(ids ...int) *motionChangeRecommendationBuilder {
 	return &motionChangeRecommendationBuilder{
-		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation]{
+		builder: builder[motionChangeRecommendationBuilder, *motionChangeRecommendationBuilder, MotionChangeRecommendation, *MotionChangeRecommendation]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionChangeRecommendation) MotionChangeRecommendation { return *p },
 		},
 	}
 }
@@ -4582,10 +5185,11 @@ type MotionComment struct {
 }
 
 type motionCommentBuilder struct {
-	builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]
+	builder[motionCommentBuilder, *motionCommentBuilder, MotionComment, *MotionComment]
 }
 
-func (b *motionCommentBuilder) lazy(ds *Fetch, id int) *MotionComment {
+func (b *motionCommentBuilder) lazy(ds *Fetch, idI any) *MotionComment {
+	id := idI.(int)
 	c := MotionComment{}
 	ds.MotionComment_Comment(id).Lazy(&c.Comment)
 	ds.MotionComment_ID(id).Lazy(&c.ID)
@@ -4602,42 +5206,46 @@ func (b *motionCommentBuilder) Preload(rel builderWrapperI) *motionCommentBuilde
 
 func (b *motionCommentBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionCommentBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionCommentBuilder) Section() *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
-		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection, *MotionCommentSection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SectionID",
 			relField: "Section",
+			conv:     func(p *MotionCommentSection) MotionCommentSection { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionComment(ids ...int) *motionCommentBuilder {
 	return &motionCommentBuilder{
-		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment, *MotionComment]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionComment) MotionComment { return *p },
 		},
 	}
 }
@@ -4660,10 +5268,11 @@ type MotionCommentSection struct {
 }
 
 type motionCommentSectionBuilder struct {
-	builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]
+	builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection, *MotionCommentSection]
 }
 
-func (b *motionCommentSectionBuilder) lazy(ds *Fetch, id int) *MotionCommentSection {
+func (b *motionCommentSectionBuilder) lazy(ds *Fetch, idI any) *MotionCommentSection {
+	id := idI.(int)
 	c := MotionCommentSection{}
 	ds.MotionCommentSection_CommentIDs(id).Lazy(&c.CommentIDs)
 	ds.MotionCommentSection_ID(id).Lazy(&c.ID)
@@ -4684,56 +5293,61 @@ func (b *motionCommentSectionBuilder) Preload(rel builderWrapperI) *motionCommen
 
 func (b *motionCommentSectionBuilder) CommentList() *motionCommentBuilder {
 	return &motionCommentBuilder{
-		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment]{
+		builder: builder[motionCommentBuilder, *motionCommentBuilder, MotionComment, *MotionComment]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CommentIDs",
 			relField: "CommentList",
 			many:     true,
+			conv:     func(p *MotionComment) MotionComment { return *p },
 		},
 	}
 }
 
 func (b *motionCommentSectionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionCommentSectionBuilder) ReadGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ReadGroupIDs",
 			relField: "ReadGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *motionCommentSectionBuilder) WriteGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "WriteGroupIDs",
 			relField: "WriteGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionCommentSection(ids ...int) *motionCommentSectionBuilder {
 	return &motionCommentSectionBuilder{
-		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection]{
+		builder: builder[motionCommentSectionBuilder, *motionCommentSectionBuilder, MotionCommentSection, *MotionCommentSection]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionCommentSection) MotionCommentSection { return *p },
 		},
 	}
 }
@@ -4751,10 +5365,11 @@ type MotionEditor struct {
 }
 
 type motionEditorBuilder struct {
-	builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]
+	builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor, *MotionEditor]
 }
 
-func (b *motionEditorBuilder) lazy(ds *Fetch, id int) *MotionEditor {
+func (b *motionEditorBuilder) lazy(ds *Fetch, idI any) *MotionEditor {
+	id := idI.(int)
 	c := MotionEditor{}
 	ds.MotionEditor_ID(id).Lazy(&c.ID)
 	ds.MotionEditor_MeetingID(id).Lazy(&c.MeetingID)
@@ -4771,42 +5386,46 @@ func (b *motionEditorBuilder) Preload(rel builderWrapperI) *motionEditorBuilder 
 
 func (b *motionEditorBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionEditorBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *motionEditorBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionEditor(ids ...int) *motionEditorBuilder {
 	return &motionEditorBuilder{
-		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor]{
+		builder: builder[motionEditorBuilder, *motionEditorBuilder, MotionEditor, *MotionEditor]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionEditor) MotionEditor { return *p },
 		},
 	}
 }
@@ -4852,10 +5471,11 @@ type MotionState struct {
 }
 
 type motionStateBuilder struct {
-	builder[motionStateBuilder, *motionStateBuilder, MotionState]
+	builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]
 }
 
-func (b *motionStateBuilder) lazy(ds *Fetch, id int) *MotionState {
+func (b *motionStateBuilder) lazy(ds *Fetch, idI any) *MotionState {
+	id := idI.(int)
 	c := MotionState{}
 	ds.MotionState_AllowAmendmentForwarding(id).Lazy(&c.AllowAmendmentForwarding)
 	ds.MotionState_AllowCreatePoll(id).Lazy(&c.AllowCreatePoll)
@@ -4894,113 +5514,123 @@ func (b *motionStateBuilder) Preload(rel builderWrapperI) *motionStateBuilder {
 
 func (b *motionStateBuilder) FirstStateOfWorkflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
-		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FirstStateOfWorkflowID",
 			relField: "FirstStateOfWorkflow",
+			conv:     func(p *MotionWorkflow) MotionWorkflow { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) MotionList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionIDs",
 			relField: "MotionList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) MotionRecommendationList() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionRecommendationIDs",
 			relField: "MotionRecommendationList",
 			many:     true,
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) NextStateList() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "NextStateIDs",
 			relField: "NextStateList",
 			many:     true,
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) PreviousStateList() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PreviousStateIDs",
 			relField: "PreviousStateList",
 			many:     true,
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) SubmitterWithdrawBackList() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SubmitterWithdrawBackIDs",
 			relField: "SubmitterWithdrawBackList",
 			many:     true,
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) SubmitterWithdrawState() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SubmitterWithdrawStateID",
 			relField: "SubmitterWithdrawState",
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionStateBuilder) Workflow() *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
-		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "WorkflowID",
 			relField: "Workflow",
+			conv:     func(p *MotionWorkflow) MotionWorkflow { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionState(ids ...int) *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
@@ -5018,10 +5648,11 @@ type MotionSubmitter struct {
 }
 
 type motionSubmitterBuilder struct {
-	builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]
+	builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter, *MotionSubmitter]
 }
 
-func (b *motionSubmitterBuilder) lazy(ds *Fetch, id int) *MotionSubmitter {
+func (b *motionSubmitterBuilder) lazy(ds *Fetch, idI any) *MotionSubmitter {
+	id := idI.(int)
 	c := MotionSubmitter{}
 	ds.MotionSubmitter_ID(id).Lazy(&c.ID)
 	ds.MotionSubmitter_MeetingID(id).Lazy(&c.MeetingID)
@@ -5038,42 +5669,46 @@ func (b *motionSubmitterBuilder) Preload(rel builderWrapperI) *motionSubmitterBu
 
 func (b *motionSubmitterBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionSubmitterBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *motionSubmitterBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionSubmitter(ids ...int) *motionSubmitterBuilder {
 	return &motionSubmitterBuilder{
-		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter]{
+		builder: builder[motionSubmitterBuilder, *motionSubmitterBuilder, MotionSubmitter, *MotionSubmitter]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionSubmitter) MotionSubmitter { return *p },
 		},
 	}
 }
@@ -5090,10 +5725,11 @@ type MotionSupporter struct {
 }
 
 type motionSupporterBuilder struct {
-	builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]
+	builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter, *MotionSupporter]
 }
 
-func (b *motionSupporterBuilder) lazy(ds *Fetch, id int) *MotionSupporter {
+func (b *motionSupporterBuilder) lazy(ds *Fetch, idI any) *MotionSupporter {
+	id := idI.(int)
 	c := MotionSupporter{}
 	ds.MotionSupporter_ID(id).Lazy(&c.ID)
 	ds.MotionSupporter_MeetingID(id).Lazy(&c.MeetingID)
@@ -5109,42 +5745,46 @@ func (b *motionSupporterBuilder) Preload(rel builderWrapperI) *motionSupporterBu
 
 func (b *motionSupporterBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionSupporterBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *motionSupporterBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionSupporter(ids ...int) *motionSupporterBuilder {
 	return &motionSupporterBuilder{
-		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter]{
+		builder: builder[motionSupporterBuilder, *motionSupporterBuilder, MotionSupporter, *MotionSupporter]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionSupporter) MotionSupporter { return *p },
 		},
 	}
 }
@@ -5167,10 +5807,11 @@ type MotionWorkflow struct {
 }
 
 type motionWorkflowBuilder struct {
-	builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]
+	builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]
 }
 
-func (b *motionWorkflowBuilder) lazy(ds *Fetch, id int) *MotionWorkflow {
+func (b *motionWorkflowBuilder) lazy(ds *Fetch, idI any) *MotionWorkflow {
+	id := idI.(int)
 	c := MotionWorkflow{}
 	ds.MotionWorkflow_DefaultAmendmentWorkflowMeetingID(id).Lazy(&c.DefaultAmendmentWorkflowMeetingID)
 	ds.MotionWorkflow_DefaultWorkflowMeetingID(id).Lazy(&c.DefaultWorkflowMeetingID)
@@ -5190,65 +5831,71 @@ func (b *motionWorkflowBuilder) Preload(rel builderWrapperI) *motionWorkflowBuil
 
 func (b *motionWorkflowBuilder) DefaultAmendmentWorkflowMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultAmendmentWorkflowMeetingID",
 			relField: "DefaultAmendmentWorkflowMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionWorkflowBuilder) DefaultWorkflowMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "DefaultWorkflowMeetingID",
 			relField: "DefaultWorkflowMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionWorkflowBuilder) FirstState() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "FirstStateID",
 			relField: "FirstState",
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (b *motionWorkflowBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionWorkflowBuilder) StateList() *motionStateBuilder {
 	return &motionStateBuilder{
-		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState]{
+		builder: builder[motionStateBuilder, *motionStateBuilder, MotionState, *MotionState]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StateIDs",
 			relField: "StateList",
 			many:     true,
+			conv:     func(p *MotionState) MotionState { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionWorkflow(ids ...int) *motionWorkflowBuilder {
 	return &motionWorkflowBuilder{
-		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow]{
+		builder: builder[motionWorkflowBuilder, *motionWorkflowBuilder, MotionWorkflow, *MotionWorkflow]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionWorkflow) MotionWorkflow { return *p },
 		},
 	}
 }
@@ -5266,10 +5913,11 @@ type MotionWorkingGroupSpeaker struct {
 }
 
 type motionWorkingGroupSpeakerBuilder struct {
-	builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]
+	builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]
 }
 
-func (b *motionWorkingGroupSpeakerBuilder) lazy(ds *Fetch, id int) *MotionWorkingGroupSpeaker {
+func (b *motionWorkingGroupSpeakerBuilder) lazy(ds *Fetch, idI any) *MotionWorkingGroupSpeaker {
+	id := idI.(int)
 	c := MotionWorkingGroupSpeaker{}
 	ds.MotionWorkingGroupSpeaker_ID(id).Lazy(&c.ID)
 	ds.MotionWorkingGroupSpeaker_MeetingID(id).Lazy(&c.MeetingID)
@@ -5286,42 +5934,46 @@ func (b *motionWorkingGroupSpeakerBuilder) Preload(rel builderWrapperI) *motionW
 
 func (b *motionWorkingGroupSpeakerBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *motionWorkingGroupSpeakerBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *motionWorkingGroupSpeakerBuilder) Motion() *motionBuilder {
 	return &motionBuilder{
-		builder: builder[motionBuilder, *motionBuilder, Motion]{
+		builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionID",
 			relField: "Motion",
+			conv:     func(p *Motion) Motion { return *p },
 		},
 	}
 }
 
 func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeakerBuilder {
 	return &motionWorkingGroupSpeakerBuilder{
-		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker]{
+		builder: builder[motionWorkingGroupSpeakerBuilder, *motionWorkingGroupSpeakerBuilder, MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *MotionWorkingGroupSpeaker) MotionWorkingGroupSpeaker { return *p },
 		},
 	}
 }
@@ -5382,10 +6034,11 @@ type Organization struct {
 }
 
 type organizationBuilder struct {
-	builder[organizationBuilder, *organizationBuilder, Organization]
+	builder[organizationBuilder, *organizationBuilder, Organization, *Organization]
 }
 
-func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
+func (b *organizationBuilder) lazy(ds *Fetch, idI any) *Organization {
+	id := idI.(int)
 	c := Organization{}
 	ds.Organization_ActiveMeetingIDs(id).Lazy(&c.ActiveMeetingIDs)
 	ds.Organization_ArchivedMeetingIDs(id).Lazy(&c.ArchivedMeetingIDs)
@@ -5437,140 +6090,152 @@ func (b *organizationBuilder) Preload(rel builderWrapperI) *organizationBuilder 
 
 func (b *organizationBuilder) ActiveMeetingList() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ActiveMeetingIDs",
 			relField: "ActiveMeetingList",
 			many:     true,
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) ArchivedMeetingList() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ArchivedMeetingIDs",
 			relField: "ArchivedMeetingList",
 			many:     true,
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) CommitteeList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CommitteeIDs",
 			relField: "CommitteeList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) GenderList() *genderBuilder {
 	return &genderBuilder{
-		builder: builder[genderBuilder, *genderBuilder, Gender]{
+		builder: builder[genderBuilder, *genderBuilder, Gender, *Gender]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "GenderIDs",
 			relField: "GenderList",
 			many:     true,
+			conv:     func(p *Gender) Gender { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) MediafileList() *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MediafileIDs",
 			relField: "MediafileList",
 			many:     true,
+			conv:     func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
-		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag, *OrganizationTag]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationTagIDs",
 			relField: "OrganizationTagList",
 			many:     true,
+			conv:     func(p *OrganizationTag) OrganizationTag { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) PublishedMediafileList() *mediafileBuilder {
 	return &mediafileBuilder{
-		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile]{
+		builder: builder[mediafileBuilder, *mediafileBuilder, Mediafile, *Mediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PublishedMediafileIDs",
 			relField: "PublishedMediafileList",
 			many:     true,
+			conv:     func(p *Mediafile) Mediafile { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) TemplateMeetingList() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TemplateMeetingIDs",
 			relField: "TemplateMeetingList",
 			many:     true,
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) Theme() *themeBuilder {
 	return &themeBuilder{
-		builder: builder[themeBuilder, *themeBuilder, Theme]{
+		builder: builder[themeBuilder, *themeBuilder, Theme, *Theme]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ThemeID",
 			relField: "Theme",
+			conv:     func(p *Theme) Theme { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) ThemeList() *themeBuilder {
 	return &themeBuilder{
-		builder: builder[themeBuilder, *themeBuilder, Theme]{
+		builder: builder[themeBuilder, *themeBuilder, Theme, *Theme]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ThemeIDs",
 			relField: "ThemeList",
 			many:     true,
+			conv:     func(p *Theme) Theme { return *p },
 		},
 	}
 }
 
 func (b *organizationBuilder) UserList() *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
 			many:     true,
+			conv:     func(p *User) User { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Organization(ids ...int) *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Organization) Organization { return *p },
 		},
 	}
 }
@@ -5586,10 +6251,11 @@ type OrganizationTag struct {
 }
 
 type organizationTagBuilder struct {
-	builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]
+	builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag, *OrganizationTag]
 }
 
-func (b *organizationTagBuilder) lazy(ds *Fetch, id int) *OrganizationTag {
+func (b *organizationTagBuilder) lazy(ds *Fetch, idI any) *OrganizationTag {
+	id := idI.(int)
 	c := OrganizationTag{}
 	ds.OrganizationTag_Color(id).Lazy(&c.Color)
 	ds.OrganizationTag_ID(id).Lazy(&c.ID)
@@ -5606,20 +6272,22 @@ func (b *organizationTagBuilder) Preload(rel builderWrapperI) *organizationTagBu
 
 func (b *organizationTagBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (r *Fetch) OrganizationTag(ids ...int) *organizationTagBuilder {
 	return &organizationTagBuilder{
-		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
+		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag, *OrganizationTag]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *OrganizationTag) OrganizationTag { return *p },
 		},
 	}
 }
@@ -5632,15 +6300,17 @@ type PersonalNote struct {
 	MeetingUserID   int
 	Note            string
 	Star            bool
+	ContentObject   PersonalNoteContentObjectUnion
 	Meeting         *Meeting
 	MeetingUser     *MeetingUser
 }
 
 type personalNoteBuilder struct {
-	builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]
+	builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote, *PersonalNote]
 }
 
-func (b *personalNoteBuilder) lazy(ds *Fetch, id int) *PersonalNote {
+func (b *personalNoteBuilder) lazy(ds *Fetch, idI any) *PersonalNote {
+	id := idI.(int)
 	c := PersonalNote{}
 	ds.PersonalNote_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.PersonalNote_ID(id).Lazy(&c.ID)
@@ -5656,33 +6326,93 @@ func (b *personalNoteBuilder) Preload(rel builderWrapperI) *personalNoteBuilder 
 	return b
 }
 
+func (b *personalNoteBuilder) ContentObject() *personalNoteContentObjectUnionBuilder {
+	return &personalNoteContentObjectUnionBuilder{
+		builder: builder[personalNoteContentObjectUnionBuilder, *personalNoteContentObjectUnionBuilder, PersonalNoteContentObjectUnion, PersonalNoteContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+			conv:     func(u PersonalNoteContentObjectUnion) PersonalNoteContentObjectUnion { return u },
+		},
+	}
+}
+
+type PersonalNoteContentObjectUnion interface {
+	isPersonalNoteContentObjectUnion()
+}
+
+func (*Motion) isPersonalNoteContentObjectUnion() {}
+
+type personalNoteContentObjectUnionBuilder struct {
+	builder[personalNoteContentObjectUnionBuilder, *personalNoteContentObjectUnionBuilder, PersonalNoteContentObjectUnion, PersonalNoteContentObjectUnion]
+}
+
+func (b *personalNoteContentObjectUnionBuilder) lazy(ds *Fetch, id any) PersonalNoteContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "motion":
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
+				fetch: ds,
+				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *personalNoteContentObjectUnionBuilder) Preload(rel builderWrapperI) *personalNoteContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *personalNoteBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *personalNoteBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PersonalNote(ids ...int) *personalNoteBuilder {
 	return &personalNoteBuilder{
-		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote]{
+		builder: builder[personalNoteBuilder, *personalNoteBuilder, PersonalNote, *PersonalNote]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PersonalNote) PersonalNote { return *p },
 		},
 	}
 }
@@ -5699,10 +6429,11 @@ type PointOfOrderCategory struct {
 }
 
 type pointOfOrderCategoryBuilder struct {
-	builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]
+	builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory, *PointOfOrderCategory]
 }
 
-func (b *pointOfOrderCategoryBuilder) lazy(ds *Fetch, id int) *PointOfOrderCategory {
+func (b *pointOfOrderCategoryBuilder) lazy(ds *Fetch, idI any) *PointOfOrderCategory {
+	id := idI.(int)
 	c := PointOfOrderCategory{}
 	ds.PointOfOrderCategory_ID(id).Lazy(&c.ID)
 	ds.PointOfOrderCategory_MeetingID(id).Lazy(&c.MeetingID)
@@ -5719,32 +6450,35 @@ func (b *pointOfOrderCategoryBuilder) Preload(rel builderWrapperI) *pointOfOrder
 
 func (b *pointOfOrderCategoryBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *pointOfOrderCategoryBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
-		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
+			conv:     func(p *Speaker) Speaker { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 	return &pointOfOrderCategoryBuilder{
-		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
+		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory, *PointOfOrderCategory]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PointOfOrderCategory) PointOfOrderCategory { return *p },
 		},
 	}
 }
@@ -5771,6 +6505,8 @@ type Poll struct {
 	Visibility        string
 	VotedIDs          []int
 	BallotList        []PollBallot
+	Config            PollConfigUnion
+	ContentObject     PollContentObjectUnion
 	EntitledGroupList []Group
 	Meeting           *Meeting
 	OptionList        []PollOption
@@ -5779,10 +6515,11 @@ type Poll struct {
 }
 
 type pollBuilder struct {
-	builder[pollBuilder, *pollBuilder, Poll]
+	builder[pollBuilder, *pollBuilder, Poll, *Poll]
 }
 
-func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
+func (b *pollBuilder) lazy(ds *Fetch, idI any) *Poll {
+	id := idI.(int)
 	c := Poll{}
 	ds.Poll_AllowInvalid(id).Lazy(&c.AllowInvalid)
 	ds.Poll_AllowVoteSplit(id).Lazy(&c.AllowVoteSplit)
@@ -5813,80 +6550,255 @@ func (b *pollBuilder) Preload(rel builderWrapperI) *pollBuilder {
 
 func (b *pollBuilder) BallotList() *pollBallotBuilder {
 	return &pollBallotBuilder{
-		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot, *PollBallot]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "BallotIDs",
 			relField: "BallotList",
 			many:     true,
+			conv:     func(p *PollBallot) PollBallot { return *p },
 		},
 	}
 }
 
+func (b *pollBuilder) Config() *pollConfigUnionBuilder {
+	return &pollConfigUnionBuilder{
+		builder: builder[pollConfigUnionBuilder, *pollConfigUnionBuilder, PollConfigUnion, PollConfigUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ConfigID",
+			relField: "Config",
+			conv:     func(u PollConfigUnion) PollConfigUnion { return u },
+		},
+	}
+}
+
+type PollConfigUnion interface {
+	isPollConfigUnion()
+}
+
+func (*PollConfigApproval) isPollConfigUnion()       {}
+func (*PollConfigSelection) isPollConfigUnion()      {}
+func (*PollConfigRatingScore) isPollConfigUnion()    {}
+func (*PollConfigRatingApproval) isPollConfigUnion() {}
+func (*PollConfigStvScottish) isPollConfigUnion()    {}
+
+type pollConfigUnionBuilder struct {
+	builder[pollConfigUnionBuilder, *pollConfigUnionBuilder, PollConfigUnion, PollConfigUnion]
+}
+
+func (b *pollConfigUnionBuilder) lazy(ds *Fetch, id any) PollConfigUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "poll_config_approval":
+		builder := &pollConfigApprovalBuilder{
+			builder: builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval, *PollConfigApproval]{
+				fetch: ds,
+				conv:  func(p *PollConfigApproval) PollConfigApproval { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "poll_config_selection":
+		builder := &pollConfigSelectionBuilder{
+			builder: builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection, *PollConfigSelection]{
+				fetch: ds,
+				conv:  func(p *PollConfigSelection) PollConfigSelection { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "poll_config_rating_score":
+		builder := &pollConfigRatingScoreBuilder{
+			builder: builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore, *PollConfigRatingScore]{
+				fetch: ds,
+				conv:  func(p *PollConfigRatingScore) PollConfigRatingScore { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "poll_config_rating_approval":
+		builder := &pollConfigRatingApprovalBuilder{
+			builder: builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval, *PollConfigRatingApproval]{
+				fetch: ds,
+				conv:  func(p *PollConfigRatingApproval) PollConfigRatingApproval { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "poll_config_stv_scottish":
+		builder := &pollConfigStvScottishBuilder{
+			builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish, *PollConfigStvScottish]{
+				fetch: ds,
+				conv:  func(p *PollConfigStvScottish) PollConfigStvScottish { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *pollConfigUnionBuilder) Preload(rel builderWrapperI) *pollConfigUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollBuilder) ContentObject() *pollContentObjectUnionBuilder {
+	return &pollContentObjectUnionBuilder{
+		builder: builder[pollContentObjectUnionBuilder, *pollContentObjectUnionBuilder, PollContentObjectUnion, PollContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+			conv:     func(u PollContentObjectUnion) PollContentObjectUnion { return u },
+		},
+	}
+}
+
+type PollContentObjectUnion interface {
+	isPollContentObjectUnion()
+}
+
+func (*Motion) isPollContentObjectUnion()     {}
+func (*Assignment) isPollContentObjectUnion() {}
+func (*Topic) isPollContentObjectUnion()      {}
+
+type pollContentObjectUnionBuilder struct {
+	builder[pollContentObjectUnionBuilder, *pollContentObjectUnionBuilder, PollContentObjectUnion, PollContentObjectUnion]
+}
+
+func (b *pollContentObjectUnionBuilder) lazy(ds *Fetch, id any) PollContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "motion":
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
+				fetch: ds,
+				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "assignment":
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
+				fetch: ds,
+				conv:  func(p *Assignment) Assignment { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "topic":
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
+				fetch: ds,
+				conv:  func(p *Topic) Topic { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *pollContentObjectUnionBuilder) Preload(rel builderWrapperI) *pollContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "EntitledGroupIDs",
 			relField: "EntitledGroupList",
 			many:     true,
+			conv:     func(p *Group) Group { return *p },
 		},
 	}
 }
 
 func (b *pollBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *pollBuilder) OptionList() *pollOptionBuilder {
 	return &pollOptionBuilder{
-		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption]{
+		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption, *PollOption]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OptionIDs",
 			relField: "OptionList",
 			many:     true,
+			conv:     func(p *PollOption) PollOption { return *p },
 		},
 	}
 }
 
 func (b *pollBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *pollBuilder) VotedList() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "VotedIDs",
 			relField: "VotedList",
 			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Poll(ids ...int) *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Poll) Poll { return *p },
 		},
 	}
 }
@@ -5906,10 +6818,11 @@ type PollBallot struct {
 }
 
 type pollBallotBuilder struct {
-	builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]
+	builder[pollBallotBuilder, *pollBallotBuilder, PollBallot, *PollBallot]
 }
 
-func (b *pollBallotBuilder) lazy(ds *Fetch, id int) *PollBallot {
+func (b *pollBallotBuilder) lazy(ds *Fetch, idI any) *PollBallot {
+	id := idI.(int)
 	c := PollBallot{}
 	ds.PollBallot_ActingMeetingUserID(id).Lazy(&c.ActingMeetingUserID)
 	ds.PollBallot_ID(id).Lazy(&c.ID)
@@ -5928,42 +6841,46 @@ func (b *pollBallotBuilder) Preload(rel builderWrapperI) *pollBallotBuilder {
 
 func (b *pollBallotBuilder) ActingMeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ActingMeetingUserID",
 			relField: "ActingMeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *pollBallotBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *pollBallotBuilder) RepresentedMeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "RepresentedMeetingUserID",
 			relField: "RepresentedMeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollBallot(ids ...int) *pollBallotBuilder {
 	return &pollBallotBuilder{
-		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot, *PollBallot]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollBallot) PollBallot { return *p },
 		},
 	}
 }
@@ -5978,10 +6895,11 @@ type PollConfigApproval struct {
 }
 
 type pollConfigApprovalBuilder struct {
-	builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval]
+	builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval, *PollConfigApproval]
 }
 
-func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigApproval {
+func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigApproval {
+	id := idI.(int)
 	c := PollConfigApproval{}
 	ds.PollConfigApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigApproval_ID(id).Lazy(&c.ID)
@@ -5997,20 +6915,22 @@ func (b *pollConfigApprovalBuilder) Preload(rel builderWrapperI) *pollConfigAppr
 
 func (b *pollConfigApprovalBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollConfigApproval(ids ...int) *pollConfigApprovalBuilder {
 	return &pollConfigApprovalBuilder{
-		builder: builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval]{
+		builder: builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval, *PollConfigApproval]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollConfigApproval) PollConfigApproval { return *p },
 		},
 	}
 }
@@ -6027,10 +6947,11 @@ type PollConfigRatingApproval struct {
 }
 
 type pollConfigRatingApprovalBuilder struct {
-	builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval]
+	builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval, *PollConfigRatingApproval]
 }
 
-func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigRatingApproval {
+func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigRatingApproval {
+	id := idI.(int)
 	c := PollConfigRatingApproval{}
 	ds.PollConfigRatingApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigRatingApproval_ID(id).Lazy(&c.ID)
@@ -6048,20 +6969,22 @@ func (b *pollConfigRatingApprovalBuilder) Preload(rel builderWrapperI) *pollConf
 
 func (b *pollConfigRatingApprovalBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollConfigRatingApproval(ids ...int) *pollConfigRatingApprovalBuilder {
 	return &pollConfigRatingApprovalBuilder{
-		builder: builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval]{
+		builder: builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval, *PollConfigRatingApproval]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollConfigRatingApproval) PollConfigRatingApproval { return *p },
 		},
 	}
 }
@@ -6080,10 +7003,11 @@ type PollConfigRatingScore struct {
 }
 
 type pollConfigRatingScoreBuilder struct {
-	builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore]
+	builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore, *PollConfigRatingScore]
 }
 
-func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, id int) *PollConfigRatingScore {
+func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, idI any) *PollConfigRatingScore {
+	id := idI.(int)
 	c := PollConfigRatingScore{}
 	ds.PollConfigRatingScore_ID(id).Lazy(&c.ID)
 	ds.PollConfigRatingScore_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
@@ -6103,20 +7027,22 @@ func (b *pollConfigRatingScoreBuilder) Preload(rel builderWrapperI) *pollConfigR
 
 func (b *pollConfigRatingScoreBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollConfigRatingScore(ids ...int) *pollConfigRatingScoreBuilder {
 	return &pollConfigRatingScoreBuilder{
-		builder: builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore]{
+		builder: builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore, *PollConfigRatingScore]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollConfigRatingScore) PollConfigRatingScore { return *p },
 		},
 	}
 }
@@ -6135,10 +7061,11 @@ type PollConfigSelection struct {
 }
 
 type pollConfigSelectionBuilder struct {
-	builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]
+	builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection, *PollConfigSelection]
 }
 
-func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, id int) *PollConfigSelection {
+func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, idI any) *PollConfigSelection {
+	id := idI.(int)
 	c := PollConfigSelection{}
 	ds.PollConfigSelection_AllowNota(id).Lazy(&c.AllowNota)
 	ds.PollConfigSelection_DisplayChart(id).Lazy(&c.DisplayChart)
@@ -6158,20 +7085,22 @@ func (b *pollConfigSelectionBuilder) Preload(rel builderWrapperI) *pollConfigSel
 
 func (b *pollConfigSelectionBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollConfigSelection(ids ...int) *pollConfigSelectionBuilder {
 	return &pollConfigSelectionBuilder{
-		builder: builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]{
+		builder: builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection, *PollConfigSelection]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollConfigSelection) PollConfigSelection { return *p },
 		},
 	}
 }
@@ -6185,10 +7114,11 @@ type PollConfigStvScottish struct {
 }
 
 type pollConfigStvScottishBuilder struct {
-	builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]
+	builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish, *PollConfigStvScottish]
 }
 
-func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, id int) *PollConfigStvScottish {
+func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, idI any) *PollConfigStvScottish {
+	id := idI.(int)
 	c := PollConfigStvScottish{}
 	ds.PollConfigStvScottish_ID(id).Lazy(&c.ID)
 	ds.PollConfigStvScottish_PollID(id).Lazy(&c.PollID)
@@ -6203,20 +7133,22 @@ func (b *pollConfigStvScottishBuilder) Preload(rel builderWrapperI) *pollConfigS
 
 func (b *pollConfigStvScottishBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollConfigStvScottish(ids ...int) *pollConfigStvScottishBuilder {
 	return &pollConfigStvScottishBuilder{
-		builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]{
+		builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish, *PollConfigStvScottish]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollConfigStvScottish) PollConfigStvScottish { return *p },
 		},
 	}
 }
@@ -6233,10 +7165,11 @@ type PollOption struct {
 }
 
 type pollOptionBuilder struct {
-	builder[pollOptionBuilder, *pollOptionBuilder, PollOption]
+	builder[pollOptionBuilder, *pollOptionBuilder, PollOption, *PollOption]
 }
 
-func (b *pollOptionBuilder) lazy(ds *Fetch, id int) *PollOption {
+func (b *pollOptionBuilder) lazy(ds *Fetch, idI any) *PollOption {
+	id := idI.(int)
 	c := PollOption{}
 	ds.PollOption_ID(id).Lazy(&c.ID)
 	ds.PollOption_MeetingUserID(id).Lazy(&c.MeetingUserID)
@@ -6253,31 +7186,34 @@ func (b *pollOptionBuilder) Preload(rel builderWrapperI) *pollOptionBuilder {
 
 func (b *pollOptionBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *pollOptionBuilder) Poll() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollID",
 			relField: "Poll",
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (r *Fetch) PollOption(ids ...int) *pollOptionBuilder {
 	return &pollOptionBuilder{
-		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption]{
+		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption, *PollOption]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *PollOption) PollOption { return *p },
 		},
 	}
 }
@@ -6294,6 +7230,7 @@ type Projection struct {
 	Stable             bool
 	Type               string
 	Weight             int
+	ContentObject      ProjectionContentObjectUnion
 	CurrentProjector   *dsfetch.Maybe[Projector]
 	HistoryProjector   *dsfetch.Maybe[Projector]
 	Meeting            *Meeting
@@ -6301,10 +7238,11 @@ type Projection struct {
 }
 
 type projectionBuilder struct {
-	builder[projectionBuilder, *projectionBuilder, Projection]
+	builder[projectionBuilder, *projectionBuilder, Projection, *Projection]
 }
 
-func (b *projectionBuilder) lazy(ds *Fetch, id int) *Projection {
+func (b *projectionBuilder) lazy(ds *Fetch, idI any) *Projection {
+	id := idI.(int)
 	c := Projection{}
 	ds.Projection_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Projection_CurrentProjectorID(id).Lazy(&c.CurrentProjectorID)
@@ -6324,55 +7262,207 @@ func (b *projectionBuilder) Preload(rel builderWrapperI) *projectionBuilder {
 	return b
 }
 
+func (b *projectionBuilder) ContentObject() *projectionContentObjectUnionBuilder {
+	return &projectionContentObjectUnionBuilder{
+		builder: builder[projectionContentObjectUnionBuilder, *projectionContentObjectUnionBuilder, ProjectionContentObjectUnion, ProjectionContentObjectUnion]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ContentObjectID",
+			relField: "ContentObject",
+			conv:     func(u ProjectionContentObjectUnion) ProjectionContentObjectUnion { return u },
+		},
+	}
+}
+
+type ProjectionContentObjectUnion interface {
+	isProjectionContentObjectUnion()
+}
+
+func (*Meeting) isProjectionContentObjectUnion()            {}
+func (*Motion) isProjectionContentObjectUnion()             {}
+func (*MeetingMediafile) isProjectionContentObjectUnion()   {}
+func (*ListOfSpeakers) isProjectionContentObjectUnion()     {}
+func (*MotionBlock) isProjectionContentObjectUnion()        {}
+func (*Assignment) isProjectionContentObjectUnion()         {}
+func (*AgendaItem) isProjectionContentObjectUnion()         {}
+func (*Topic) isProjectionContentObjectUnion()              {}
+func (*Poll) isProjectionContentObjectUnion()               {}
+func (*ProjectorMessage) isProjectionContentObjectUnion()   {}
+func (*ProjectorCountdown) isProjectionContentObjectUnion() {}
+
+type projectionContentObjectUnionBuilder struct {
+	builder[projectionContentObjectUnionBuilder, *projectionContentObjectUnionBuilder, ProjectionContentObjectUnion, ProjectionContentObjectUnion]
+}
+
+func (b *projectionContentObjectUnionBuilder) lazy(ds *Fetch, id any) ProjectionContentObjectUnion {
+	fqid, ok := id.(string)
+	if !ok {
+		return nil
+	}
+
+	collection, idStr, ok := strings.Cut(fqid, "/")
+	if !ok {
+		return nil
+	}
+
+	intId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil
+	}
+
+	switch collection {
+	case "meeting":
+		builder := &meetingBuilder{
+			builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
+				fetch: ds,
+				conv:  func(p *Meeting) Meeting { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "motion":
+		builder := &motionBuilder{
+			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
+				fetch: ds,
+				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "meeting_mediafile":
+		builder := &meetingMediafileBuilder{
+			builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
+				fetch: ds,
+				conv:  func(p *MeetingMediafile) MeetingMediafile { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "list_of_speakers":
+		builder := &listOfSpeakersBuilder{
+			builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
+				fetch: ds,
+				conv:  func(p *ListOfSpeakers) ListOfSpeakers { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "motion_block":
+		builder := &motionBlockBuilder{
+			builder: builder[motionBlockBuilder, *motionBlockBuilder, MotionBlock, *MotionBlock]{
+				fetch: ds,
+				conv:  func(p *MotionBlock) MotionBlock { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "assignment":
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
+				fetch: ds,
+				conv:  func(p *Assignment) Assignment { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "agenda_item":
+		builder := &agendaItemBuilder{
+			builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
+				fetch: ds,
+				conv:  func(p *AgendaItem) AgendaItem { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "topic":
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
+				fetch: ds,
+				conv:  func(p *Topic) Topic { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "poll":
+		builder := &pollBuilder{
+			builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
+				fetch: ds,
+				conv:  func(p *Poll) Poll { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "projector_message":
+		builder := &projectorMessageBuilder{
+			builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage, *ProjectorMessage]{
+				fetch: ds,
+				conv:  func(p *ProjectorMessage) ProjectorMessage { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "projector_countdown":
+		builder := &projectorCountdownBuilder{
+			builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown, *ProjectorCountdown]{
+				fetch: ds,
+				conv:  func(p *ProjectorCountdown) ProjectorCountdown { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	}
+
+	return nil
+}
+
+func (b *projectionContentObjectUnionBuilder) Preload(rel builderWrapperI) *projectionContentObjectUnionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
 func (b *projectionBuilder) CurrentProjector() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CurrentProjectorID",
 			relField: "CurrentProjector",
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *projectionBuilder) HistoryProjector() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryProjectorID",
 			relField: "HistoryProjector",
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (b *projectionBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectionBuilder) PreviewProjector() *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PreviewProjectorID",
 			relField: "PreviewProjector",
+			conv:     func(p *Projector) Projector { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Projection(ids ...int) *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Projection) Projection { return *p },
 		},
 	}
 }
@@ -6442,10 +7532,11 @@ type Projector struct {
 }
 
 type projectorBuilder struct {
-	builder[projectorBuilder, *projectorBuilder, Projector]
+	builder[projectorBuilder, *projectorBuilder, Projector, *Projector]
 }
 
-func (b *projectorBuilder) lazy(ds *Fetch, id int) *Projector {
+func (b *projectorBuilder) lazy(ds *Fetch, idI any) *Projector {
+	id := idI.(int)
 	c := Projector{}
 	ds.Projector_AspectRatioDenominator(id).Lazy(&c.AspectRatioDenominator)
 	ds.Projector_AspectRatioNumerator(id).Lazy(&c.AspectRatioNumerator)
@@ -6498,221 +7589,241 @@ func (b *projectorBuilder) Preload(rel builderWrapperI) *projectorBuilder {
 
 func (b *projectorBuilder) CurrentProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CurrentProjectionIDs",
 			relField: "CurrentProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) HistoryProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryProjectionIDs",
 			relField: "HistoryProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) PreviewProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PreviewProjectionIDs",
 			relField: "PreviewProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForAgendaItemListInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAgendaItemListInMeetingID",
 			relField: "UsedAsDefaultProjectorForAgendaItemListInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForAmendmentInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAmendmentInMeetingID",
 			relField: "UsedAsDefaultProjectorForAmendmentInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForAssignmentInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAssignmentInMeetingID",
 			relField: "UsedAsDefaultProjectorForAssignmentInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForAssignmentPollInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForAssignmentPollInMeetingID",
 			relField: "UsedAsDefaultProjectorForAssignmentPollInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForCountdownInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForCountdownInMeetingID",
 			relField: "UsedAsDefaultProjectorForCountdownInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForCurrentLosInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForCurrentLosInMeetingID",
 			relField: "UsedAsDefaultProjectorForCurrentLosInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForListOfSpeakersInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForListOfSpeakersInMeetingID",
 			relField: "UsedAsDefaultProjectorForListOfSpeakersInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForMediafileInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMediafileInMeetingID",
 			relField: "UsedAsDefaultProjectorForMediafileInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForMessageInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMessageInMeetingID",
 			relField: "UsedAsDefaultProjectorForMessageInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForMotionBlockInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMotionBlockInMeetingID",
 			relField: "UsedAsDefaultProjectorForMotionBlockInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForMotionInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMotionInMeetingID",
 			relField: "UsedAsDefaultProjectorForMotionInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForMotionPollInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForMotionPollInMeetingID",
 			relField: "UsedAsDefaultProjectorForMotionPollInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForPollInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForPollInMeetingID",
 			relField: "UsedAsDefaultProjectorForPollInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsDefaultProjectorForTopicInMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForTopicInMeetingID",
 			relField: "UsedAsDefaultProjectorForTopicInMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorBuilder) UsedAsReferenceProjectorMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsReferenceProjectorMeetingID",
 			relField: "UsedAsReferenceProjectorMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Projector(ids ...int) *projectorBuilder {
 	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector, *Projector]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Projector) Projector { return *p },
 		},
 	}
 }
@@ -6736,10 +7847,11 @@ type ProjectorCountdown struct {
 }
 
 type projectorCountdownBuilder struct {
-	builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]
+	builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown, *ProjectorCountdown]
 }
 
-func (b *projectorCountdownBuilder) lazy(ds *Fetch, id int) *ProjectorCountdown {
+func (b *projectorCountdownBuilder) lazy(ds *Fetch, idI any) *ProjectorCountdown {
+	id := idI.(int)
 	c := ProjectorCountdown{}
 	ds.ProjectorCountdown_CountdownTime(id).Lazy(&c.CountdownTime)
 	ds.ProjectorCountdown_DefaultTime(id).Lazy(&c.DefaultTime)
@@ -6761,54 +7873,59 @@ func (b *projectorCountdownBuilder) Preload(rel builderWrapperI) *projectorCount
 
 func (b *projectorCountdownBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorCountdownBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (b *projectorCountdownBuilder) UsedAsListOfSpeakersCountdownMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsListOfSpeakersCountdownMeetingID",
 			relField: "UsedAsListOfSpeakersCountdownMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorCountdownBuilder) UsedAsPollCountdownMeeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "UsedAsPollCountdownMeetingID",
 			relField: "UsedAsPollCountdownMeeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (r *Fetch) ProjectorCountdown(ids ...int) *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
-		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
+		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown, *ProjectorCountdown]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ProjectorCountdown) ProjectorCountdown { return *p },
 		},
 	}
 }
@@ -6824,10 +7941,11 @@ type ProjectorMessage struct {
 }
 
 type projectorMessageBuilder struct {
-	builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]
+	builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage, *ProjectorMessage]
 }
 
-func (b *projectorMessageBuilder) lazy(ds *Fetch, id int) *ProjectorMessage {
+func (b *projectorMessageBuilder) lazy(ds *Fetch, idI any) *ProjectorMessage {
+	id := idI.(int)
 	c := ProjectorMessage{}
 	ds.ProjectorMessage_ID(id).Lazy(&c.ID)
 	ds.ProjectorMessage_MeetingID(id).Lazy(&c.MeetingID)
@@ -6843,32 +7961,35 @@ func (b *projectorMessageBuilder) Preload(rel builderWrapperI) *projectorMessage
 
 func (b *projectorMessageBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *projectorMessageBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (r *Fetch) ProjectorMessage(ids ...int) *projectorMessageBuilder {
 	return &projectorMessageBuilder{
-		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage]{
+		builder: builder[projectorMessageBuilder, *projectorMessageBuilder, ProjectorMessage, *ProjectorMessage]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *ProjectorMessage) ProjectorMessage { return *p },
 		},
 	}
 }
@@ -6899,10 +8020,11 @@ type Speaker struct {
 }
 
 type speakerBuilder struct {
-	builder[speakerBuilder, *speakerBuilder, Speaker]
+	builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]
 }
 
-func (b *speakerBuilder) lazy(ds *Fetch, id int) *Speaker {
+func (b *speakerBuilder) lazy(ds *Fetch, idI any) *Speaker {
+	id := idI.(int)
 	c := Speaker{}
 	ds.Speaker_Answer(id).Lazy(&c.Answer)
 	ds.Speaker_BeginTime(id).Lazy(&c.BeginTime)
@@ -6930,64 +8052,70 @@ func (b *speakerBuilder) Preload(rel builderWrapperI) *speakerBuilder {
 
 func (b *speakerBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *speakerBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *speakerBuilder) MeetingUser() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserID",
 			relField: "MeetingUser",
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *speakerBuilder) PointOfOrderCategory() *pointOfOrderCategoryBuilder {
 	return &pointOfOrderCategoryBuilder{
-		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory]{
+		builder: builder[pointOfOrderCategoryBuilder, *pointOfOrderCategoryBuilder, PointOfOrderCategory, *PointOfOrderCategory]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PointOfOrderCategoryID",
 			relField: "PointOfOrderCategory",
+			conv:     func(p *PointOfOrderCategory) PointOfOrderCategory { return *p },
 		},
 	}
 }
 
 func (b *speakerBuilder) StructureLevelListOfSpeakers() *structureLevelListOfSpeakersBuilder {
 	return &structureLevelListOfSpeakersBuilder{
-		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelListOfSpeakersID",
 			relField: "StructureLevelListOfSpeakers",
+			conv:     func(p *StructureLevelListOfSpeakers) StructureLevelListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Speaker(ids ...int) *speakerBuilder {
 	return &speakerBuilder{
-		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Speaker) Speaker { return *p },
 		},
 	}
 }
@@ -7007,10 +8135,11 @@ type StructureLevel struct {
 }
 
 type structureLevelBuilder struct {
-	builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]
+	builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel, *StructureLevel]
 }
 
-func (b *structureLevelBuilder) lazy(ds *Fetch, id int) *StructureLevel {
+func (b *structureLevelBuilder) lazy(ds *Fetch, idI any) *StructureLevel {
+	id := idI.(int)
 	c := StructureLevel{}
 	ds.StructureLevel_Color(id).Lazy(&c.Color)
 	ds.StructureLevel_DefaultTime(id).Lazy(&c.DefaultTime)
@@ -7029,44 +8158,48 @@ func (b *structureLevelBuilder) Preload(rel builderWrapperI) *structureLevelBuil
 
 func (b *structureLevelBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *structureLevelBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *structureLevelBuilder) StructureLevelListOfSpeakersList() *structureLevelListOfSpeakersBuilder {
 	return &structureLevelListOfSpeakersBuilder{
-		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelListOfSpeakersIDs",
 			relField: "StructureLevelListOfSpeakersList",
 			many:     true,
+			conv:     func(p *StructureLevelListOfSpeakers) StructureLevelListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (r *Fetch) StructureLevel(ids ...int) *structureLevelBuilder {
 	return &structureLevelBuilder{
-		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel, *StructureLevel]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *StructureLevel) StructureLevel { return *p },
 		},
 	}
 }
@@ -7089,10 +8222,11 @@ type StructureLevelListOfSpeakers struct {
 }
 
 type structureLevelListOfSpeakersBuilder struct {
-	builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]
+	builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]
 }
 
-func (b *structureLevelListOfSpeakersBuilder) lazy(ds *Fetch, id int) *StructureLevelListOfSpeakers {
+func (b *structureLevelListOfSpeakersBuilder) lazy(ds *Fetch, idI any) *StructureLevelListOfSpeakers {
+	id := idI.(int)
 	c := StructureLevelListOfSpeakers{}
 	ds.StructureLevelListOfSpeakers_AdditionalTime(id).Lazy(&c.AdditionalTime)
 	ds.StructureLevelListOfSpeakers_CurrentStartTime(id).Lazy(&c.CurrentStartTime)
@@ -7113,54 +8247,59 @@ func (b *structureLevelListOfSpeakersBuilder) Preload(rel builderWrapperI) *stru
 
 func (b *structureLevelListOfSpeakersBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *structureLevelListOfSpeakersBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *structureLevelListOfSpeakersBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
-		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
+		builder: builder[speakerBuilder, *speakerBuilder, Speaker, *Speaker]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "SpeakerIDs",
 			relField: "SpeakerList",
 			many:     true,
+			conv:     func(p *Speaker) Speaker { return *p },
 		},
 	}
 }
 
 func (b *structureLevelListOfSpeakersBuilder) StructureLevel() *structureLevelBuilder {
 	return &structureLevelBuilder{
-		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel]{
+		builder: builder[structureLevelBuilder, *structureLevelBuilder, StructureLevel, *StructureLevel]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "StructureLevelID",
 			relField: "StructureLevel",
+			conv:     func(p *StructureLevel) StructureLevel { return *p },
 		},
 	}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers(ids ...int) *structureLevelListOfSpeakersBuilder {
 	return &structureLevelListOfSpeakersBuilder{
-		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers]{
+		builder: builder[structureLevelListOfSpeakersBuilder, *structureLevelListOfSpeakersBuilder, StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *StructureLevelListOfSpeakers) StructureLevelListOfSpeakers { return *p },
 		},
 	}
 }
@@ -7175,10 +8314,11 @@ type Tag struct {
 }
 
 type tagBuilder struct {
-	builder[tagBuilder, *tagBuilder, Tag]
+	builder[tagBuilder, *tagBuilder, Tag, *Tag]
 }
 
-func (b *tagBuilder) lazy(ds *Fetch, id int) *Tag {
+func (b *tagBuilder) lazy(ds *Fetch, idI any) *Tag {
+	id := idI.(int)
 	c := Tag{}
 	ds.Tag_ID(id).Lazy(&c.ID)
 	ds.Tag_MeetingID(id).Lazy(&c.MeetingID)
@@ -7194,20 +8334,22 @@ func (b *tagBuilder) Preload(rel builderWrapperI) *tagBuilder {
 
 func (b *tagBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Tag(ids ...int) *tagBuilder {
 	return &tagBuilder{
-		builder: builder[tagBuilder, *tagBuilder, Tag]{
+		builder: builder[tagBuilder, *tagBuilder, Tag, *Tag]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Tag) Tag { return *p },
 		},
 	}
 }
@@ -7269,10 +8411,11 @@ type Theme struct {
 }
 
 type themeBuilder struct {
-	builder[themeBuilder, *themeBuilder, Theme]
+	builder[themeBuilder, *themeBuilder, Theme, *Theme]
 }
 
-func (b *themeBuilder) lazy(ds *Fetch, id int) *Theme {
+func (b *themeBuilder) lazy(ds *Fetch, idI any) *Theme {
+	id := idI.(int)
 	c := Theme{}
 	ds.Theme_Abstain(id).Lazy(&c.Abstain)
 	ds.Theme_Accent100(id).Lazy(&c.Accent100)
@@ -7334,31 +8477,34 @@ func (b *themeBuilder) Preload(rel builderWrapperI) *themeBuilder {
 
 func (b *themeBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (b *themeBuilder) ThemeForOrganization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ThemeForOrganizationID",
 			relField: "ThemeForOrganization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Theme(ids ...int) *themeBuilder {
 	return &themeBuilder{
-		builder: builder[themeBuilder, *themeBuilder, Theme]{
+		builder: builder[themeBuilder, *themeBuilder, Theme, *Theme]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Theme) Theme { return *p },
 		},
 	}
 }
@@ -7384,10 +8530,11 @@ type Topic struct {
 }
 
 type topicBuilder struct {
-	builder[topicBuilder, *topicBuilder, Topic]
+	builder[topicBuilder, *topicBuilder, Topic, *Topic]
 }
 
-func (b *topicBuilder) lazy(ds *Fetch, id int) *Topic {
+func (b *topicBuilder) lazy(ds *Fetch, idI any) *Topic {
+	id := idI.(int)
 	c := Topic{}
 	ds.Topic_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Topic_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
@@ -7409,78 +8556,85 @@ func (b *topicBuilder) Preload(rel builderWrapperI) *topicBuilder {
 
 func (b *topicBuilder) AgendaItem() *agendaItemBuilder {
 	return &agendaItemBuilder{
-		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem]{
+		builder: builder[agendaItemBuilder, *agendaItemBuilder, AgendaItem, *AgendaItem]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AgendaItemID",
 			relField: "AgendaItem",
+			conv:     func(p *AgendaItem) AgendaItem { return *p },
 		},
 	}
 }
 
 func (b *topicBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder {
 	return &meetingMediafileBuilder{
-		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile]{
+		builder: builder[meetingMediafileBuilder, *meetingMediafileBuilder, MeetingMediafile, *MeetingMediafile]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AttachmentMeetingMediafileIDs",
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
+			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
 		},
 	}
 }
 
 func (b *topicBuilder) ListOfSpeakers() *listOfSpeakersBuilder {
 	return &listOfSpeakersBuilder{
-		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers]{
+		builder: builder[listOfSpeakersBuilder, *listOfSpeakersBuilder, ListOfSpeakers, *ListOfSpeakers]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ListOfSpeakersID",
 			relField: "ListOfSpeakers",
+			conv:     func(p *ListOfSpeakers) ListOfSpeakers { return *p },
 		},
 	}
 }
 
 func (b *topicBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *topicBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "PollIDs",
 			relField: "PollList",
 			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
 
 func (b *topicBuilder) ProjectionList() *projectionBuilder {
 	return &projectionBuilder{
-		builder: builder[projectionBuilder, *projectionBuilder, Projection]{
+		builder: builder[projectionBuilder, *projectionBuilder, Projection, *Projection]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "ProjectionIDs",
 			relField: "ProjectionList",
 			many:     true,
+			conv:     func(p *Projection) Projection { return *p },
 		},
 	}
 }
 
 func (r *Fetch) Topic(ids ...int) *topicBuilder {
 	return &topicBuilder{
-		builder: builder[topicBuilder, *topicBuilder, Topic]{
+		builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *Topic) Topic { return *p },
 		},
 	}
 }
@@ -7530,10 +8684,11 @@ type User struct {
 }
 
 type userBuilder struct {
-	builder[userBuilder, *userBuilder, User]
+	builder[userBuilder, *userBuilder, User, *User]
 }
 
-func (b *userBuilder) lazy(ds *Fetch, id int) *User {
+func (b *userBuilder) lazy(ds *Fetch, idI any) *User {
+	id := idI.(int)
 	c := User{}
 	ds.User_CanChangeOwnPassword(id).Lazy(&c.CanChangeOwnPassword)
 	ds.User_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
@@ -7575,126 +8730,137 @@ func (b *userBuilder) Preload(rel builderWrapperI) *userBuilder {
 
 func (b *userBuilder) CommitteeList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CommitteeIDs",
 			relField: "CommitteeList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) CommitteeManagementList() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "CommitteeManagementIDs",
 			relField: "CommitteeManagementList",
 			many:     true,
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) Gender() *genderBuilder {
 	return &genderBuilder{
-		builder: builder[genderBuilder, *genderBuilder, Gender]{
+		builder: builder[genderBuilder, *genderBuilder, Gender, *Gender]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "GenderID",
 			relField: "Gender",
+			conv:     func(p *Gender) Gender { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) HistoryEntryList() *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryEntryIDs",
 			relField: "HistoryEntryList",
 			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) HistoryPositionList() *historyPositionBuilder {
 	return &historyPositionBuilder{
-		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition]{
+		builder: builder[historyPositionBuilder, *historyPositionBuilder, HistoryPosition, *HistoryPosition]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryPositionIDs",
 			relField: "HistoryPositionList",
 			many:     true,
+			conv:     func(p *HistoryPosition) HistoryPosition { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) HomeCommittee() *committeeBuilder {
 	return &committeeBuilder{
-		builder: builder[committeeBuilder, *committeeBuilder, Committee]{
+		builder: builder[committeeBuilder, *committeeBuilder, Committee, *Committee]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HomeCommitteeID",
 			relField: "HomeCommittee",
+			conv:     func(p *Committee) Committee { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) IsPresentInMeetingList() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "IsPresentInMeetingIDs",
 			relField: "IsPresentInMeetingList",
 			many:     true,
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) MeetingList() *meetingBuilder {
 	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingIDs",
 			relField: "MeetingList",
 			many:     true,
+			conv:     func(p *Meeting) Meeting { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) MeetingUserList() *meetingUserBuilder {
 	return &meetingUserBuilder{
-		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MeetingUserIDs",
 			relField: "MeetingUserList",
 			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }
 
 func (b *userBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
-		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization, *Organization]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OrganizationID",
 			relField: "Organization",
+			conv:     func(p *Organization) Organization { return *p },
 		},
 	}
 }
 
 func (r *Fetch) User(ids ...int) *userBuilder {
 	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
+		builder: builder[userBuilder, *userBuilder, User, *User]{
 			ids:   ids,
 			fetch: r,
+			conv:  func(p *User) User { return *p },
 		},
 	}
 }
