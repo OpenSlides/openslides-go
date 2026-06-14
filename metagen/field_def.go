@@ -1140,6 +1140,7 @@ var RestrictionModes = map[string]string{
 	"poll/live_voting_enabled":     "A",
 	"poll/max_votes_amount":        "A",
 	"poll/max_votes_per_option":    "A",
+	"poll/max_yes_votes_amount":    "A",
 	"poll/meeting_id":              "A",
 	"poll/min_votes_amount":        "A",
 	"poll/onehundred_percent_base": "A",

@@ -5881,6 +5881,7 @@ type Poll struct {
 	LiveVotingEnabled     bool
 	MaxVotesAmount        int
 	MaxVotesPerOption     int
+	MaxYesVotesAmount     int
 	MeetingID             int
 	MinVotesAmount        int
 	OnehundredPercentBase string
@@ -5924,6 +5925,7 @@ func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
 	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
 	ds.Poll_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
+	ds.Poll_MaxYesVotesAmount(id).Lazy(&c.MaxYesVotesAmount)
 	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)
 	ds.Poll_MinVotesAmount(id).Lazy(&c.MinVotesAmount)
 	ds.Poll_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)

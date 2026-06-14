@@ -6782,6 +6782,15 @@ func (r *Fetch) Poll_MaxVotesPerOption(pollID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Poll_MaxYesVotesAmount(pollID int) *ValueInt {
+	key, err := dskey.FromParts("poll", pollID, "max_yes_votes_amount")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
 func (r *Fetch) Poll_MeetingID(pollID int) *ValueInt {
 	key, err := dskey.FromParts("poll", pollID, "meeting_id")
 	if err != nil {
