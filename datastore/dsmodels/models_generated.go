@@ -1364,9 +1364,10 @@ type HistoryEntryModelUnion interface {
 	isHistoryEntryModelUnion()
 }
 
-func (*User) isHistoryEntryModelUnion()       {}
-func (*Motion) isHistoryEntryModelUnion()     {}
 func (*Assignment) isHistoryEntryModelUnion() {}
+func (*Motion) isHistoryEntryModelUnion()     {}
+func (*Poll) isHistoryEntryModelUnion()       {}
+func (*User) isHistoryEntryModelUnion()       {}
 
 type historyEntryModelUnionBuilder struct {
 	builder[historyEntryModelUnionBuilder, *historyEntryModelUnionBuilder, HistoryEntryModelUnion, HistoryEntryModelUnion]
@@ -1389,11 +1390,11 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) HistoryEntryMode
 	}
 
 	switch collection {
-	case "user":
-		builder := &userBuilder{
-			builder: builder[userBuilder, *userBuilder, User, *User]{
+	case "assignment":
+		builder := &assignmentBuilder{
+			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
 				fetch: ds,
-				conv:  func(p *User) User { return *p },
+				conv:  func(p *Assignment) Assignment { return *p },
 			},
 		}
 		return builder.lazy(ds, intId)
@@ -1405,11 +1406,19 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) HistoryEntryMode
 			},
 		}
 		return builder.lazy(ds, intId)
-	case "assignment":
-		builder := &assignmentBuilder{
-			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
+	case "poll":
+		builder := &pollBuilder{
+			builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
 				fetch: ds,
-				conv:  func(p *Assignment) Assignment { return *p },
+				conv:  func(p *Poll) Poll { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "user":
+		builder := &userBuilder{
+			builder: builder[userBuilder, *userBuilder, User, *User]{
+				fetch: ds,
+				conv:  func(p *User) User { return *p },
 			},
 		}
 		return builder.lazy(ds, intId)
@@ -6747,12 +6756,13 @@ func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 
 func (b *pollBuilder) HistoryEntryList() *historyEntryBuilder {
 	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "HistoryEntryIDs",
 			relField: "HistoryEntryList",
 			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }
