@@ -702,6 +702,7 @@ var collectionFields = [...]collectionField{
 	{"poll", "config_id"},
 	{"poll", "content_object_id"},
 	{"poll", "entitled_group_ids"},
+	{"poll", "history_entry_ids"},
 	{"poll", "id"},
 	{"poll", "live_voting_enabled"},
 	{"poll", "meeting_id"},
@@ -2374,546 +2375,548 @@ func collectionFieldToID(cf string) int {
 		return 698
 	case "poll/entitled_group_ids":
 		return 699
-	case "poll/id":
+	case "poll/history_entry_ids":
 		return 700
-	case "poll/live_voting_enabled":
+	case "poll/id":
 		return 701
-	case "poll/meeting_id":
+	case "poll/live_voting_enabled":
 		return 702
-	case "poll/option_ids":
+	case "poll/meeting_id":
 		return 703
-	case "poll/projection_ids":
+	case "poll/option_ids":
 		return 704
-	case "poll/published":
+	case "poll/projection_ids":
 		return 705
-	case "poll/result":
+	case "poll/published":
 		return 706
-	case "poll/sequential_number":
+	case "poll/result":
 		return 707
-	case "poll/state":
+	case "poll/sequential_number":
 		return 708
-	case "poll/title":
+	case "poll/state":
 		return 709
-	case "poll/visibility":
+	case "poll/title":
 		return 710
-	case "poll/voted_ids":
+	case "poll/visibility":
 		return 711
-	case "poll_ballot/A":
+	case "poll/voted_ids":
 		return 712
-	case "poll_ballot/B":
+	case "poll_ballot/A":
 		return 713
-	case "poll_ballot/C":
+	case "poll_ballot/B":
 		return 714
-	case "poll_ballot/acting_meeting_user_id":
+	case "poll_ballot/C":
 		return 715
-	case "poll_ballot/id":
+	case "poll_ballot/acting_meeting_user_id":
 		return 716
-	case "poll_ballot/poll_id":
+	case "poll_ballot/id":
 		return 717
-	case "poll_ballot/represented_meeting_user_id":
+	case "poll_ballot/poll_id":
 		return 718
-	case "poll_ballot/split":
+	case "poll_ballot/represented_meeting_user_id":
 		return 719
-	case "poll_ballot/value":
+	case "poll_ballot/split":
 		return 720
-	case "poll_ballot/weight":
+	case "poll_ballot/value":
 		return 721
-	case "poll_config_approval/A":
+	case "poll_ballot/weight":
 		return 722
-	case "poll_config_approval/allow_abstain":
+	case "poll_config_approval/A":
 		return 723
-	case "poll_config_approval/id":
+	case "poll_config_approval/allow_abstain":
 		return 724
-	case "poll_config_approval/onehundred_percent_base":
+	case "poll_config_approval/id":
 		return 725
-	case "poll_config_approval/poll_id":
+	case "poll_config_approval/onehundred_percent_base":
 		return 726
-	case "poll_config_rating_approval/A":
+	case "poll_config_approval/poll_id":
 		return 727
-	case "poll_config_rating_approval/allow_abstain":
+	case "poll_config_rating_approval/A":
 		return 728
-	case "poll_config_rating_approval/id":
+	case "poll_config_rating_approval/allow_abstain":
 		return 729
-	case "poll_config_rating_approval/max_options_amount":
+	case "poll_config_rating_approval/id":
 		return 730
-	case "poll_config_rating_approval/min_options_amount":
+	case "poll_config_rating_approval/max_options_amount":
 		return 731
-	case "poll_config_rating_approval/onehundred_percent_base":
+	case "poll_config_rating_approval/min_options_amount":
 		return 732
-	case "poll_config_rating_approval/poll_id":
+	case "poll_config_rating_approval/onehundred_percent_base":
 		return 733
-	case "poll_config_rating_score/A":
+	case "poll_config_rating_approval/poll_id":
 		return 734
-	case "poll_config_rating_score/id":
+	case "poll_config_rating_score/A":
 		return 735
-	case "poll_config_rating_score/max_options_amount":
+	case "poll_config_rating_score/id":
 		return 736
-	case "poll_config_rating_score/max_vote_sum":
+	case "poll_config_rating_score/max_options_amount":
 		return 737
-	case "poll_config_rating_score/max_votes_per_option":
+	case "poll_config_rating_score/max_vote_sum":
 		return 738
-	case "poll_config_rating_score/min_options_amount":
+	case "poll_config_rating_score/max_votes_per_option":
 		return 739
-	case "poll_config_rating_score/min_vote_sum":
+	case "poll_config_rating_score/min_options_amount":
 		return 740
-	case "poll_config_rating_score/onehundred_percent_base":
+	case "poll_config_rating_score/min_vote_sum":
 		return 741
-	case "poll_config_rating_score/poll_id":
+	case "poll_config_rating_score/onehundred_percent_base":
 		return 742
-	case "poll_config_selection/A":
+	case "poll_config_rating_score/poll_id":
 		return 743
-	case "poll_config_selection/allow_nota":
+	case "poll_config_selection/A":
 		return 744
-	case "poll_config_selection/display_chart":
+	case "poll_config_selection/allow_nota":
 		return 745
-	case "poll_config_selection/id":
+	case "poll_config_selection/display_chart":
 		return 746
-	case "poll_config_selection/max_options_amount":
+	case "poll_config_selection/id":
 		return 747
-	case "poll_config_selection/min_options_amount":
+	case "poll_config_selection/max_options_amount":
 		return 748
-	case "poll_config_selection/onehundred_percent_base":
+	case "poll_config_selection/min_options_amount":
 		return 749
-	case "poll_config_selection/poll_id":
+	case "poll_config_selection/onehundred_percent_base":
 		return 750
-	case "poll_config_selection/strike_out":
+	case "poll_config_selection/poll_id":
 		return 751
-	case "poll_config_stv_scottish/A":
+	case "poll_config_selection/strike_out":
 		return 752
-	case "poll_config_stv_scottish/id":
+	case "poll_config_stv_scottish/A":
 		return 753
-	case "poll_config_stv_scottish/poll_id":
+	case "poll_config_stv_scottish/id":
 		return 754
-	case "poll_config_stv_scottish/posts":
+	case "poll_config_stv_scottish/poll_id":
 		return 755
-	case "poll_option/A":
+	case "poll_config_stv_scottish/posts":
 		return 756
-	case "poll_option/id":
+	case "poll_option/A":
 		return 757
-	case "poll_option/meeting_user_id":
+	case "poll_option/id":
 		return 758
-	case "poll_option/poll_id":
+	case "poll_option/meeting_user_id":
 		return 759
-	case "poll_option/text":
+	case "poll_option/poll_id":
 		return 760
-	case "poll_option/weight":
+	case "poll_option/text":
 		return 761
-	case "projection/A":
+	case "poll_option/weight":
 		return 762
-	case "projection/content_object_id":
+	case "projection/A":
 		return 763
-	case "projection/current_projector_id":
+	case "projection/content_object_id":
 		return 764
-	case "projection/history_projector_id":
+	case "projection/current_projector_id":
 		return 765
-	case "projection/id":
+	case "projection/history_projector_id":
 		return 766
-	case "projection/meeting_id":
+	case "projection/id":
 		return 767
-	case "projection/options":
+	case "projection/meeting_id":
 		return 768
-	case "projection/preview_projector_id":
+	case "projection/options":
 		return 769
-	case "projection/stable":
+	case "projection/preview_projector_id":
 		return 770
-	case "projection/type":
+	case "projection/stable":
 		return 771
-	case "projection/weight":
+	case "projection/type":
 		return 772
-	case "projector/A":
+	case "projection/weight":
 		return 773
-	case "projector/aspect_ratio_denominator":
+	case "projector/A":
 		return 774
-	case "projector/aspect_ratio_numerator":
+	case "projector/aspect_ratio_denominator":
 		return 775
-	case "projector/background_color":
+	case "projector/aspect_ratio_numerator":
 		return 776
-	case "projector/chyron_background_color":
+	case "projector/background_color":
 		return 777
-	case "projector/chyron_background_color_2":
+	case "projector/chyron_background_color":
 		return 778
-	case "projector/chyron_font_color":
+	case "projector/chyron_background_color_2":
 		return 779
-	case "projector/chyron_font_color_2":
+	case "projector/chyron_font_color":
 		return 780
-	case "projector/color":
+	case "projector/chyron_font_color_2":
 		return 781
-	case "projector/current_projection_ids":
+	case "projector/color":
 		return 782
-	case "projector/header_background_color":
+	case "projector/current_projection_ids":
 		return 783
-	case "projector/header_font_color":
+	case "projector/header_background_color":
 		return 784
-	case "projector/header_h1_color":
+	case "projector/header_font_color":
 		return 785
-	case "projector/history_projection_ids":
+	case "projector/header_h1_color":
 		return 786
-	case "projector/id":
+	case "projector/history_projection_ids":
 		return 787
-	case "projector/is_internal":
+	case "projector/id":
 		return 788
-	case "projector/meeting_id":
+	case "projector/is_internal":
 		return 789
-	case "projector/name":
+	case "projector/meeting_id":
 		return 790
-	case "projector/preview_projection_ids":
+	case "projector/name":
 		return 791
-	case "projector/scale":
+	case "projector/preview_projection_ids":
 		return 792
-	case "projector/scroll":
+	case "projector/scale":
 		return 793
-	case "projector/sequential_number":
+	case "projector/scroll":
 		return 794
-	case "projector/show_clock":
+	case "projector/sequential_number":
 		return 795
-	case "projector/show_header_footer":
+	case "projector/show_clock":
 		return 796
-	case "projector/show_logo":
+	case "projector/show_header_footer":
 		return 797
-	case "projector/show_title":
+	case "projector/show_logo":
 		return 798
-	case "projector/used_as_default_projector_for_agenda_item_list_in_meeting_id":
+	case "projector/show_title":
 		return 799
-	case "projector/used_as_default_projector_for_amendment_in_meeting_id":
+	case "projector/used_as_default_projector_for_agenda_item_list_in_meeting_id":
 		return 800
-	case "projector/used_as_default_projector_for_assignment_in_meeting_id":
+	case "projector/used_as_default_projector_for_amendment_in_meeting_id":
 		return 801
-	case "projector/used_as_default_projector_for_assignment_poll_in_meeting_id":
+	case "projector/used_as_default_projector_for_assignment_in_meeting_id":
 		return 802
-	case "projector/used_as_default_projector_for_countdown_in_meeting_id":
+	case "projector/used_as_default_projector_for_assignment_poll_in_meeting_id":
 		return 803
-	case "projector/used_as_default_projector_for_current_los_in_meeting_id":
+	case "projector/used_as_default_projector_for_countdown_in_meeting_id":
 		return 804
-	case "projector/used_as_default_projector_for_list_of_speakers_in_meeting_id":
+	case "projector/used_as_default_projector_for_current_los_in_meeting_id":
 		return 805
-	case "projector/used_as_default_projector_for_mediafile_in_meeting_id":
+	case "projector/used_as_default_projector_for_list_of_speakers_in_meeting_id":
 		return 806
-	case "projector/used_as_default_projector_for_message_in_meeting_id":
+	case "projector/used_as_default_projector_for_mediafile_in_meeting_id":
 		return 807
-	case "projector/used_as_default_projector_for_motion_block_in_meeting_id":
+	case "projector/used_as_default_projector_for_message_in_meeting_id":
 		return 808
-	case "projector/used_as_default_projector_for_motion_in_meeting_id":
+	case "projector/used_as_default_projector_for_motion_block_in_meeting_id":
 		return 809
-	case "projector/used_as_default_projector_for_motion_poll_in_meeting_id":
+	case "projector/used_as_default_projector_for_motion_in_meeting_id":
 		return 810
-	case "projector/used_as_default_projector_for_poll_in_meeting_id":
+	case "projector/used_as_default_projector_for_motion_poll_in_meeting_id":
 		return 811
-	case "projector/used_as_default_projector_for_topic_in_meeting_id":
+	case "projector/used_as_default_projector_for_poll_in_meeting_id":
 		return 812
-	case "projector/used_as_reference_projector_meeting_id":
+	case "projector/used_as_default_projector_for_topic_in_meeting_id":
 		return 813
-	case "projector/width":
+	case "projector/used_as_reference_projector_meeting_id":
 		return 814
-	case "projector_countdown/A":
+	case "projector/width":
 		return 815
-	case "projector_countdown/countdown_time":
+	case "projector_countdown/A":
 		return 816
-	case "projector_countdown/default_time":
+	case "projector_countdown/countdown_time":
 		return 817
-	case "projector_countdown/description":
+	case "projector_countdown/default_time":
 		return 818
-	case "projector_countdown/id":
+	case "projector_countdown/description":
 		return 819
-	case "projector_countdown/meeting_id":
+	case "projector_countdown/id":
 		return 820
-	case "projector_countdown/projection_ids":
+	case "projector_countdown/meeting_id":
 		return 821
-	case "projector_countdown/running":
+	case "projector_countdown/projection_ids":
 		return 822
-	case "projector_countdown/title":
+	case "projector_countdown/running":
 		return 823
-	case "projector_countdown/used_as_list_of_speakers_countdown_meeting_id":
+	case "projector_countdown/title":
 		return 824
-	case "projector_countdown/used_as_poll_countdown_meeting_id":
+	case "projector_countdown/used_as_list_of_speakers_countdown_meeting_id":
 		return 825
-	case "projector_message/A":
+	case "projector_countdown/used_as_poll_countdown_meeting_id":
 		return 826
-	case "projector_message/id":
+	case "projector_message/A":
 		return 827
-	case "projector_message/meeting_id":
+	case "projector_message/id":
 		return 828
-	case "projector_message/message":
+	case "projector_message/meeting_id":
 		return 829
-	case "projector_message/projection_ids":
+	case "projector_message/message":
 		return 830
-	case "speaker/A":
+	case "projector_message/projection_ids":
 		return 831
-	case "speaker/answer":
+	case "speaker/A":
 		return 832
-	case "speaker/begin_time":
+	case "speaker/answer":
 		return 833
-	case "speaker/end_time":
+	case "speaker/begin_time":
 		return 834
-	case "speaker/id":
+	case "speaker/end_time":
 		return 835
-	case "speaker/list_of_speakers_id":
+	case "speaker/id":
 		return 836
-	case "speaker/meeting_id":
+	case "speaker/list_of_speakers_id":
 		return 837
-	case "speaker/meeting_user_id":
+	case "speaker/meeting_id":
 		return 838
-	case "speaker/note":
+	case "speaker/meeting_user_id":
 		return 839
-	case "speaker/pause_time":
+	case "speaker/note":
 		return 840
-	case "speaker/point_of_order":
+	case "speaker/pause_time":
 		return 841
-	case "speaker/point_of_order_category_id":
+	case "speaker/point_of_order":
 		return 842
-	case "speaker/speech_state":
+	case "speaker/point_of_order_category_id":
 		return 843
-	case "speaker/structure_level_list_of_speakers_id":
+	case "speaker/speech_state":
 		return 844
-	case "speaker/total_pause":
+	case "speaker/structure_level_list_of_speakers_id":
 		return 845
-	case "speaker/unpause_time":
+	case "speaker/total_pause":
 		return 846
-	case "speaker/weight":
+	case "speaker/unpause_time":
 		return 847
-	case "structure_level/A":
+	case "speaker/weight":
 		return 848
-	case "structure_level/color":
+	case "structure_level/A":
 		return 849
-	case "structure_level/default_time":
+	case "structure_level/color":
 		return 850
-	case "structure_level/id":
+	case "structure_level/default_time":
 		return 851
-	case "structure_level/meeting_id":
+	case "structure_level/id":
 		return 852
-	case "structure_level/meeting_user_ids":
+	case "structure_level/meeting_id":
 		return 853
-	case "structure_level/name":
+	case "structure_level/meeting_user_ids":
 		return 854
-	case "structure_level/structure_level_list_of_speakers_ids":
+	case "structure_level/name":
 		return 855
-	case "structure_level_list_of_speakers/A":
+	case "structure_level/structure_level_list_of_speakers_ids":
 		return 856
-	case "structure_level_list_of_speakers/additional_time":
+	case "structure_level_list_of_speakers/A":
 		return 857
-	case "structure_level_list_of_speakers/current_start_time":
+	case "structure_level_list_of_speakers/additional_time":
 		return 858
-	case "structure_level_list_of_speakers/id":
+	case "structure_level_list_of_speakers/current_start_time":
 		return 859
-	case "structure_level_list_of_speakers/initial_time":
+	case "structure_level_list_of_speakers/id":
 		return 860
-	case "structure_level_list_of_speakers/list_of_speakers_id":
+	case "structure_level_list_of_speakers/initial_time":
 		return 861
-	case "structure_level_list_of_speakers/meeting_id":
+	case "structure_level_list_of_speakers/list_of_speakers_id":
 		return 862
-	case "structure_level_list_of_speakers/remaining_time":
+	case "structure_level_list_of_speakers/meeting_id":
 		return 863
-	case "structure_level_list_of_speakers/speaker_ids":
+	case "structure_level_list_of_speakers/remaining_time":
 		return 864
-	case "structure_level_list_of_speakers/structure_level_id":
+	case "structure_level_list_of_speakers/speaker_ids":
 		return 865
-	case "tag/A":
+	case "structure_level_list_of_speakers/structure_level_id":
 		return 866
-	case "tag/id":
+	case "tag/A":
 		return 867
-	case "tag/meeting_id":
+	case "tag/id":
 		return 868
-	case "tag/name":
+	case "tag/meeting_id":
 		return 869
-	case "tag/tagged_ids":
+	case "tag/name":
 		return 870
-	case "theme/A":
+	case "tag/tagged_ids":
 		return 871
-	case "theme/abstain":
+	case "theme/A":
 		return 872
-	case "theme/accent_100":
+	case "theme/abstain":
 		return 873
-	case "theme/accent_200":
+	case "theme/accent_100":
 		return 874
-	case "theme/accent_300":
+	case "theme/accent_200":
 		return 875
-	case "theme/accent_400":
+	case "theme/accent_300":
 		return 876
-	case "theme/accent_50":
+	case "theme/accent_400":
 		return 877
-	case "theme/accent_500":
+	case "theme/accent_50":
 		return 878
-	case "theme/accent_600":
+	case "theme/accent_500":
 		return 879
-	case "theme/accent_700":
+	case "theme/accent_600":
 		return 880
-	case "theme/accent_800":
+	case "theme/accent_700":
 		return 881
-	case "theme/accent_900":
+	case "theme/accent_800":
 		return 882
-	case "theme/accent_a100":
+	case "theme/accent_900":
 		return 883
-	case "theme/accent_a200":
+	case "theme/accent_a100":
 		return 884
-	case "theme/accent_a400":
+	case "theme/accent_a200":
 		return 885
-	case "theme/accent_a700":
+	case "theme/accent_a400":
 		return 886
-	case "theme/headbar":
+	case "theme/accent_a700":
 		return 887
-	case "theme/id":
+	case "theme/headbar":
 		return 888
-	case "theme/name":
+	case "theme/id":
 		return 889
-	case "theme/no":
+	case "theme/name":
 		return 890
-	case "theme/organization_id":
+	case "theme/no":
 		return 891
-	case "theme/primary_100":
+	case "theme/organization_id":
 		return 892
-	case "theme/primary_200":
+	case "theme/primary_100":
 		return 893
-	case "theme/primary_300":
+	case "theme/primary_200":
 		return 894
-	case "theme/primary_400":
+	case "theme/primary_300":
 		return 895
-	case "theme/primary_50":
+	case "theme/primary_400":
 		return 896
-	case "theme/primary_500":
+	case "theme/primary_50":
 		return 897
-	case "theme/primary_600":
+	case "theme/primary_500":
 		return 898
-	case "theme/primary_700":
+	case "theme/primary_600":
 		return 899
-	case "theme/primary_800":
+	case "theme/primary_700":
 		return 900
-	case "theme/primary_900":
+	case "theme/primary_800":
 		return 901
-	case "theme/primary_a100":
+	case "theme/primary_900":
 		return 902
-	case "theme/primary_a200":
+	case "theme/primary_a100":
 		return 903
-	case "theme/primary_a400":
+	case "theme/primary_a200":
 		return 904
-	case "theme/primary_a700":
+	case "theme/primary_a400":
 		return 905
-	case "theme/theme_for_organization_id":
+	case "theme/primary_a700":
 		return 906
-	case "theme/warn_100":
+	case "theme/theme_for_organization_id":
 		return 907
-	case "theme/warn_200":
+	case "theme/warn_100":
 		return 908
-	case "theme/warn_300":
+	case "theme/warn_200":
 		return 909
-	case "theme/warn_400":
+	case "theme/warn_300":
 		return 910
-	case "theme/warn_50":
+	case "theme/warn_400":
 		return 911
-	case "theme/warn_500":
+	case "theme/warn_50":
 		return 912
-	case "theme/warn_600":
+	case "theme/warn_500":
 		return 913
-	case "theme/warn_700":
+	case "theme/warn_600":
 		return 914
-	case "theme/warn_800":
+	case "theme/warn_700":
 		return 915
-	case "theme/warn_900":
+	case "theme/warn_800":
 		return 916
-	case "theme/warn_a100":
+	case "theme/warn_900":
 		return 917
-	case "theme/warn_a200":
+	case "theme/warn_a100":
 		return 918
-	case "theme/warn_a400":
+	case "theme/warn_a200":
 		return 919
-	case "theme/warn_a700":
+	case "theme/warn_a400":
 		return 920
-	case "theme/yes":
+	case "theme/warn_a700":
 		return 921
-	case "topic/A":
+	case "theme/yes":
 		return 922
-	case "topic/agenda_item_id":
+	case "topic/A":
 		return 923
-	case "topic/attachment_meeting_mediafile_ids":
+	case "topic/agenda_item_id":
 		return 924
-	case "topic/id":
+	case "topic/attachment_meeting_mediafile_ids":
 		return 925
-	case "topic/list_of_speakers_id":
+	case "topic/id":
 		return 926
-	case "topic/meeting_id":
+	case "topic/list_of_speakers_id":
 		return 927
-	case "topic/poll_ids":
+	case "topic/meeting_id":
 		return 928
-	case "topic/projection_ids":
+	case "topic/poll_ids":
 		return 929
-	case "topic/sequential_number":
+	case "topic/projection_ids":
 		return 930
-	case "topic/text":
+	case "topic/sequential_number":
 		return 931
-	case "topic/title":
+	case "topic/text":
 		return 932
-	case "user/A":
+	case "topic/title":
 		return 933
-	case "user/B":
+	case "user/A":
 		return 934
-	case "user/D":
+	case "user/B":
 		return 935
-	case "user/E":
+	case "user/D":
 		return 936
-	case "user/F":
+	case "user/E":
 		return 937
-	case "user/G":
+	case "user/F":
 		return 938
-	case "user/H":
+	case "user/G":
 		return 939
-	case "user/can_change_own_password":
+	case "user/H":
 		return 940
-	case "user/committee_ids":
+	case "user/can_change_own_password":
 		return 941
-	case "user/committee_management_ids":
+	case "user/committee_ids":
 		return 942
-	case "user/default_password":
+	case "user/committee_management_ids":
 		return 943
-	case "user/default_vote_weight":
+	case "user/default_password":
 		return 944
-	case "user/email":
+	case "user/default_vote_weight":
 		return 945
-	case "user/external":
+	case "user/email":
 		return 946
-	case "user/first_name":
+	case "user/external":
 		return 947
-	case "user/gender_id":
+	case "user/first_name":
 		return 948
-	case "user/history_entry_ids":
+	case "user/gender_id":
 		return 949
-	case "user/history_position_ids":
+	case "user/history_entry_ids":
 		return 950
-	case "user/home_committee_id":
+	case "user/history_position_ids":
 		return 951
-	case "user/id":
+	case "user/home_committee_id":
 		return 952
-	case "user/is_active":
+	case "user/id":
 		return 953
-	case "user/is_demo_user":
+	case "user/is_active":
 		return 954
-	case "user/is_physical_person":
+	case "user/is_demo_user":
 		return 955
-	case "user/is_present_in_meeting_ids":
+	case "user/is_physical_person":
 		return 956
-	case "user/last_email_sent":
+	case "user/is_present_in_meeting_ids":
 		return 957
-	case "user/last_login":
+	case "user/last_email_sent":
 		return 958
-	case "user/last_name":
+	case "user/last_login":
 		return 959
-	case "user/meeting_ids":
+	case "user/last_name":
 		return 960
-	case "user/meeting_user_ids":
+	case "user/meeting_ids":
 		return 961
-	case "user/member_number":
+	case "user/meeting_user_ids":
 		return 962
-	case "user/organization_id":
+	case "user/member_number":
 		return 963
-	case "user/organization_management_level":
+	case "user/organization_id":
 		return 964
-	case "user/password":
+	case "user/organization_management_level":
 		return 965
-	case "user/pronoun":
+	case "user/password":
 		return 966
-	case "user/saml_id":
+	case "user/pronoun":
 		return 967
-	case "user/title":
+	case "user/saml_id":
 		return 968
-	case "user/username":
+	case "user/title":
 		return 969
+	case "user/username":
+		return 970
 	default:
 		return -1
 	}
