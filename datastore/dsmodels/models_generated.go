@@ -6965,6 +6965,7 @@ type PollConfigRatingApproval struct {
 	AllowAbstain          bool
 	ID                    int
 	MaxOptionsAmount      int
+	MaxYesAmount          int
 	MinOptionsAmount      int
 	OnehundredPercentBase string
 	PollID                int
@@ -6981,6 +6982,7 @@ func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigRa
 	ds.PollConfigRatingApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigRatingApproval_ID(id).Lazy(&c.ID)
 	ds.PollConfigRatingApproval_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
+	ds.PollConfigRatingApproval_MaxYesAmount(id).Lazy(&c.MaxYesAmount)
 	ds.PollConfigRatingApproval_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
 	ds.PollConfigRatingApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingApproval_PollID(id).Lazy(&c.PollID)
