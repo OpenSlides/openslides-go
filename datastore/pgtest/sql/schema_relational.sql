@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '51e6dde20f32a81e6624f27da3c903a6'
+-- MODELS_YML_CHECKSUM = '65103beb4910ed9e78b253bf2639b69c'
 
 
 -- ENUM definitions
@@ -2052,6 +2052,7 @@ CREATE TABLE poll_config_rating_approval_t (
         CONSTRAINT default_poll_config_rating_approval_max_options_amount DEFAULT 0,
     min_options_amount integer
         CONSTRAINT default_poll_config_rating_approval_min_options_amount DEFAULT 0,
+    max_yes_amount integer,
     allow_abstain boolean
         CONSTRAINT default_poll_config_rating_approval_allow_abstain DEFAULT True,
     onehundred_percent_base enum_rating_approval_onehundred_percent_bases

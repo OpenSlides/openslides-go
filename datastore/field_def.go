@@ -38,7 +38,7 @@ var collectionFields = map[string][]string{
 	"poll":                             {"allow_invalid", "allow_vote_split", "anonymized", "ballot_ids", "config_id", "content_object_id", "entitled_group_ids", "history_entry_ids", "id", "live_voting_enabled", "meeting_id", "option_ids", "projection_ids", "published", "result", "sequential_number", "state", "title", "visibility", "voted_ids"},
 	"poll_ballot":                      {"acting_meeting_user_id", "id", "poll_id", "represented_meeting_user_id", "split", "value", "weight"},
 	"poll_config_approval":             {"allow_abstain", "id", "onehundred_percent_base", "poll_id"},
-	"poll_config_rating_approval":      {"allow_abstain", "id", "max_options_amount", "min_options_amount", "onehundred_percent_base", "poll_id"},
+	"poll_config_rating_approval":      {"allow_abstain", "id", "max_options_amount", "max_yes_amount", "min_options_amount", "onehundred_percent_base", "poll_id"},
 	"poll_config_rating_score":         {"id", "max_options_amount", "max_vote_sum", "max_votes_per_option", "min_options_amount", "min_vote_sum", "onehundred_percent_base", "poll_id"},
 	"poll_config_selection":            {"allow_nota", "display_chart", "id", "max_options_amount", "min_options_amount", "onehundred_percent_base", "poll_id", "strike_out"},
 	"poll_config_stv_scottish":         {"id", "poll_id", "posts"},

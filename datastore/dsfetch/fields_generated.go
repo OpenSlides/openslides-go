@@ -6575,6 +6575,15 @@ func (r *Fetch) PollConfigRatingApproval_MaxOptionsAmount(pollConfigRatingApprov
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) PollConfigRatingApproval_MaxYesAmount(pollConfigRatingApprovalID int) *ValueInt {
+	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "max_yes_amount")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
 func (r *Fetch) PollConfigRatingApproval_MinOptionsAmount(pollConfigRatingApprovalID int) *ValueInt {
 	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "min_options_amount")
 	if err != nil {

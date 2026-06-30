@@ -1142,6 +1142,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_approval/allow_abstain":           "A",
 	"poll_config_rating_approval/id":                      "A",
 	"poll_config_rating_approval/max_options_amount":      "A",
+	"poll_config_rating_approval/max_yes_amount":          "A",
 	"poll_config_rating_approval/min_options_amount":      "A",
 	"poll_config_rating_approval/onehundred_percent_base": "A",
 	"poll_config_rating_approval/poll_id":                 "A",
