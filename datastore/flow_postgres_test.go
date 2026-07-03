@@ -3,6 +3,7 @@ package datastore_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -13,19 +14,15 @@ import (
 	"github.com/OpenSlides/openslides-go/environment"
 )
 
-func TestFlowPostgres(t *testing.T) {
-	ctx := t.Context()
+func TestMain(m *testing.M) {
+	os.Exit(pgtest.RunTests(m))
+}
 
+func TestFlowPostgres(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("Postgres Test")
 	}
-
-	tp, err := pgtest.NewPostgresTest(ctx)
-	if err != nil {
-		t.Fatalf("starting postgres: %v", err)
-	}
-	defer tp.Close()
 
 	for _, tt := range []struct {
 		name   string // Name of the test
@@ -119,8 +116,12 @@ func TestFlowPostgres(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			tp, err := pgtest.NewPostgresTest(t)
+			if err != nil {
+				t.Fatalf("starting postgres: %v", err)
+			}
+
 			ctx := t.Context()
-			tp.Cleanup(t)
 
 			conn, err := tp.Conn(ctx)
 			if err != nil {
@@ -172,11 +173,10 @@ func TestPostgresUpdate(t *testing.T) {
 		t.Skip("Postgres Test")
 	}
 
-	tp, err := pgtest.NewPostgresTest(ctx)
+	tp, err := pgtest.NewPostgresTest(t)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
-	defer tp.Close()
 
 	conn, err := tp.Conn(ctx)
 	if err != nil {
@@ -249,11 +249,10 @@ func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
 		t.Skip("Postgres Test")
 	}
 
-	tp, err := pgtest.NewPostgresTest(ctx)
+	tp, err := pgtest.NewPostgresTest(t)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
-	defer tp.Close()
 
 	conn, err := tp.Conn(ctx)
 	if err != nil {
@@ -363,11 +362,10 @@ func TestBigQuery(t *testing.T) {
 
 	ctx := t.Context()
 
-	tp, err := pgtest.NewPostgresTest(ctx)
+	tp, err := pgtest.NewPostgresTest(t)
 	if err != nil {
 		t.Fatalf("starting postgres: %v", err)
 	}
-	defer tp.Close()
 
 	flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
