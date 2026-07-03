@@ -357,6 +357,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		nonFatalErrs := []error{}
+		debugLevelErrs := []error{}
 
 		var deletedKeys []dskey.Key
 		var updatedKeys []dskey.Key
@@ -369,7 +370,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 			keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
 			if err != nil {
-				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("creating key list from notification: %w", err))
+				debugLevelErrs = append(debugLevelErrs, fmt.Errorf("creating key list from notification: %w", err))
 			}
 
 			switch updateLog.Operation {
@@ -397,6 +398,10 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 		for _, key := range deletedKeys {
 			values[key] = nil
+		}
+
+		if len(debugLevelErrs) > 0 {
+			oslog.Debug("notify update: %s", errors.Join(debugLevelErrs...))
 		}
 
 		updateFn(values, errors.Join(nonFatalErrs...))
