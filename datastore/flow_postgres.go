@@ -327,13 +327,17 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		if conn == nil || conn.IsClosed() {
-			conn = getPostgresConnection(ctx, p.notifyConfig)
+			var err error
+			conn, err = getPostgresConnection(ctx, p.notifyConfig)
+			if err != nil {
+				updateFn(nil, fmt.Errorf("get postgres connection: %w", err))
+				continue
+			}
 			if lastXactID > 0 {
 				oslog.Info("Database reconnected")
 			}
 
-			_, err := conn.Exec(ctx, "LISTEN os_notify")
-			if err != nil {
+			if _, err := conn.Exec(ctx, "LISTEN os_notify"); err != nil {
 				updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
 				continue
 			}
@@ -436,26 +440,38 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 
 func waitPostgresAvailable(ctx context.Context, config *pgx.ConnConfig) error {
 	for {
-		conn := getPostgresConnection(ctx, config)
-		err := waitDatabaseInitialized(ctx, conn)
-		_ = conn.Close(ctx)
+		conn, err := getPostgresConnection(ctx, config)
 		if err != nil {
-			time.Sleep(1 * time.Second)
-			continue
+			return fmt.Errorf("get postgres connection: %w", err)
 		}
+		_ = conn
+		// err = waitDatabaseInitialized(ctx, conn)
+		// _ = conn.Close(ctx)
+		// if err != nil {
+		// 	time.Sleep(1 * time.Second)
+		// 	continue
+		// }
 
 		return nil
 	}
 }
 
 // getPostgresConnection tries to connect to a database until it is successful
-// TODO: Return error on credential related errors
-func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx.Conn {
+// TODO: Only returny on some known errors.
+func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) (*pgx.Conn, error) {
 	retryDelay := 1 * time.Second
 
 	for {
 		conn, err := pgx.ConnectConfig(ctx, connConfig)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				// TODO: This is inverted. The function should only retry on
+				// some known error and return on any unknown error. But I don't
+				// know what the error is, on which the service should retry. If
+				// nobody knows, we should fail on any error and wait for
+				// production to report the correct error.
+				return nil, fmt.Errorf("pgx connect: %w", err)
+			}
 			oslog.Error("Error connecting to db: %v", err)
 			time.Sleep(retryDelay)
 			continue
@@ -471,7 +487,7 @@ func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx
 		}
 
 		cancel()
-		return conn
+		return conn, nil
 	}
 }
 
