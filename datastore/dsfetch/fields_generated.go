@@ -6440,13 +6440,13 @@ func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueStri
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollBallotUser_ActingMeetingUserID(pollBallotUserID int) *ValueMaybeInt {
+func (r *Fetch) PollBallotUser_ActingMeetingUserID(pollBallotUserID int) *ValueInt {
 	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "acting_meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueInt{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueInt{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollBallotUser_ID(pollBallotUserID int) *ValueInt {
@@ -6476,13 +6476,13 @@ func (r *Fetch) PollBallotUser_PollID(pollBallotUserID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollBallotUser_RepresentedMeetingUserID(pollBallotUserID int) *ValueMaybeInt {
+func (r *Fetch) PollBallotUser_RepresentedMeetingUserID(pollBallotUserID int) *ValueInt {
 	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "represented_meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueInt{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueInt{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollBallot_ID(pollBallotID int) *ValueInt {

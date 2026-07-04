@@ -6881,15 +6881,15 @@ func (r *Fetch) PollBallot(ids ...int) *pollBallotBuilder {
 
 // PollBallotUser has all fields from poll_ballot_user.
 type PollBallotUser struct {
-	ActingMeetingUserID      dsfetch.Maybe[int]
+	ActingMeetingUserID      int
 	ID                       int
 	PollBallotID             dsfetch.Maybe[int]
 	PollID                   int
-	RepresentedMeetingUserID dsfetch.Maybe[int]
-	ActingMeetingUser        *dsfetch.Maybe[MeetingUser]
+	RepresentedMeetingUserID int
+	ActingMeetingUser        *MeetingUser
 	PollBallot               *dsfetch.Maybe[PollBallot]
 	Poll                     *Poll
-	RepresentedMeetingUser   *dsfetch.Maybe[MeetingUser]
+	RepresentedMeetingUser   *MeetingUser
 }
 
 type pollBallotUserBuilder struct {
