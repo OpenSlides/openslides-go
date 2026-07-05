@@ -1128,16 +1128,16 @@ var RestrictionModes = map[string]string{
 	"poll_ballot/id":                  "A",
 	"poll_ballot/poll_ballot_user_id": "A",
 	"poll_ballot/poll_id":             "A",
-	"poll_ballot/split":               "B",
-	"poll_ballot/value":               "B",
-	"poll_ballot/weight":              "B",
+	"poll_ballot/split":               "A",
+	"poll_ballot/value":               "A",
+	"poll_ballot/weight":              "A",
 
 	// poll_ballot_user
 	"poll_ballot_user/id":                          "A",
 	"poll_ballot_user/poll_ballot_id":              "A",
 	"poll_ballot_user/poll_id":                     "A",
-	"poll_ballot_user/acting_meeting_user_id":      "C",
-	"poll_ballot_user/represented_meeting_user_id": "C",
+	"poll_ballot_user/acting_meeting_user_id":      "B",
+	"poll_ballot_user/represented_meeting_user_id": "B",
 
 	// poll_config_approval
 	"poll_config_approval/allow_abstain":           "A",
