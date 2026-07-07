@@ -444,13 +444,12 @@ func waitPostgresAvailable(ctx context.Context, config *pgx.ConnConfig) error {
 		if err != nil {
 			return fmt.Errorf("get postgres connection: %w", err)
 		}
-		_ = conn
-		// err = waitDatabaseInitialized(ctx, conn)
-		// _ = conn.Close(ctx)
-		// if err != nil {
-		// 	time.Sleep(1 * time.Second)
-		// 	continue
-		// }
+		err = waitDatabaseInitialized(ctx, conn)
+		_ = conn.Close(ctx)
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
 		return nil
 	}
