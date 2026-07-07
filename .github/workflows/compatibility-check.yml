@@ -18,6 +18,7 @@ jobs:
           - openslides-projector-service
           - openslides-search-service
           - openslides-autoupdate-service
+          - openslides-icc-service
 
     steps:
       - name: Checkout openslides-go (PR head)
