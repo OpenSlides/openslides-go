@@ -1,0 +1,76 @@
+name: Compatibility Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - openslides-vote-service
+          - openslides-projector-service
+          - openslides-search-service
+          - openslides-autoupdate-service
+
+    steps:
+      - name: Checkout openslides-go (PR head)
+        uses: actions/checkout@v4
+        with:
+          repository: OpenSlides/openslides-go
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: openslides-go
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Determine ref for service repo
+        id: ref
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: OpenSlides
+          REPO: ${{ matrix.service }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${OWNER}/${REPO}/branches/${PR_BRANCH}" >/dev/null 2>&1; then
+            echo "ref=${PR_BRANCH}" >> "$GITHUB_OUTPUT"
+          else
+            default_branch="$(gh api "repos/${OWNER}/${REPO}" --jq .default_branch)"
+            echo "ref=${default_branch}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout service repo (recursive submodules)
+        uses: actions/checkout@v4
+        with:
+          repository: OpenSlides/${{ matrix.service }}
+          ref: ${{ steps.ref.outputs.ref }}
+          path: service
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: service/go.mod
+          cache: true
+
+      - name: Create temporary go.work (service + openslides-go)
+        run: |
+          set -euo pipefail
+          go work init ./service ./openslides-go
+          # sync is optional but helps keep workspace module graph consistent
+          go work sync
+
+      - name: Run go vet (service against PR openslides-go)
+        working-directory: service
+        run: go vet ./...
+
+      - name: Run go test (service against PR openslides-go)
+        working-directory: service
+        run: go test ./...
