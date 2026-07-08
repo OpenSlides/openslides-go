@@ -19,6 +19,7 @@ jobs:
           - openslides-search-service
           - openslides-autoupdate-service
           - openslides-icc-service
+          - openslides-cli
 
     steps:
       - name: Checkout openslides-go (PR head)
