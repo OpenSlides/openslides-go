@@ -44,38 +44,33 @@ type FlowPostgres struct {
 }
 
 // NewFlowPostgres initializes a SourcePostgres.
-//
-// Returns the postgres instance, an init function, that has to be called before
-// the first use and an error.
-func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, func(context.Context) error, error) {
+func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 	addr, err := postgresDSN(lookup)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading postgres dns: %w", err)
+		return nil, fmt.Errorf("reading postgres dns: %w", err)
 	}
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
-		return nil, nil, fmt.Errorf("parse config: %w", err)
+		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
-	// NewWithConfig does no IO, if MinConns == 0. So the background-context
-	// does nothing in this case.
-	config.MinConns = 0
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	ctx := context.Background()
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating connection pool: %w", err)
+		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
 	notifyAddr, err := postgresDSNNotify(lookup)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading postgres dns for notify: %w", err)
+		return nil, fmt.Errorf("reading postgres dns for notify: %w", err)
 	}
 
 	notifyConf, err := pgx.ParseConfig(notifyAddr)
 	if err != nil {
-		return nil, nil, fmt.Errorf("generate config for notify: %w", err)
+		return nil, fmt.Errorf("generate config for notify: %w", err)
 	}
 
 	flow := FlowPostgres{
@@ -83,32 +78,24 @@ func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, func(cont
 		notifyConfig: notifyConf,
 	}
 
-	init := func(ctx context.Context) error {
-		if err := waitPostgresAvailable(ctx, config.ConnConfig); err != nil {
-			return fmt.Errorf("waiting for postgres: %w", err)
-		}
-
-		if err := flow.updateEnums(ctx); err != nil {
-			return fmt.Errorf("init enum values: %w", err)
-		}
-		return nil
+	if err := flow.updateEnums(ctx); err != nil {
+		return nil, err
 	}
 
-	return &flow, init, nil
+	return &flow, nil
 }
 
-// updateEnums ready the enum values from postgres for later use.
 func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 	c, err := p.Pool.Acquire(ctx)
 	if err != nil {
-		return fmt.Errorf("acquire connection: %w", err)
+		return err
 	}
 	defer c.Release()
 
 	sql := `SELECT oid, typarray FROM pg_type WHERE typtype = 'e';`
 	rows, err := c.Conn().Query(ctx, sql)
 	if err != nil {
-		return fmt.Errorf("fetch pg_types: %w", err)
+		return err
 	}
 	defer rows.Close()
 
@@ -118,7 +105,7 @@ func (p *FlowPostgres) updateEnums(ctx context.Context) error {
 		var oid uint32
 		var typarray uint32
 		if err := rows.Scan(&oid, &typarray); err != nil {
-			return fmt.Errorf("read type: %w", err)
+			return err
 		}
 
 		p.enums[oid] = struct{}{}
@@ -327,17 +314,13 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 		}
 
 		if conn == nil || conn.IsClosed() {
-			var err error
-			conn, err = getPostgresConnection(ctx, p.notifyConfig)
-			if err != nil {
-				updateFn(nil, fmt.Errorf("get postgres connection: %w", err))
-				continue
-			}
+			conn = getPostgresConnection(ctx, p.notifyConfig)
 			if lastXactID > 0 {
 				oslog.Info("Database reconnected")
 			}
 
-			if _, err := conn.Exec(ctx, "LISTEN os_notify"); err != nil {
+			_, err := conn.Exec(ctx, "LISTEN os_notify")
+			if err != nil {
 				updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
 				continue
 			}
@@ -438,13 +421,27 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	}
 }
 
-func waitPostgresAvailable(ctx context.Context, config *pgx.ConnConfig) error {
+// WaitPostgresAvailable blocks until postgres db is availabe
+func WaitPostgresAvailable(lookup environment.Environmenter) error {
+	if _, forDocu := lookup.(*environment.ForDocu); forDocu {
+		return nil
+	}
+
+	addr, err := postgresDSN(lookup)
+	if err != nil {
+		return fmt.Errorf("reading postgres config: %w", err)
+	}
+
+	config, err := pgx.ParseConfig(addr)
+	if err != nil {
+		return fmt.Errorf("parsing postgres config: %w", err)
+	}
+
+	ctx := context.Background()
+
 	for {
-		conn, err := getPostgresConnection(ctx, config)
-		if err != nil {
-			return fmt.Errorf("get postgres connection: %w", err)
-		}
-		err = waitDatabaseInitialized(ctx, conn)
+		conn := getPostgresConnection(ctx, config)
+		err := waitDatabaseInitialized(ctx, conn)
 		_ = conn.Close(ctx)
 		if err != nil {
 			time.Sleep(1 * time.Second)
@@ -456,21 +453,13 @@ func waitPostgresAvailable(ctx context.Context, config *pgx.ConnConfig) error {
 }
 
 // getPostgresConnection tries to connect to a database until it is successful
-// TODO: Only returny on some known errors.
-func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) (*pgx.Conn, error) {
+// TODO: Return error on credential related errors
+func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) *pgx.Conn {
 	retryDelay := 1 * time.Second
 
 	for {
 		conn, err := pgx.ConnectConfig(ctx, connConfig)
 		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				// TODO: This is inverted. The function should only retry on
-				// some known error and return on any unknown error. But I don't
-				// know what the error is, on which the service should retry. If
-				// nobody knows, we should fail on any error and wait for
-				// production to report the correct error.
-				return nil, fmt.Errorf("pgx connect: %w", err)
-			}
 			oslog.Error("Error connecting to db: %v", err)
 			time.Sleep(retryDelay)
 			continue
@@ -479,14 +468,13 @@ func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) (*pg
 		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		err = conn.Ping(pingCtx)
 		if err != nil {
-			cancel()
 			oslog.Info("Waiting for db to become ready")
 			time.Sleep(retryDelay)
 			continue
 		}
 
 		cancel()
-		return conn, nil
+		return conn
 	}
 }
 

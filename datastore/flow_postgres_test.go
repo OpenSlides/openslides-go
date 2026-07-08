@@ -133,14 +133,11 @@ func TestFlowPostgres(t *testing.T) {
 				t.Fatalf("adding example data: %v", pgtest.PrityPostgresError(err, tt.insert))
 			}
 
-			flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+			flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 			if err != nil {
 				t.Fatalf("NewFlowPostgres(): %v", err)
 			}
 			defer flow.Close()
-			if err := init(ctx); err != nil {
-				t.Fatalf("init postgres: %v", err)
-			}
 
 			keys := make([]dskey.Key, 0, len(tt.expect))
 			for k := range tt.expect {
@@ -183,12 +180,9 @@ func TestPostgresUpdate(t *testing.T) {
 		t.Fatalf("create connection: %v", err)
 	}
 
-	flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		t.Fatalf("NewFlowPostgres(): %v", err)
-	}
-	if err := init(ctx); err != nil {
-		t.Fatalf("init postgres: %v", err)
 	}
 
 	keys := []dskey.Key{
@@ -259,12 +253,9 @@ func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
 		t.Fatalf("create connection: %v", err)
 	}
 
-	flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		t.Fatalf("NewFlowPostgres(): %v", err)
-	}
-	if err := init(ctx); err != nil {
-		t.Fatalf("init postgres: %v", err)
 	}
 
 	keys := []dskey.Key{
@@ -367,12 +358,9 @@ func TestBigQuery(t *testing.T) {
 		t.Fatalf("starting postgres: %v", err)
 	}
 
-	flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
-	}
-	if err := init(ctx); err != nil {
-		t.Fatalf("init postgres: %v", err)
 	}
 
 	conn, err := tp.Conn(ctx)
