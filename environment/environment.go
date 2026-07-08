@@ -68,13 +68,7 @@ func (v Variable) ValueOr(loopup Environmenter, other Variable) string {
 // Environmenter is an type, that can return the value for environment
 // variables.
 //
-// This type is used to access environment variables, but also, to autogenerate,
-// which environment variables a service needs.
-//
-// For that to work, a function, that takes this type is only allowed to
-// initialize datastructures. It is not allowed to do any IO or other blocking
-// function calls. Especially, not network request like waiting for postgres. If
-// IO is needed, it has to be done in a callback.
+// It also saves the used environment variables.
 type Environmenter interface {
 	Getenv(key string) string
 	UseVariable(v Variable)
