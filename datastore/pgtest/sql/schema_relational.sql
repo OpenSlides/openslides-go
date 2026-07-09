@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '65103beb4910ed9e78b253bf2639b69c'
+-- MODELS_YML_CHECKSUM = 'accb55ba8debadb6c55f69dfb508076b'
 
 
 -- ENUM definitions
@@ -1442,6 +1442,8 @@ Password: {password}
 
 This email was generated automatically.',
     users_enable_vote_delegations boolean,
+    users_vote_delegations_max_amount integer
+        CONSTRAINT default_meeting_users_vote_delegations_max_amount DEFAULT 1,
     users_forbid_delegator_in_list_of_speakers boolean,
     users_forbid_delegator_as_submitter boolean,
     users_forbid_delegator_as_supporter boolean,
@@ -1570,7 +1572,6 @@ CREATE TABLE meeting_user_t (
         CONSTRAINT required_meeting_user_user_id NOT NULL,
     meeting_id integer
         CONSTRAINT required_meeting_user_meeting_id NOT NULL,
-    vote_delegated_to_id integer,
     CONSTRAINT unique_meeting_user_meeting_id_user_id UNIQUE (meeting_id, user_id)
 );
 
@@ -2750,6 +2751,22 @@ CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id_3c67b77 ON 
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id_8abf47a ON gm_meeting_mediafile_attachment_ids_t (attachment_id_topic_id);
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id_66fb18e ON gm_meeting_mediafile_attachment_ids_t (attachment_id_assignment_id);
 
+CREATE TABLE nm_meeting_user_vote_delegated_to_ids_meeting_user_t (
+    vote_delegations_from_id integer
+        CONSTRAINT required_nm_meeting_user_vote_delegated_to_ids_meeting_u2c2dede NOT NULL
+        CONSTRAINT fk_nm_meeting_user_vote_delegated_to_ids_meeting_user_t_3faa0ec REFERENCES meeting_user_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    vote_delegated_to_id integer
+        CONSTRAINT required_nm_meeting_user_vote_delegated_to_ids_meeting_ueb04d5e NOT NULL
+        CONSTRAINT fk_nm_meeting_user_vote_delegated_to_ids_meeting_user_t_d8197d4 REFERENCES meeting_user_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    CONSTRAINT pk_nm_meeting_user_vote_delegated_to_ids_meeting_user_t PRIMARY KEY (vote_delegations_from_id, vote_delegated_to_id)
+);
+CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_tee86852 ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegations_from_id);
+CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_t54a80eb ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegated_to_id);
+
 CREATE TABLE nm_meeting_user_poll_voted_ids_poll_t (
     meeting_user_id integer
         CONSTRAINT required_nm_meeting_user_poll_voted_ids_poll_t_meeting_user_id NOT NULL
@@ -3153,7 +3170,8 @@ CREATE VIEW "meeting_user" AS SELECT *,
 (select array_agg(mw.id ORDER BY mw.id) from motion_working_group_speaker_t mw where mw.meeting_user_id = m.id) as motion_working_group_speaker_ids,
 (select array_agg(ms.id ORDER BY ms.id) from motion_submitter_t ms where ms.meeting_user_id = m.id) as motion_submitter_ids,
 (select array_agg(a.id ORDER BY a.id) from assignment_candidate_t a where a.meeting_user_id = m.id) as assignment_candidate_ids,
-(select array_agg(mu.id ORDER BY mu.id) from meeting_user_t mu where mu.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
+(select array_agg(n.vote_delegated_to_id ORDER BY n.vote_delegated_to_id) from nm_meeting_user_vote_delegated_to_ids_meeting_user_t n where n.vote_delegations_from_id = m.id) as vote_delegated_to_ids,
+(select array_agg(n.vote_delegations_from_id ORDER BY n.vote_delegations_from_id) from nm_meeting_user_vote_delegated_to_ids_meeting_user_t n where n.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
 (select array_agg(n.poll_id ORDER BY n.poll_id) from nm_meeting_user_poll_voted_ids_poll_t n where n.meeting_user_id = m.id) as poll_voted_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_option_t p where p.meeting_user_id = m.id) as poll_option_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_ballot_t p where p.acting_meeting_user_id = m.id) as acting_ballot_ids,
@@ -3574,8 +3592,6 @@ ALTER TABLE meeting_user_t ADD CONSTRAINT fk_meeting_user_t_user_id_user_t_id FO
 CREATE INDEX idx_meeting_user_t_user_id ON meeting_user_t (user_id);
 ALTER TABLE meeting_user_t ADD CONSTRAINT fk_meeting_user_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_user_t_meeting_id ON meeting_user_t (meeting_id);
-ALTER TABLE meeting_user_t ADD CONSTRAINT fk_meeting_user_t_vote_delegated_to_id_meeting_user_t_id FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_meeting_user_t_vote_delegated_to_id ON meeting_user_t (vote_delegated_to_id);
 
 ALTER TABLE motion_t ADD CONSTRAINT fk_motion_t_lead_motion_id_motion_t_id FOREIGN KEY(lead_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_motion_t_lead_motion_id ON motion_t (lead_motion_id);
@@ -4782,8 +4798,11 @@ CREATE TRIGGER tr_log_meeting_user_t_user_id AFTER INSERT OR UPDATE OF user_id O
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'user_id', 'meeting_user_ids');
 CREATE TRIGGER tr_log_meeting_user_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'meeting_user_ids');
-CREATE TRIGGER tr_log_meeting_user_t_vote_delegated_to_id AFTER INSERT OR UPDATE OF vote_delegated_to_id OR DELETE ON meeting_user_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'vote_delegated_to_id', 'vote_delegations_from_ids');
+
+CREATE TRIGGER tr_log_nm_meeting_user_vote_delegated_to_ids_meeting_user_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','vote_delegations_from_id','vote_delegated_to_ids','meeting_user','vote_delegated_to_id','vote_delegations_from_ids');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 CREATE TRIGGER tr_log_nm_meeting_user_poll_voted_ids_poll_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_poll_voted_ids_poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','meeting_user_id','poll_voted_ids','poll','poll_id','voted_ids');
@@ -5470,10 +5489,12 @@ FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('meeting_mediafile_id', 
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_id AFTER INSERT OR UPDATE OF vote_delegated_to_id ON meeting_user_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('meeting_user', 'meeting_user', 'vote_delegated_to_id', 'meeting_id', FALSE);
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
 CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegations_from_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('meeting_user', 'meeting_user', 'vote_delegated_to_id', 'meeting_id', TRUE);
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegated_to_id', 'meeting_user', 'vote_delegations_from_id', 'meeting_user', 'meeting_id', 'vote_delegations_from_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids68aada4 AFTER INSERT ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
 
 
 CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_structure_level_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
@@ -6060,8 +6081,8 @@ SQL nt:1r => meeting_user/motion_editor_ids:-> motion_editor/meeting_user_id
 SQL nt:1r => meeting_user/motion_working_group_speaker_ids:-> motion_working_group_speaker/meeting_user_id
 SQL nt:1r => meeting_user/motion_submitter_ids:-> motion_submitter/meeting_user_id
 SQL nt:1r => meeting_user/assignment_candidate_ids:-> assignment_candidate/meeting_user_id
-FIELD 1r:nt => meeting_user/vote_delegated_to_id:-> meeting_user/vote_delegations_from_ids
-SQL nt:1r => meeting_user/vote_delegations_from_ids:-> meeting_user/vote_delegated_to_id
+SQL nt:nt => meeting_user/vote_delegated_to_ids:-> meeting_user/vote_delegations_from_ids
+SQL nt:nt => meeting_user/vote_delegations_from_ids:-> meeting_user/vote_delegated_to_ids
 SQL nt:nt => meeting_user/poll_voted_ids:-> poll/voted_ids
 SQL nr:1r => meeting_user/poll_option_ids:-> poll_option/meeting_user_id
 SQL nt:1r => meeting_user/acting_ballot_ids:-> poll_ballot/acting_meeting_user_id

@@ -2381,13 +2381,13 @@ func (r *Fetch) MeetingUser_UserID(meetingUserID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting_user", meetingUserID, "vote_delegated_to_id")
+func (r *Fetch) MeetingUser_VoteDelegatedToIDs(meetingUserID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_user", meetingUserID, "vote_delegated_to_ids")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_VoteDelegationsFromIDs(meetingUserID int) *ValueIntSlice {
@@ -4548,6 +4548,15 @@ func (r *Fetch) Meeting_UsersPdfWlanSsid(meetingID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_UsersVoteDelegationsMaxAmount(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "users_vote_delegations_max_amount")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_WelcomeText(meetingID int) *ValueString {
