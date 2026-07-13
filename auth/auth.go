@@ -25,11 +25,8 @@ import (
 var (
 	envAuthFake = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
-	envIssuerURL       = environment.NewVariable("OIDC_ISSUER_URL", "http://localhost:8080/realms/openslides", "URL of keycloak server")
-	envIssuerURLDocker = environment.NewVariable("OIDC_ISSUER_URL_DOCKER", "http://keycloak-server:8080/realms/openslides", "Dockerized URL of keycloak server")
-	envClientID        = environment.NewVariable("OIDC_CLIENT_ID", "proxy-client", "Keycloak client name")
-	envClientSecret    = environment.NewVariable("OIDC_CLIENT_SECRET", "proxy-secret", "Keycloak client secret")
-	envSecret          = environment.NewVariable("OIDC_SECRET", "qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK", "Keycloak secret")
+	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "http://localhost:8080/realms/openslides", "URL of idp server")
+	envIssuerURLInternal = environment.NewVariable("IDP_URL_INTERNAL", "http://zitadel-api:8080/realms/openslides", "Internal URL of idp server")
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -70,7 +67,7 @@ type Auth struct {
 // Returns the initialized Auth objectand a function to be called in the
 // background.
 func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
-	issuerURLDocker := envIssuerURLDocker.Value(lookup)
+	issuerURLDocker := envIssuerURLInternal.Value(lookup)
 	if issuerURLDocker == "" {
 		issuerURLDocker = envIssuerURL.Value(lookup)
 	}
@@ -256,7 +253,7 @@ func (a *Auth) fetchJWKS(ctx context.Context, kid string) (*rsa.PublicKey, error
 		return key, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", a.issuerURLDocker+"/protocol/openid-connect/certs", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", a.issuerURLDocker+"/oauth/v2/keys", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating JWKS request: %w", err)
 	}
