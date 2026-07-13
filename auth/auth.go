@@ -107,7 +107,8 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	}
 
 	// Get OS User Id linked to IDP ID
-	if userID, err := strconv.Atoi(p.OSUserID); err != nil {
+	userID, err := strconv.Atoi(p.OSUserID)
+	if err != nil {
 		return nil, &authError{"user id is not an integer " + p.OSUserID, nil}
 	}
 
@@ -149,7 +150,7 @@ func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.
 		return authError{msg: "Invalid OIDC token", wrapped: err}
 	}
 
-	if _, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
+	if _, err := jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
 		rawKid, ok := token.Header["kid"]
 		if !ok {
 			return nil, fmt.Errorf("missing kid in token header")
@@ -161,7 +162,7 @@ func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.
 		}
 
 		return a.getKey(r.Context(), kid)
-	}; err != nil {
+	}); err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
 			fmt.Println(err)
