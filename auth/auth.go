@@ -23,9 +23,7 @@ import (
 )
 
 var (
-	envAuthFake = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
-
-	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "http://localhost:8080", "URL of idp server")
+	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "https://localhost:8080", "URL of idp server")
 	envIssuerURLInternal = environment.NewVariable("IDP_URL_INTERNAL", "http://zitadel-api:8080", "Internal URL of idp server")
 )
 
@@ -49,14 +47,10 @@ type LogoutEventer interface {
 //
 // Has to be initialized with auth.New().
 type Auth struct {
-	fake bool
-
 	logedoutSessions *topic.Topic[string]
 
-	tokenKey  string
-	cookieKey string
-
-	issuerURLDocker string
+	issuerURL         string
+	issuerURLInternal string
 
 	keys      map[string]*rsa.PublicKey
 	expiresAt time.Time
@@ -67,27 +61,24 @@ type Auth struct {
 // Returns the initialized Auth objectand a function to be called in the
 // background.
 func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
-	issuerURLDocker := envIssuerURLInternal.Value(lookup)
-	if issuerURLDocker == "" {
-		issuerURLDocker = envIssuerURL.Value(lookup)
+	issuerURL := envIssuerURL.Value(lookup)
+
+	issuerURLInternal := envIssuerURLInternal.Value(lookup)
+	if issuerURLInternal == "" {
+		issuerURLInternal = envIssuerURL.Value(lookup)
 	}
 
-	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
-
 	a := &Auth{
-		logedoutSessions: topic.New[string](),
-		issuerURLDocker:  issuerURLDocker,
-		keys:             make(map[string]*rsa.PublicKey),
+		logedoutSessions:  topic.New[string](),
+		issuerURL:         issuerURL,
+		issuerURLInternal: issuerURLInternal,
+		keys:              make(map[string]*rsa.PublicKey),
 	}
 
 	// Make sure the topic is not empty
 	a.logedoutSessions.Publish("")
 
 	background := func(ctx context.Context, errorHandler func(error)) {
-		if fake {
-			return
-		}
-
 		go a.listenOnLogouts(ctx, messageBus, errorHandler)
 		go a.pruneOldData(ctx)
 	}
@@ -98,10 +89,6 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
-	if a.fake {
-		return r.Context(), nil
-	}
-
 	ctx := r.Context()
 
 	p := new(payloadIDP)
@@ -120,8 +107,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	}
 
 	// Get OS User Id linked to IDP ID
-	userID, err := strconv.Atoi(p.OSUserID)
-	if err != nil {
+	if userID, err := strconv.Atoi(p.OSUserID); err != nil {
 		return nil, &authError{"user id is not an integer " + p.OSUserID, nil}
 	}
 
@@ -158,22 +144,24 @@ func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.
 		return nil
 	}
 
-	_, err := a.validateToken(r.Context(), encodedToken)
-	if err != nil {
+	if _, err := a.validateToken(r.Context(), encodedToken); err != nil {
 		// OIDC validation failed - return error (no cookie means no legacy fallback)
 		return authError{msg: "Invalid OIDC token", wrapped: err}
 	}
 
-	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
-		kid, ok := token.Header["kid"].(string)
+	if _, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
+		rawKid, ok := token.Header["kid"]
 		if !ok {
-			return nil, fmt.Errorf("Missing kid in token header")
+			return nil, fmt.Errorf("missing kid in token header")
+		}
+
+		kid, ok := rawKid.(string)
+		if !ok {
+			return nil, fmt.Errorf("kid in token header is not a string")
 		}
 
 		return a.getKey(r.Context(), kid)
-	})
-
-	if err != nil {
+	}; err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
 			fmt.Println(err)
@@ -191,9 +179,14 @@ func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadI
 		return nil, fmt.Errorf("parsing token: %w", err)
 	}
 
-	kid, ok := token.Header["kid"].(string)
+	rawKid, ok := token.Header["kid"]
 	if !ok {
-		return nil, errors.New("missing kid in token header")
+		return nil, fmt.Errorf("missing kid in token header")
+	}
+
+	kid, ok := rawKid.(string)
+	if !ok {
+		return nil, fmt.Errorf("kid in token header is not a string")
 	}
 
 	// 2. Get public key from JWKS (cached)
@@ -215,7 +208,7 @@ func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadI
 	}
 
 	if !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 
 	// 4. Validate issuer
@@ -253,7 +246,7 @@ func (a *Auth) fetchJWKS(ctx context.Context, kid string) (*rsa.PublicKey, error
 		return key, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", a.issuerURLDocker+"/oauth/v2/keys", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", a.issuerURLInternal+"/oauth/v2/keys", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating JWKS request: %w", err)
 	}
@@ -335,10 +328,6 @@ func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Con
 //
 // Panics, if the context was not returned from Authenticate
 func (a *Auth) FromContext(ctx context.Context) int {
-	if a.fake {
-		return 1
-	}
-
 	v := ctx.Value(userIDType)
 	if v == nil {
 		panic("call to auth.FromContext() without auth.Authenticate()")
