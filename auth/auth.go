@@ -25,8 +25,8 @@ import (
 var (
 	envAuthFake = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
-	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "http://localhost:8080/realms/openslides", "URL of idp server")
-	envIssuerURLInternal = environment.NewVariable("IDP_URL_INTERNAL", "http://zitadel-api:8080/realms/openslides", "Internal URL of idp server")
+	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "http://localhost:8080", "URL of idp server")
+	envIssuerURLInternal = environment.NewVariable("IDP_URL_INTERNAL", "http://zitadel-api:8080", "Internal URL of idp server")
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -104,13 +104,13 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 
 	ctx := r.Context()
 
-	p := new(payloadKeycloak)
-	if err := a.loadTokenKeycloak(w, r, p); err != nil {
+	p := new(payloadIDP)
+	if err := a.loadTokenIDP(w, r, p); err != nil {
 		fmt.Println("reading token: %w", err)
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
 
-	if p.KeycloakID == "" {
+	if p.IDPID == "" {
 		return a.AuthenticatedContext(ctx, 0), nil
 	}
 
@@ -119,7 +119,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return nil, &authError{"invalid session", nil}
 	}
 
-	// Get OS User Id linked to Keycloak ID
+	// Get OS User Id linked to IDP ID
 	userID, err := strconv.Atoi(p.OSUserID)
 	if err != nil {
 		return nil, &authError{"user id is not an integer " + p.OSUserID, nil}
@@ -149,7 +149,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 
 // loadToken loads and validates the token. If the token is expired, it tries
 // to renew it and write the new token in the responsewriter.
-func (a *Auth) loadTokenKeycloak(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
+func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
 	header := r.Header.Get(authHeader)
 	encodedToken := strings.TrimPrefix(header, "Bearer: ")
 
@@ -184,9 +184,9 @@ func (a *Auth) loadTokenKeycloak(w http.ResponseWriter, r *http.Request, payload
 	return nil
 }
 
-func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadKeycloak, error) {
+func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadIDP, error) {
 	// 1. Parse token without validation to get kid
-	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &payloadKeycloak{})
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &payloadIDP{})
 	if err != nil {
 		return nil, fmt.Errorf("parsing token: %w", err)
 	}
@@ -203,7 +203,7 @@ func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadK
 	}
 
 	// 3. Validate token with public key
-	claims := &payloadKeycloak{}
+	claims := &payloadIDP{}
 	token, err = jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -219,17 +219,17 @@ func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadK
 	}
 
 	// 4. Validate issuer
-	//if claims.Issuer != a.issuerURLDocker {
-	//	return nil, fmt.Errorf("invalid issuer: got %s, want %s", claims.Issuer, a.issuerURLDocker)
-	//}
+	if claims.Issuer != a.issuerURL {
+		return nil, fmt.Errorf("invalid issuer: got %s, want %s", claims.Issuer, a.issuerURL)
+	}
 
 	return claims, nil
 }
 
-type payloadKeycloak struct {
+type payloadIDP struct {
 	jwt.RegisteredClaims
-	KeycloakID string `json:"sub"`
-	SessionID  string `json:"sid"` // Keycloak session ID
+	IDPID      string `json:"sub"`
+	SessionID  string `json:"sid"` // IDP session ID
 	Email      string `json:"email"`
 	Username   string `json:"preferred_username"`
 	ClientName string `json:"azp"`
