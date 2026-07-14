@@ -58,7 +58,7 @@ func New(lookup environment.Environmenter) *Redis {
 // Wait blocks until a connection can be established.
 func (r *Redis) Wait(ctx context.Context) error {
 	var lastErr error
-	for {
+	for range 100 {
 		conn := r.pool.Get()
 		_, err := redis.DoContext(conn, ctx, "PING")
 		conn.Close()
@@ -74,6 +74,7 @@ func (r *Redis) Wait(ctx context.Context) error {
 			return lastErr
 		}
 	}
+	return fmt.Errorf("try to connect to connect to redis 100 times. Last error: %w", lastErr)
 }
 
 // Update implements the Flow interface.
