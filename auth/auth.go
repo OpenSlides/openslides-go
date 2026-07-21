@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -23,7 +21,8 @@ import (
 )
 
 var (
-	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "https://localhost:8080", "URL of idp server")
+	envExternalHost      = environment.NewVariable("IDP_EXTERNAL_HOST", "localhost:8800", "External host address")
+	envIssuerURL         = environment.NewVariable("IDP_URL_EXTERNAL", "https://localhost:8800", "URL of idp server")
 	envIssuerURLInternal = environment.NewVariable("IDP_URL_INTERNAL", "http://zitadel-api:8080", "Internal URL of idp server")
 )
 
@@ -49,6 +48,7 @@ type LogoutEventer interface {
 type Auth struct {
 	logedoutSessions *topic.Topic[string]
 
+	externalHost      string
 	issuerURL         string
 	issuerURLInternal string
 
@@ -61,6 +61,7 @@ type Auth struct {
 // Returns the initialized Auth objectand a function to be called in the
 // background.
 func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
+	externalHost := envExternalHost.Value(lookup)
 	issuerURL := envIssuerURL.Value(lookup)
 
 	issuerURLInternal := envIssuerURLInternal.Value(lookup)
@@ -70,6 +71,7 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 
 	a := &Auth{
 		logedoutSessions:  topic.New[string](),
+		externalHost:      externalHost,
 		issuerURL:         issuerURL,
 		issuerURLInternal: issuerURLInternal,
 		keys:              make(map[string]*rsa.PublicKey),
@@ -93,7 +95,6 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 
 	p := new(payloadIDP)
 	if err := a.loadTokenIDP(w, r, p); err != nil {
-		fmt.Println("reading token: %w", err)
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
 
@@ -101,34 +102,31 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return a.AuthenticatedContext(ctx, 0), nil
 	}
 
-	cid, sessionIDs := a.logedoutSessions.ReceiveAll()
-	if slices.Contains(sessionIDs, p.SessionID) {
-		return nil, &authError{"invalid session", nil}
-	}
+	// TODO: Blocklist
+	//cid, sessionIDs := a.logedoutSessions.ReceiveAll()
+	//if slices.Contains(sessionIDs, p.SessionID) {
+	//	return nil, &authError{"invalid session", nil}
+	//}
 
 	// Get OS User Id linked to IDP ID
-	userID, err := strconv.Atoi(p.OSUserID)
-	if err != nil {
-		return nil, &authError{"user id is not an integer " + p.OSUserID, nil}
-	}
-
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, userID))
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.OSUserID))
 
 	go func() {
 		defer cancelCtx()
 
-		var sessionIDs []string
-		var err error
-		for {
-			cid, sessionIDs, err = a.logedoutSessions.ReceiveSince(ctx, cid)
-			if err != nil {
-				return
-			}
+		/*
+			var sessionIDs []string
+			var err error
+			for {
+				cid, sessionIDs, err = a.logedoutSessions.ReceiveSince(ctx, cid)
+				if err != nil {
+					return
+				}
 
-			if slices.Contains(sessionIDs, p.SessionID) {
-				return
-			}
-		}
+				if slices.Contains(sessionIDs, p.SessionID) {
+					return
+				}
+			}*/
 	}()
 
 	return ctx, nil
@@ -158,6 +156,7 @@ func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.
 
 		kid, ok := rawKid.(string)
 		if !ok {
+
 			return nil, fmt.Errorf("kid in token header is not a string")
 		}
 
@@ -165,7 +164,6 @@ func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.
 	}); err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
-			fmt.Println(err)
 			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken)
 		}
 	}
@@ -199,11 +197,13 @@ func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadI
 	// 3. Validate token with public key
 	claims := &payloadIDP{}
 	token, err = jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return key, nil
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("validating token: %w", err)
 	}
@@ -222,12 +222,10 @@ func (a *Auth) validateToken(ctx context.Context, tokenString string) (*payloadI
 
 type payloadIDP struct {
 	jwt.RegisteredClaims
-	IDPID      string `json:"sub"`
-	SessionID  string `json:"sid"` // IDP session ID
-	Email      string `json:"email"`
-	Username   string `json:"preferred_username"`
-	ClientName string `json:"azp"`
-	OSUserID   string `json:"os_id"`
+	IDPID  string `json:"sub"`
+	Issuer string `json:"iss"`
+	// SessionID string `json:"sid"` // IDP session ID
+	OSUserID int `json:"os_id"`
 }
 
 // getKey returns the RSA public key for the given kid, fetching from JWKS if needed
@@ -251,6 +249,8 @@ func (a *Auth) fetchJWKS(ctx context.Context, kid string) (*rsa.PublicKey, error
 	if err != nil {
 		return nil, fmt.Errorf("creating JWKS request: %w", err)
 	}
+
+	req.Host = a.externalHost
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
