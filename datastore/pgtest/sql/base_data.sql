@@ -160,14 +160,9 @@ projector_t
     used_as_default_projector_for_countdown_in_meeting_id,
     used_as_default_projector_for_assignment_poll_in_meeting_id,
     used_as_default_projector_for_motion_poll_in_meeting_id,
-    used_as_default_projector_for_poll_in_meeting_id
+    used_as_default_projector_for_topic_poll_in_meeting_id
 )
 VALUES (1, 1, 'main', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 SELECT nextval('projector_t_id_seq');
-
-
-INSERT INTO
-version (migration_index, migration_state)
-VALUES (100, 'finalized');
 
 COMMIT;
