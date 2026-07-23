@@ -98,8 +98,9 @@ func msg(e *zerolog.Event, format string, a ...any) {
 
 func setLogLevel(lookup environment.Environmenter) {
 	logLevel := zerolog.TraceLevel
-	logLevelParsed, err := zerolog.ParseLevel(EnvLogLevel.Value(lookup))
-	if err == nil {
+	logLevelStr := EnvLogLevel.Value(lookup)
+	logLevelParsed, err := zerolog.ParseLevel(logLevelStr)
+	if err == nil && logLevelStr != "" {
 		logLevel = logLevelParsed
 	} else if !isDev {
 		logLevel = zerolog.InfoLevel
