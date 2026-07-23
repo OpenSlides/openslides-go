@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout openslides-go (PR head)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: OpenSlides/openslides-go
           ref: ${{ github.event.pull_request.head.sha }}
@@ -48,7 +48,7 @@ jobs:
           fi
 
       - name: Checkout service repo (recursive submodules)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: OpenSlides/${{ matrix.service }}
           ref: ${{ steps.ref.outputs.ref }}
@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: service/go.mod
           cache: true
