@@ -9,11 +9,8 @@ import (
 
 // TestImmediateExecution verifies that the first Run executes promptly.
 func TestImmediateExecution(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	done := make(chan struct{})
-	tt := New(ctx, 50*time.Millisecond)
+	tt := New(t.Context(), 50*time.Millisecond)
 	tt.Run(func() {
 		close(done)
 	})
@@ -28,11 +25,8 @@ func TestImmediateExecution(t *testing.T) {
 // TestThrottleWindowDelaysSecondRun verifies that a second Run during the
 // throttle window is delayed until the window expires.
 func TestThrottleWindowDelaysSecondRun(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	period := 50 * time.Millisecond
-	tt := New(ctx, period)
+	tt := New(t.Context(), period)
 
 	firstDone := make(chan struct{})
 	tt.Run(func() {
@@ -61,14 +55,41 @@ func TestThrottleWindowDelaysSecondRun(t *testing.T) {
 	}
 }
 
+// TestThrottleWindowImmediateSecondRunAfterDelay verifies that a second Run after
+// the throttle period is executed instantly
+func TestThrottleWindowImmediateSecondRunAfterDelay(t *testing.T) {
+	period := 50 * time.Millisecond
+	tt := New(t.Context(), period)
+
+	firstDone := make(chan struct{})
+	tt.Run(func() {
+		close(firstDone)
+	})
+	select {
+	case <-firstDone:
+	case <-time.After(40 * time.Millisecond):
+		t.Fatal("first Run did not execute instantly")
+	}
+
+	time.Sleep(period)
+
+	secondDone := make(chan struct{})
+	tt.Run(func() {
+		close(secondDone)
+	})
+
+	select {
+	case <-secondDone:
+	case <-time.After(40 * time.Millisecond):
+		t.Fatal("second Run did not execute instantly")
+	}
+}
+
 // TestMostRecentWins verifies that when multiple Runs are called during the
 // throttle window, only the most recent function executes.
 func TestMostRecentWins(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	period := 50 * time.Millisecond
-	tt := New(ctx, period)
+	tt := New(t.Context(), period)
 
 	firstDone := make(chan struct{})
 	tt.Run(func() {
@@ -100,11 +121,8 @@ func TestMostRecentWins(t *testing.T) {
 // TestMultiplePeriods verifies that the throttler correctly handles several
 // consecutive executions spaced by the period.
 func TestMultiplePeriods(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	period := 30 * time.Millisecond
-	tt := New(ctx, period)
+	tt := New(t.Context(), period)
 
 	var count atomic.Int32
 
@@ -173,11 +191,8 @@ func TestContextCancellation(t *testing.T) {
 // TestConcurrentRuns verifies that concurrent Run calls don't panic or
 // deadlock, and that exactly one function survives to execute.
 func TestConcurrentRuns(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	period := 50 * time.Millisecond
-	tt := New(ctx, period)
+	tt := New(t.Context(), period)
 
 	// Start with one execution to open the throttle window.
 	ready := make(chan struct{})
