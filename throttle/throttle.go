@@ -24,17 +24,21 @@ func New(ctx context.Context, period time.Duration) *Throttler {
 // (waiting for the throttle window to expire), it is replaced by fn so that
 // only the most recently enqueued function runs.
 func (tt *Throttler) Run(fn func()) {
-	for {
-		select {
-		case tt.in <- fn:
-			return
-		default:
-		}
+	select {
+	case tt.in <- fn:
+		return
+	default:
+	}
 
-		select {
-		case <-tt.in:
-		default:
-		}
+	select {
+	case <-tt.in:
+	default:
+	}
+
+	select {
+	case tt.in <- fn:
+		return
+	default:
 	}
 }
 
