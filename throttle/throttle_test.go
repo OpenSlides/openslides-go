@@ -55,6 +55,36 @@ func TestThrottleWindowDelaysSecondRun(t *testing.T) {
 	}
 }
 
+// TestThrottleWindowImmediateSecondRunAfterDelay verifies that a second Run after
+// the throttle period is executed instantly
+func TestThrottleWindowImmediateSecondRunAfterDelay(t *testing.T) {
+	period := 50 * time.Millisecond
+	tt := New(t.Context(), period)
+
+	firstDone := make(chan struct{})
+	tt.Run(func() {
+		close(firstDone)
+	})
+	select {
+	case <-firstDone:
+	case <-time.After(40 * time.Millisecond):
+		t.Fatal("first Run did not execute instantly")
+	}
+
+	time.Sleep(period)
+
+	secondDone := make(chan struct{})
+	tt.Run(func() {
+		close(secondDone)
+	})
+
+	select {
+	case <-secondDone:
+	case <-time.After(40 * time.Millisecond):
+		t.Fatal("second Run did not execute instantly")
+	}
+}
+
 // TestMostRecentWins verifies that when multiple Runs are called during the
 // throttle window, only the most recent function executes.
 func TestMostRecentWins(t *testing.T) {
