@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -179,15 +180,32 @@ func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error
 		}
 	}
 
+	type enumData struct {
+		GoName string
+		Fields []enumField
+	}
+
+	enums := []enumData{}
+	for name, values := range enumMap {
+		enums = append(enums, enumData{
+			GoName: name,
+			Fields: values,
+		})
+	}
+
+	slices.SortFunc(enums, func(a, b enumData) int {
+		return strings.Compare(a.GoName, b.GoName)
+	})
+
 	tmpl, err := template.New("value_enum.go").Parse(tmplEnum)
 	if err != nil {
 		return fmt.Errorf("parsing template: %w", err)
 	}
 
-	for name, values := range enumMap {
+	for _, e := range enums {
 		if err := tmpl.Execute(buf, map[string]any{
-			"Name":   name,
-			"Values": values,
+			"Name":   e.GoName,
+			"Values": e.Fields,
 		}); err != nil {
 			return fmt.Errorf("executing template: %w", err)
 		}

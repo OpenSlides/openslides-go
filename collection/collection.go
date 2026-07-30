@@ -40,6 +40,19 @@ func openWithMeta(path string, meta []byte) (Collection, error) {
 	return wrapper.Collection, nil
 }
 
+type Meta struct {
+	EnumDefinitions map[string][]string `yaml:"enum_definitions"`
+}
+
+func parseMeta(meta []byte) (Meta, error) {
+	var result Meta
+	if err := yaml.Unmarshal(meta, &result); err != nil {
+		return Meta{}, fmt.Errorf("parse yml: %w", err)
+	}
+
+	return result, nil
+}
+
 func indent(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	indent := strings.Repeat(" ", 2)
@@ -63,12 +76,23 @@ func Collections(meta string) (map[string]Collection, error) {
 		return nil, fmt.Errorf("reading collections: %w", err)
 	}
 
+	metaParsed, err := parseMeta(metaContent)
+	if err != nil {
+		return nil, fmt.Errorf("reading collection meta: %w", err)
+	}
+
 	all := make(map[string]Collection)
 	for _, collection := range collections {
 		c, err := openWithMeta(filepath.Join(meta, "collections", collection.Name()), metaContent)
 		if err != nil {
 			return nil, fmt.Errorf("reading collection %s: %w", collection.Name(), err)
 		}
+		for _, f := range c.Fields {
+			if f != nil && f.Enum.GlobalName != "" {
+				f.Enum.Values = metaParsed.EnumDefinitions[f.Enum.GlobalName]
+			}
+		}
+
 		nameWithoutExt := strings.TrimSuffix(collection.Name(), ".yml")
 		all[nameWithoutExt] = c
 	}
