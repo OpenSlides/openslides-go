@@ -8,7 +8,7 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
-// ValueEnum[T] is a value from the datastore.
+// ValueEnum is a value from the datastore.
 type ValueEnum[T any] struct {
 	err error
 
