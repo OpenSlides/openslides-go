@@ -87,6 +87,7 @@ type Field struct {
 	restrictionMode string
 	relation        Relation
 	Required        bool
+	Enum            Enum
 }
 
 // Relation returns the relation object if the Field is a relation. In other
@@ -110,6 +111,7 @@ func (f *Field) UnmarshalYAML(node []byte) error {
 		Type            string `yaml:"type"`
 		RestrictionMode string `yaml:"restriction_mode"`
 		Required        bool   `yaml:"required"`
+		Enum            Enum   `yaml:"enum"`
 	}
 	if err := yaml.Unmarshal(node, &typer); err != nil {
 		return fmt.Errorf("field object without type: %w", err)
@@ -118,6 +120,7 @@ func (f *Field) UnmarshalYAML(node []byte) error {
 	f.Type = typer.Type
 	f.restrictionMode = typer.RestrictionMode
 	f.Required = typer.Required
+	f.Enum = typer.Enum
 
 	var list bool
 	switch typer.Type {
@@ -147,6 +150,34 @@ func (f *Field) UnmarshalYAML(node []byte) error {
 
 	}
 	return nil
+}
+
+// Enum represents a enum property of a field
+type Enum struct {
+	GlobalName string
+	Values     []string
+}
+
+func (s *Enum) UnmarshalYAML(node []byte) error {
+	var str string
+	if err := yaml.Unmarshal(node, &str); err == nil {
+		*s = Enum{
+			GlobalName: str,
+			Values:     []string{},
+		}
+		return nil
+	}
+
+	var slice []string
+	if err := yaml.Unmarshal(node, &slice); err == nil {
+		*s = Enum{
+			GlobalName: "",
+			Values:     slice,
+		}
+		return nil
+	}
+
+	return fmt.Errorf("field must be a string or a list of strings")
 }
 
 // Relation represents some kind of relation between fields.

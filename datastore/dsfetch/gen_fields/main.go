@@ -24,6 +24,9 @@ var tmplValue string
 //go:embed header.go.tmpl
 var tmplHeader string
 
+//go:embed enum.go.tmpl
+var tmplEnum string
+
 //go:embed field.go.tmpl
 var tmplField string
 
@@ -47,6 +50,10 @@ func run(w io.Writer) error {
 
 	if err := genValueTypes(buf); err != nil {
 		return fmt.Errorf("generate value types: %w", err)
+	}
+
+	if err := genEnums(buf, fromYml); err != nil {
+		return fmt.Errorf("generate enums types: %w", err)
 	}
 
 	if err := genFieldMethods(buf, fromYml); err != nil {
@@ -138,6 +145,55 @@ func zeroValue(t string) string {
 		return "nil"
 	}
 	return "unknown type " + t
+}
+
+func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error {
+	// Make sure the types are in the same order every time go generate runs.
+	type enumField struct {
+		GoName   string
+		RawValue string
+	}
+
+	enumMap := make(map[string][]enumField)
+	for colName, col := range fromYML {
+		for fieldName, field := range col.Fields {
+			if len(field.Enum.Values) > 0 || field.Enum.GlobalName != "" {
+				enumName := goName(colName) + "_" + goName(fieldName)
+				if field.Enum.GlobalName != "" {
+					enumName = goName(field.Enum.GlobalName)
+				}
+
+				enumMap[enumName] = []enumField{}
+				for _, enumValue := range field.Enum.Values {
+					goEnumName := goName(strings.ReplaceAll(enumValue, "-", "_"))
+					if goEnumName == "" {
+						goEnumName = "empty"
+					}
+
+					enumMap[enumName] = append(enumMap[enumName], enumField{
+						GoName: goEnumName,
+						RawValue: enumValue,
+					})
+				}
+			}
+		}
+	}
+
+	tmpl, err := template.New("value_enum.go").Parse(tmplEnum)
+	if err != nil {
+		return fmt.Errorf("parsing template: %w", err)
+	}
+
+	for name, values := range enumMap {
+		if err := tmpl.Execute(buf, map[string]any{
+			"Name":   name,
+			"Values": values,
+		}); err != nil {
+			return fmt.Errorf("executing template: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func genFieldMethods(buf *bytes.Buffer, fromYML map[string]collection.Collection) error {
