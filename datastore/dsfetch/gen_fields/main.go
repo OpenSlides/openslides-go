@@ -159,19 +159,15 @@ func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error
 	for colName, col := range fromYML {
 		for fieldName, field := range col.Fields {
 			if len(field.Enum.Values) > 0 || field.Enum.GlobalName != "" {
-				enumName := goName(colName) + "_" + goName(fieldName)
-				if field.Enum.GlobalName != "" {
-					enumName = goName(field.Enum.GlobalName)
-				}
-
-				enumMap[enumName] = []enumField{}
+				name := enumName(colName, fieldName, field)
+				enumMap[name] = []enumField{}
 				for _, enumValue := range field.Enum.Values {
 					goEnumName := goName(strings.ReplaceAll(enumValue, "-", "_"))
 					if goEnumName == "" {
 						goEnumName = "empty"
 					}
 
-					enumMap[enumName] = append(enumMap[enumName], enumField{
+					enumMap[name] = append(enumMap[name], enumField{
 						GoName:   goEnumName,
 						RawValue: enumValue,
 					})
@@ -241,7 +237,7 @@ func toFields(raw map[string]collection.Collection) ([]field, error) {
 		for fieldName, collectionField := range collection.Fields {
 			f := field{}
 			f.GoName = goName(collectionName) + "_" + goName(fieldName)
-			f.ValueType = valueType(collectionField.Type, collectionField.Required)
+			f.ValueType = valueType(goName(collectionName), fieldName, collectionField)
 			f.Collection = firstLower(goName(collectionName))
 			f.CollectionName = collectionName
 			f.FieldName = fieldName
@@ -293,13 +289,29 @@ func firstLower(s string) string {
 	return strings.ToLower(string(s[0])) + s[1:]
 }
 
-func valueType(collectionType string, required bool) string {
+func enumName(collection string, fieldName string, field *collection.Field) string {
+	enumName := goName(collection) + "_" + goName(fieldName)
+	if field.Enum.GlobalName != "" {
+		enumName = goName(field.Enum.GlobalName)
+	}
+
+	return enumName
+}
+
+func valueType(collection string, fieldName string, field *collection.Field) string {
+	required := field.Required
+	collectionType := field.Type
+
 	if !required && collectionType == "relation" {
 		return "ValueMaybeInt"
 	}
 
 	if !required && collectionType == "generic-relation" {
 		return "ValueMaybeString"
+	}
+
+	if field.Enum.GlobalName != "" || len(field.Enum.Values) != 0 {
+		return fmt.Sprintf("ValueEnum[%s]", enumName(collection, fieldName, field))
 	}
 
 	switch collectionType {
