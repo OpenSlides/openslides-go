@@ -198,11 +198,17 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 			CollectionName: collectionName,
 		}
 		for fieldName, collectionField := range collection.Fields {
+			typeName := valueType(goName(collectionName), fieldName, collectionField)
+			fieldTypeName, ok := typesToGo[typeName]
+			if !ok {
+				fieldTypeName = typeName
+			}
+
 			col.Fields = append(
 				col.Fields,
 				CollectionField{
 					Name:      goName(fieldName),
-					Type:      typesToGo[valueType(collectionField.Type, collectionField.Required)],
+					Type:      fieldTypeName,
 					FetchName: goName(collectionName) + "_" + goName(fieldName),
 				},
 			)
@@ -290,13 +296,29 @@ func withoutID(in string) string {
 	return result
 }
 
-func valueType(collectionType string, required bool) string {
+func enumName(collection string, fieldName string, field *collection.Field) string {
+	enumName := goName(collection) + "_" + goName(fieldName)
+	if field.Enum.GlobalName != "" {
+		enumName = goName(field.Enum.GlobalName)
+	}
+
+	return enumName
+}
+
+func valueType(collection string, fieldName string, field *collection.Field) string {
+	required := field.Required
+	collectionType := field.Type
+
 	if !required && collectionType == "relation" {
 		return "ValueMaybeInt"
 	}
 
 	if !required && collectionType == "generic-relation" {
 		return "ValueMaybeString"
+	}
+
+	if field.Enum.GlobalName != "" || len(field.Enum.Values) != 0 {
+		return fmt.Sprintf("dsfetch.%s", enumName(collection, fieldName, field))
 	}
 
 	switch collectionType {

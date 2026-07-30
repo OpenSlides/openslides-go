@@ -13,7 +13,7 @@ type ActionWorker struct {
 	ID        int
 	Name      string
 	Result    json.RawMessage
-	State     string
+	State     dsfetch.ActionWorker_State
 	Timestamp int
 	UserID    int
 }
@@ -64,7 +64,7 @@ type AgendaItem struct {
 	ParentID        dsfetch.Maybe[int]
 	ProjectionIDs   []int
 	TagIDs          []int
-	Type            string
+	Type            dsfetch.AgendaItem_Type
 	Weight          int
 	ChildList       []AgendaItem
 	Meeting         *Meeting
@@ -183,7 +183,7 @@ type Assignment struct {
 	MeetingID                      int
 	NumberPollCandidates           bool
 	OpenPosts                      int
-	Phase                          string
+	Phase                          dsfetch.Assignment_Phase
 	PollIDs                        []int
 	ProjectionIDs                  []int
 	SequentialNumber               int
@@ -1270,9 +1270,9 @@ func (r *Fetch) HistoryPosition(ids ...int) *historyPositionBuilder {
 type ImportPreview struct {
 	Created int
 	ID      int
-	Name    string
+	Name    dsfetch.ImportPreview_Name
 	Result  json.RawMessage
-	State   string
+	State   dsfetch.ImportPreview_State
 }
 
 type importPreviewBuilder struct {
@@ -1508,11 +1508,11 @@ func (r *Fetch) Mediafile(ids ...int) *mediafileBuilder {
 type Meeting struct {
 	AdminGroupID                                 dsfetch.Maybe[int]
 	AgendaEnableNumbering                        bool
-	AgendaItemCreation                           string
+	AgendaItemCreation                           dsfetch.Meeting_AgendaItemCreation
 	AgendaItemIDs                                []int
-	AgendaNewItemsDefaultVisibility              string
+	AgendaNewItemsDefaultVisibility              dsfetch.Meeting_AgendaNewItemsDefaultVisibility
 	AgendaNumberPrefix                           string
-	AgendaNumeralSystem                          string
+	AgendaNumeralSystem                          dsfetch.Meeting_AgendaNumeralSystem
 	AgendaShowInternalItemsOnProjector           bool
 	AgendaShowSubtitles                          bool
 	AgendaShowTopicNavigationOnDetailView        bool
@@ -1524,16 +1524,16 @@ type Meeting struct {
 	ApplauseParticleImageUrl                     string
 	ApplauseShowLevel                            bool
 	ApplauseTimeout                              int
-	ApplauseType                                 string
+	ApplauseType                                 dsfetch.Meeting_ApplauseType
 	AssignmentCandidateIDs                       []int
 	AssignmentIDs                                []int
 	AssignmentPollAddCandidatesToListOfSpeakers  bool
 	AssignmentPollBallotPaperNumber              int
-	AssignmentPollBallotPaperSelection           string
-	AssignmentPollDefaultBackend                 string
+	AssignmentPollBallotPaperSelection           dsfetch.BallotPaperSelection
+	AssignmentPollDefaultBackend                 dsfetch.PollBackends
 	AssignmentPollDefaultGroupIDs                []int
 	AssignmentPollDefaultMethod                  string
-	AssignmentPollDefaultOnehundredPercentBase   string
+	AssignmentPollDefaultOnehundredPercentBase   dsfetch.OnehundredPercentBases
 	AssignmentPollDefaultType                    string
 	AssignmentPollEnableMaxVotesPerOption        bool
 	AssignmentPollSortPollResultByVotes          bool
@@ -1571,7 +1571,7 @@ type Meeting struct {
 	Description                                  string
 	EnableAnonymous                              bool
 	EndTime                                      int
-	ExportCsvEncoding                            string
+	ExportCsvEncoding                            dsfetch.Meeting_ExportCsvEncoding
 	ExportCsvSeparator                           string
 	ExportPdfFontsize                            int
 	ExportPdfLineHeight                          float64
@@ -1579,8 +1579,8 @@ type Meeting struct {
 	ExportPdfPageMarginLeft                      int
 	ExportPdfPageMarginRight                     int
 	ExportPdfPageMarginTop                       int
-	ExportPdfPagenumberAlignment                 string
-	ExportPdfPagesize                            string
+	ExportPdfPagenumberAlignment                 dsfetch.Meeting_ExportPdfPagenumberAlignment
+	ExportPdfPagesize                            dsfetch.Meeting_ExportPdfPagesize
 	ExternalID                                   string
 	FontBoldID                                   dsfetch.Maybe[int]
 	FontBoldItalicID                             dsfetch.Maybe[int]
@@ -1599,7 +1599,7 @@ type Meeting struct {
 	JitsiDomain                                  string
 	JitsiRoomName                                string
 	JitsiRoomPassword                            string
-	Language                                     string
+	Language                                     dsfetch.Languages
 	ListOfSpeakersAllowMultipleSpeakers          bool
 	ListOfSpeakersAmountLastOnProjector          int
 	ListOfSpeakersAmountNextOnProjector          int
@@ -1642,14 +1642,14 @@ type Meeting struct {
 	MotionEditorIDs                              []int
 	MotionIDs                                    []int
 	MotionPollBallotPaperNumber                  int
-	MotionPollBallotPaperSelection               string
-	MotionPollDefaultBackend                     string
+	MotionPollBallotPaperSelection               dsfetch.BallotPaperSelection
+	MotionPollDefaultBackend                     dsfetch.PollBackends
 	MotionPollDefaultGroupIDs                    []int
 	MotionPollDefaultMethod                      string
-	MotionPollDefaultOnehundredPercentBase       string
+	MotionPollDefaultOnehundredPercentBase       dsfetch.OnehundredPercentBases
 	MotionPollDefaultType                        string
 	MotionPollProjectionMaxColumns               int
-	MotionPollProjectionNameOrderFirst           string
+	MotionPollProjectionNameOrderFirst           dsfetch.Meeting_MotionPollProjectionNameOrderFirst
 	MotionStateIDs                               []int
 	MotionSubmitterIDs                           []int
 	MotionSupporterIDs                           []int
@@ -1660,12 +1660,12 @@ type Meeting struct {
 	MotionsAmendmentsMultipleParagraphs          bool
 	MotionsAmendmentsOfAmendments                bool
 	MotionsAmendmentsPrefix                      string
-	MotionsAmendmentsTextMode                    string
+	MotionsAmendmentsTextMode                    dsfetch.Meeting_MotionsAmendmentsTextMode
 	MotionsBlockSlideColumns                     int
 	MotionsCreateEnableAdditionalSubmitterText   bool
 	MotionsDefaultAmendmentWorkflowID            int
-	MotionsDefaultLineNumbering                  string
-	MotionsDefaultSorting                        string
+	MotionsDefaultLineNumbering                  dsfetch.Meeting_MotionsDefaultLineNumbering
+	MotionsDefaultSorting                        dsfetch.Meeting_MotionsDefaultSorting
 	MotionsDefaultWorkflowID                     int
 	MotionsEnableEditor                          bool
 	MotionsEnableOriginMotionDisplay             bool
@@ -1683,12 +1683,12 @@ type Meeting struct {
 	MotionsHideMetadataBackground                bool
 	MotionsLineLength                            int
 	MotionsNumberMinDigits                       int
-	MotionsNumberType                            string
+	MotionsNumberType                            dsfetch.Meeting_MotionsNumberType
 	MotionsNumberWithBlank                       bool
 	MotionsOriginMotionToggleDefault             bool
 	MotionsPreamble                              string
 	MotionsReasonRequired                        bool
-	MotionsRecommendationTextMode                string
+	MotionsRecommendationTextMode                dsfetch.Meeting_MotionsRecommendationTextMode
 	MotionsRecommendationsBy                     string
 	MotionsShowReferringMotions                  bool
 	MotionsShowSequentialNumber                  bool
@@ -1699,16 +1699,16 @@ type Meeting struct {
 	PersonalNoteIDs                              []int
 	PointOfOrderCategoryIDs                      []int
 	PollBallotPaperNumber                        int
-	PollBallotPaperSelection                     string
+	PollBallotPaperSelection                     dsfetch.BallotPaperSelection
 	PollCandidateIDs                             []int
 	PollCandidateListIDs                         []int
 	PollCountdownID                              dsfetch.Maybe[int]
 	PollCoupleCountdown                          bool
-	PollDefaultBackend                           string
+	PollDefaultBackend                           dsfetch.PollBackends
 	PollDefaultGroupIDs                          []int
 	PollDefaultLiveVotingEnabled                 bool
 	PollDefaultMethod                            string
-	PollDefaultOnehundredPercentBase             string
+	PollDefaultOnehundredPercentBase             dsfetch.OnehundredPercentBases
 	PollDefaultType                              string
 	PollIDs                                      []int
 	PollSortPollResultByVotes                    bool
@@ -1745,7 +1745,7 @@ type Meeting struct {
 	UsersForbidDelegatorToVote                   bool
 	UsersPdfWelcometext                          string
 	UsersPdfWelcometitle                         string
-	UsersPdfWlanEncryption                       string
+	UsersPdfWlanEncryption                       dsfetch.Meeting_UsersPdfWlanEncryption
 	UsersPdfWlanPassword                         string
 	UsersPdfWlanSsid                             string
 	VoteIDs                                      []int
@@ -4525,7 +4525,7 @@ type MotionChangeRecommendation struct {
 	OtherDescription string
 	Rejected         bool
 	Text             string
-	Type             string
+	Type             dsfetch.MotionChangeRecommendation_Type
 	Meeting          *Meeting
 	Motion           *Motion
 }
@@ -4835,12 +4835,12 @@ type MotionState struct {
 	AllowMotionForwarding            bool
 	AllowSubmitterEdit               bool
 	AllowSupport                     bool
-	CssClass                         string
+	CssClass                         dsfetch.MotionState_CssClass
 	FirstStateOfWorkflowID           dsfetch.Maybe[int]
 	ID                               int
 	IsInternal                       bool
 	MeetingID                        int
-	MergeAmendmentIntoFinal          string
+	MergeAmendmentIntoFinal          dsfetch.MotionState_MergeAmendmentIntoFinal
 	MotionIDs                        []int
 	MotionRecommendationIDs          []int
 	Name                             string
@@ -5446,7 +5446,7 @@ type Organization struct {
 	ActiveMeetingIDs                        []int
 	ArchivedMeetingIDs                      []int
 	CommitteeIDs                            []int
-	DefaultLanguage                         string
+	DefaultLanguage                         dsfetch.Languages
 	Description                             string
 	DisableForwardWithAttachments           bool
 	EnableAnonymous                         bool
@@ -5866,7 +5866,7 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 
 // Poll has all fields from poll.
 type Poll struct {
-	Backend               string
+	Backend               dsfetch.PollBackends
 	ContentObjectID       string
 	Description           string
 	EntitledGroupIDs      []int
@@ -5883,14 +5883,14 @@ type Poll struct {
 	MaxVotesPerOption     int
 	MeetingID             int
 	MinVotesAmount        int
-	OnehundredPercentBase string
+	OnehundredPercentBase dsfetch.OnehundredPercentBases
 	OptionIDs             []int
-	Pollmethod            string
+	Pollmethod            dsfetch.Poll_Pollmethod
 	ProjectionIDs         []int
 	SequentialNumber      int
-	State                 string
+	State                 dsfetch.Poll_State
 	Title                 string
-	Type                  string
+	Type                  dsfetch.Poll_Type
 	VotedIDs              []int
 	Votescast             decimal.Decimal
 	Votesinvalid          decimal.Decimal
@@ -6776,7 +6776,7 @@ type Speaker struct {
 	PauseTime                      int
 	PointOfOrder                   bool
 	PointOfOrderCategoryID         dsfetch.Maybe[int]
-	SpeechState                    string
+	SpeechState                    dsfetch.Speaker_SpeechState
 	StructureLevelListOfSpeakersID dsfetch.Maybe[int]
 	TotalPause                     int
 	UnpauseTime                    int
@@ -7403,7 +7403,7 @@ type User struct {
 	MemberNumber                string
 	OptionIDs                   []int
 	OrganizationID              int
-	OrganizationManagementLevel string
+	OrganizationManagementLevel dsfetch.User_OrganizationManagementLevel
 	Password                    string
 	PollCandidateIDs            []int
 	PollVotedIDs                []int
