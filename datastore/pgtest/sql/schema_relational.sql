@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '64c1db423c8901eecf1da9182f2a5543'
+-- MODELS_YML_CHECKSUM = 'a44e04db9c7a454a908afd09268217cd'
 
 
 -- ENUM definitions
@@ -17,6 +17,8 @@ CREATE TYPE enum_rating_approval_onehundred_percent_bases AS ENUM ('yes_no', 'va
 CREATE TYPE enum_rating_score_onehundred_percent_bases AS ENUM ('yes_no', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
 CREATE TYPE enum_selection_onehundred_percent_bases AS ENUM ('no_general', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+
+CREATE TYPE enum_required_majority AS ENUM ('no_majority', 'two_third_majority', 'absolute_majority');
 
 CREATE TYPE enum_poll_visibility AS ENUM ('manually', 'named', 'open', 'secret');
 
@@ -1444,8 +1446,12 @@ This email was generated automatically.',
         CONSTRAINT default_meeting_topic_poll_default_method DEFAULT 'selection',
     topic_poll_config_id integer
         CONSTRAINT unique_meeting_topic_poll_config_id UNIQUE,
+    poll_enable_max_yes_votes boolean
+        CONSTRAINT default_meeting_poll_enable_max_yes_votes DEFAULT False,
     poll_enable_max_votes_per_option boolean
         CONSTRAINT default_meeting_poll_enable_max_votes_per_option DEFAULT False,
+    poll_default_required_majority enum_required_majority
+        CONSTRAINT default_meeting_poll_default_required_majority DEFAULT 'no_majority',
     poll_default_live_voting_enabled boolean
         CONSTRAINT default_meeting_poll_default_live_voting_enabled DEFAULT False,
     poll_default_allow_invalid boolean
@@ -2053,7 +2059,9 @@ CREATE TABLE poll_config_approval_t (
     allow_abstain boolean
         CONSTRAINT default_poll_config_approval_allow_abstain DEFAULT True,
     onehundred_percent_base enum_approval_onehundred_percent_bases
-        CONSTRAINT required_poll_config_approval_onehundred_percent_base NOT NULL
+        CONSTRAINT required_poll_config_approval_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority
+        CONSTRAINT default_poll_config_approval_required_majority DEFAULT 'no_majority'
 );
 
 
@@ -2069,7 +2077,9 @@ CREATE TABLE poll_config_rating_approval_t (
     allow_abstain boolean
         CONSTRAINT default_poll_config_rating_approval_allow_abstain DEFAULT True,
     onehundred_percent_base enum_rating_approval_onehundred_percent_bases
-        CONSTRAINT required_poll_config_rating_approval_onehundred_percent_base NOT NULL
+        CONSTRAINT required_poll_config_rating_approval_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority
+        CONSTRAINT default_poll_config_rating_approval_required_majority DEFAULT 'no_majority'
 );
 
 
@@ -2088,7 +2098,9 @@ CREATE TABLE poll_config_rating_score_t (
     min_vote_sum integer
         CONSTRAINT default_poll_config_rating_score_min_vote_sum DEFAULT 0,
     onehundred_percent_base enum_rating_score_onehundred_percent_bases
-        CONSTRAINT required_poll_config_rating_score_onehundred_percent_base NOT NULL
+        CONSTRAINT required_poll_config_rating_score_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority
+        CONSTRAINT default_poll_config_rating_score_required_majority DEFAULT 'no_majority'
 );
 
 
@@ -2106,6 +2118,8 @@ CREATE TABLE poll_config_selection_t (
         CONSTRAINT default_poll_config_selection_strike_out DEFAULT False,
     onehundred_percent_base enum_selection_onehundred_percent_bases
         CONSTRAINT required_poll_config_selection_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority
+        CONSTRAINT default_poll_config_selection_required_majority DEFAULT 'no_majority',
     display_chart varchar(256)
 );
 

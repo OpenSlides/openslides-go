@@ -2084,7 +2084,9 @@ type Meeting struct {
 	PollDefaultAllowVoteSplit                    bool
 	PollDefaultIDs                               []int
 	PollDefaultLiveVotingEnabled                 bool
+	PollDefaultRequiredMajority                  string
 	PollEnableMaxVotesPerOption                  bool
+	PollEnableMaxYesVotes                        bool
 	PollIDs                                      []int
 	PollProjectionMaxColumns                     int
 	PollProjectionNameOrderFirst                 string
@@ -2405,7 +2407,9 @@ func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
 	ds.Meeting_PollDefaultAllowVoteSplit(id).Lazy(&c.PollDefaultAllowVoteSplit)
 	ds.Meeting_PollDefaultIDs(id).Lazy(&c.PollDefaultIDs)
 	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
+	ds.Meeting_PollDefaultRequiredMajority(id).Lazy(&c.PollDefaultRequiredMajority)
 	ds.Meeting_PollEnableMaxVotesPerOption(id).Lazy(&c.PollEnableMaxVotesPerOption)
+	ds.Meeting_PollEnableMaxYesVotes(id).Lazy(&c.PollEnableMaxYesVotes)
 	ds.Meeting_PollIDs(id).Lazy(&c.PollIDs)
 	ds.Meeting_PollProjectionMaxColumns(id).Lazy(&c.PollProjectionMaxColumns)
 	ds.Meeting_PollProjectionNameOrderFirst(id).Lazy(&c.PollProjectionNameOrderFirst)
@@ -7047,6 +7051,7 @@ type PollConfigApproval struct {
 	ID                    int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	Poll                  *Poll
 }
 
@@ -7061,6 +7066,7 @@ func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigApproval
 	ds.PollConfigApproval_ID(id).Lazy(&c.ID)
 	ds.PollConfigApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigApproval_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigApproval_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	return &c
 }
 
@@ -7100,6 +7106,7 @@ type PollConfigRatingApproval struct {
 	MinOptionsAmount      int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	Poll                  *Poll
 }
 
@@ -7117,6 +7124,7 @@ func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigRa
 	ds.PollConfigRatingApproval_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
 	ds.PollConfigRatingApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingApproval_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigRatingApproval_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	return &c
 }
 
@@ -7157,6 +7165,7 @@ type PollConfigRatingScore struct {
 	MinVoteSum            int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	Poll                  *Poll
 }
 
@@ -7175,6 +7184,7 @@ func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, idI any) *PollConfigRatin
 	ds.PollConfigRatingScore_MinVoteSum(id).Lazy(&c.MinVoteSum)
 	ds.PollConfigRatingScore_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingScore_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigRatingScore_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	return &c
 }
 
@@ -7214,6 +7224,7 @@ type PollConfigSelection struct {
 	MinOptionsAmount      int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	StrikeOut             bool
 	Poll                  *Poll
 }
@@ -7232,6 +7243,7 @@ func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, idI any) *PollConfigSelecti
 	ds.PollConfigSelection_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
 	ds.PollConfigSelection_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigSelection_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigSelection_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	ds.PollConfigSelection_StrikeOut(id).Lazy(&c.StrikeOut)
 	return &c
 }

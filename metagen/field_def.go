@@ -726,7 +726,9 @@ var RestrictionModes = map[string]string{
 	"meeting/poll_default_allow_vote_split":                         "B",
 	"meeting/poll_default_ids":                                      "B",
 	"meeting/poll_default_live_voting_enabled":                      "B",
+	"meeting/poll_default_required_majority":                        "B",
 	"meeting/poll_enable_max_votes_per_option":                      "B",
+	"meeting/poll_enable_max_yes_votes":                             "B",
 	"meeting/poll_ids":                                              "B",
 	"meeting/poll_projection_max_columns":                           "B",
 	"meeting/poll_projection_name_order_first":                      "B",
@@ -1146,6 +1148,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_approval/id":                      "A",
 	"poll_config_approval/onehundred_percent_base": "A",
 	"poll_config_approval/poll_id":                 "A",
+	"poll_config_approval/required_majority":       "A",
 
 	// poll_config_rating_approval
 	"poll_config_rating_approval/allow_abstain":           "A",
@@ -1155,6 +1158,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_approval/min_options_amount":      "A",
 	"poll_config_rating_approval/onehundred_percent_base": "A",
 	"poll_config_rating_approval/poll_id":                 "A",
+	"poll_config_rating_approval/required_majority":       "A",
 
 	// poll_config_rating_score
 	"poll_config_rating_score/id":                      "A",
@@ -1165,6 +1169,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_score/min_vote_sum":            "A",
 	"poll_config_rating_score/onehundred_percent_base": "A",
 	"poll_config_rating_score/poll_id":                 "A",
+	"poll_config_rating_score/required_majority":       "A",
 
 	// poll_config_selection
 	"poll_config_selection/allow_nota":              "A",
@@ -1174,6 +1179,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_selection/min_options_amount":      "A",
 	"poll_config_selection/onehundred_percent_base": "A",
 	"poll_config_selection/poll_id":                 "A",
+	"poll_config_selection/required_majority":       "A",
 	"poll_config_selection/strike_out":              "A",
 
 	// poll_config_stv_scottish
