@@ -219,7 +219,7 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 						continue
 					}
 
-					keyValues[key], err = p.convertValue(value, fieldDescription[i])
+					keyValues[key], err = p.convertValue(conn.TypeMap(), value, fieldDescription[i])
 					if err != nil {
 						return fmt.Errorf("convert value for field %s/%s: %w", collection, field, err)
 					}
@@ -243,7 +243,7 @@ func (p *FlowPostgres) getWithConn(ctx context.Context, conn *pgx.Conn, keys ...
 	return result, nil
 }
 
-func (p *FlowPostgres) convertValue(value []byte, desc pgconn.FieldDescription) ([]byte, error) {
+func (p *FlowPostgres) convertValue(typeMap *pgtype.Map, value []byte, desc pgconn.FieldDescription) ([]byte, error) {
 	switch desc.DataTypeOID {
 	case pgtype.VarcharOID, pgtype.TextOID:
 		return json.Marshal(string(value))
@@ -275,14 +275,14 @@ func (p *FlowPostgres) convertValue(value []byte, desc pgconn.FieldDescription) 
 		return strconv.AppendInt(nil, timeValue.Unix(), 10), nil
 
 	case pgtype.VarcharArrayOID, pgtype.TextArrayOID:
-		return convertPGArray(value, desc)
+		return convertPGArray(typeMap, value, desc)
 
 	default:
 		if _, ok := p.enums[desc.DataTypeOID]; ok {
 			return json.Marshal(string(value))
 		}
 		if _, ok := p.enumArray[desc.DataTypeOID]; ok {
-			return convertPGArray(value, desc)
+			return convertPGArray(typeMap, value, desc)
 		}
 
 		return nil, fmt.Errorf("unsupported postgres type %d", desc.DataTypeOID)
@@ -290,9 +290,7 @@ func (p *FlowPostgres) convertValue(value []byte, desc pgconn.FieldDescription) 
 }
 
 // convertPGArray transforms a postgres style array into a json array.
-func convertPGArray(value []byte, desc pgconn.FieldDescription) ([]byte, error) {
-	typeMap := pgtype.NewMap()
-
+func convertPGArray(typeMap *pgtype.Map, value []byte, desc pgconn.FieldDescription) ([]byte, error) {
 	var dst []string
 	if err := typeMap.Scan(desc.DataTypeOID, desc.Format, value, &dst); err != nil {
 		return nil, fmt.Errorf("parsing array %s: %w", value, err)
