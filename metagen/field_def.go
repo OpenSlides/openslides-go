@@ -87,7 +87,6 @@ var RelationFields = map[string]string{
 	"meeting_poll_default/used_as_topic_poll_config_in_meeting_id":           "meeting/topic_poll_config_id",
 	"meeting_user/meeting_id":                                                "meeting/meeting_user_ids",
 	"meeting_user/user_id":                                                   "user/meeting_user_ids",
-	"meeting_user/vote_delegated_to_id":                                      "meeting_user/vote_delegations_from_ids",
 	"motion/agenda_item_id":                                                  "agenda_item/content_object_id",
 	"motion/block_id":                                                        "motion_block/motion_ids",
 	"motion/category_id":                                                     "motion_category/motion_ids",
@@ -308,7 +307,8 @@ var RelationListFields = map[string]string{
 	"meeting_user/represented_ballot_ids":                      "poll_ballot_user/represented_meeting_user_id",
 	"meeting_user/speaker_ids":                                 "speaker/meeting_user_id",
 	"meeting_user/structure_level_ids":                         "structure_level/meeting_user_ids",
-	"meeting_user/vote_delegations_from_ids":                   "meeting_user/vote_delegated_to_id",
+	"meeting_user/vote_delegated_to_ids":                       "meeting_user/vote_delegations_from_ids",
+	"meeting_user/vote_delegations_from_ids":                   "meeting_user/vote_delegated_to_ids",
 	"motion/all_derived_motion_ids":                            "motion/all_origin_ids",
 	"motion/all_origin_ids":                                    "motion/all_derived_motion_ids",
 	"motion/amendment_ids":                                     "motion/lead_motion_id",
@@ -521,13 +521,13 @@ var RestrictionModes = map[string]string{
 	"group/write_comment_section_ids":                    "A",
 
 	// history_entry
-	"history_entry/changed_fields":    "A",
-	"history_entry/entries":           "A",
-	"history_entry/id":                "A",
-	"history_entry/meeting_id":        "A",
-	"history_entry/model_id":          "A",
-	"history_entry/original_model_id": "A",
-	"history_entry/position_id":       "A",
+	"history_entry/entries":                "A",
+	"history_entry/id":                     "A",
+	"history_entry/meeting_id":             "A",
+	"history_entry/model_id":               "A",
+	"history_entry/original_model_id":      "A",
+	"history_entry/position_id":            "A",
+	"history_entry/structured_information": "A",
 
 	// history_position
 	"history_position/entry_ids":        "A",
@@ -728,7 +728,9 @@ var RestrictionModes = map[string]string{
 	"meeting/poll_default_allow_vote_split":                         "B",
 	"meeting/poll_default_ids":                                      "B",
 	"meeting/poll_default_live_voting_enabled":                      "B",
+	"meeting/poll_default_required_majority":                        "B",
 	"meeting/poll_enable_max_votes_per_option":                      "B",
+	"meeting/poll_enable_max_yes_votes":                             "B",
 	"meeting/poll_ids":                                              "B",
 	"meeting/poll_projection_max_columns":                           "B",
 	"meeting/poll_projection_name_order_first":                      "B",
@@ -764,6 +766,7 @@ var RestrictionModes = map[string]string{
 	"meeting/users_pdf_wlan_encryption":                             "B",
 	"meeting/users_pdf_wlan_password":                               "B",
 	"meeting/users_pdf_wlan_ssid":                                   "B",
+	"meeting/users_vote_delegations_max_amount":                     "B",
 	"meeting/applause_enable":                                       "C",
 	"meeting/applause_max_amount":                                   "C",
 	"meeting/applause_min_amount":                                   "C",
@@ -857,7 +860,7 @@ var RestrictionModes = map[string]string{
 	"meeting_user/represented_ballot_ids":           "A",
 	"meeting_user/speaker_ids":                      "A",
 	"meeting_user/structure_level_ids":              "A",
-	"meeting_user/vote_delegated_to_id":             "A",
+	"meeting_user/vote_delegated_to_ids":            "A",
 	"meeting_user/vote_delegations_from_ids":        "A",
 	"meeting_user/vote_weight":                      "A",
 	"meeting_user/personal_note_ids":                "B",
@@ -1150,6 +1153,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_approval/id":                      "A",
 	"poll_config_approval/onehundred_percent_base": "A",
 	"poll_config_approval/poll_id":                 "A",
+	"poll_config_approval/required_majority":       "A",
 
 	// poll_config_rating_approval
 	"poll_config_rating_approval/allow_abstain":           "A",
@@ -1159,6 +1163,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_approval/min_options_amount":      "A",
 	"poll_config_rating_approval/onehundred_percent_base": "A",
 	"poll_config_rating_approval/poll_id":                 "A",
+	"poll_config_rating_approval/required_majority":       "A",
 
 	// poll_config_rating_score
 	"poll_config_rating_score/id":                      "A",
@@ -1169,6 +1174,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_score/min_vote_sum":            "A",
 	"poll_config_rating_score/onehundred_percent_base": "A",
 	"poll_config_rating_score/poll_id":                 "A",
+	"poll_config_rating_score/required_majority":       "A",
 
 	// poll_config_selection
 	"poll_config_selection/allow_nota":              "A",
@@ -1178,6 +1184,7 @@ var RestrictionModes = map[string]string{
 	"poll_config_selection/min_options_amount":      "A",
 	"poll_config_selection/onehundred_percent_base": "A",
 	"poll_config_selection/poll_id":                 "A",
+	"poll_config_selection/required_majority":       "A",
 	"poll_config_selection/strike_out":              "A",
 
 	// poll_config_stv_scottish

@@ -1260,16 +1260,16 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 
 // HistoryEntry has all fields from history_entry.
 type HistoryEntry struct {
-	ChangedFields   json.RawMessage
-	Entries         []string
-	ID              int
-	MeetingID       dsfetch.Maybe[int]
-	ModelID         dsfetch.Maybe[string]
-	OriginalModelID string
-	PositionID      int
-	Meeting         *dsfetch.Maybe[Meeting]
-	Model           HistoryEntryModelUnion
-	Position        *HistoryPosition
+	Entries               []string
+	ID                    int
+	MeetingID             dsfetch.Maybe[int]
+	ModelID               dsfetch.Maybe[string]
+	OriginalModelID       string
+	PositionID            int
+	StructuredInformation json.RawMessage
+	Meeting               *dsfetch.Maybe[Meeting]
+	Model                 HistoryEntryModelUnion
+	Position              *HistoryPosition
 }
 
 type historyEntryBuilder struct {
@@ -1279,13 +1279,13 @@ type historyEntryBuilder struct {
 func (b *historyEntryBuilder) lazy(ds *Fetch, idI any) *HistoryEntry {
 	id := idI.(int)
 	c := HistoryEntry{}
-	ds.HistoryEntry_ChangedFields(id).Lazy(&c.ChangedFields)
 	ds.HistoryEntry_Entries(id).Lazy(&c.Entries)
 	ds.HistoryEntry_ID(id).Lazy(&c.ID)
 	ds.HistoryEntry_MeetingID(id).Lazy(&c.MeetingID)
 	ds.HistoryEntry_ModelID(id).Lazy(&c.ModelID)
 	ds.HistoryEntry_OriginalModelID(id).Lazy(&c.OriginalModelID)
 	ds.HistoryEntry_PositionID(id).Lazy(&c.PositionID)
+	ds.HistoryEntry_StructuredInformation(id).Lazy(&c.StructuredInformation)
 	return &c
 }
 
@@ -2084,7 +2084,9 @@ type Meeting struct {
 	PollDefaultAllowVoteSplit                    bool
 	PollDefaultIDs                               []int
 	PollDefaultLiveVotingEnabled                 bool
+	PollDefaultRequiredMajority                  string
 	PollEnableMaxVotesPerOption                  bool
+	PollEnableMaxYesVotes                        bool
 	PollIDs                                      []int
 	PollProjectionMaxColumns                     int
 	PollProjectionNameOrderFirst                 string
@@ -2125,6 +2127,7 @@ type Meeting struct {
 	UsersPdfWlanEncryption                       string
 	UsersPdfWlanPassword                         string
 	UsersPdfWlanSsid                             string
+	UsersVoteDelegationsMaxAmount                int
 	WelcomeText                                  string
 	WelcomeTitle                                 string
 	AdminGroup                                   *dsfetch.Maybe[Group]
@@ -2405,7 +2408,9 @@ func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
 	ds.Meeting_PollDefaultAllowVoteSplit(id).Lazy(&c.PollDefaultAllowVoteSplit)
 	ds.Meeting_PollDefaultIDs(id).Lazy(&c.PollDefaultIDs)
 	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
+	ds.Meeting_PollDefaultRequiredMajority(id).Lazy(&c.PollDefaultRequiredMajority)
 	ds.Meeting_PollEnableMaxVotesPerOption(id).Lazy(&c.PollEnableMaxVotesPerOption)
+	ds.Meeting_PollEnableMaxYesVotes(id).Lazy(&c.PollEnableMaxYesVotes)
 	ds.Meeting_PollIDs(id).Lazy(&c.PollIDs)
 	ds.Meeting_PollProjectionMaxColumns(id).Lazy(&c.PollProjectionMaxColumns)
 	ds.Meeting_PollProjectionNameOrderFirst(id).Lazy(&c.PollProjectionNameOrderFirst)
@@ -2446,6 +2451,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
 	ds.Meeting_UsersPdfWlanEncryption(id).Lazy(&c.UsersPdfWlanEncryption)
 	ds.Meeting_UsersPdfWlanPassword(id).Lazy(&c.UsersPdfWlanPassword)
 	ds.Meeting_UsersPdfWlanSsid(id).Lazy(&c.UsersPdfWlanSsid)
+	ds.Meeting_UsersVoteDelegationsMaxAmount(id).Lazy(&c.UsersVoteDelegationsMaxAmount)
 	ds.Meeting_WelcomeText(id).Lazy(&c.WelcomeText)
 	ds.Meeting_WelcomeTitle(id).Lazy(&c.WelcomeTitle)
 	return &c
@@ -4078,7 +4084,7 @@ type MeetingUser struct {
 	SpeakerIDs                    []int
 	StructureLevelIDs             []int
 	UserID                        int
-	VoteDelegatedToID             dsfetch.Maybe[int]
+	VoteDelegatedToIDs            []int
 	VoteDelegationsFromIDs        []int
 	VoteWeight                    decimal.Decimal
 	ActingBallotList              []PollBallotUser
@@ -4098,7 +4104,7 @@ type MeetingUser struct {
 	SpeakerList                   []Speaker
 	StructureLevelList            []StructureLevel
 	User                          *User
-	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
+	VoteDelegatedToList           []MeetingUser
 	VoteDelegationsFromList       []MeetingUser
 }
 
@@ -4131,7 +4137,7 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, idI any) *MeetingUser {
 	ds.MeetingUser_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.MeetingUser_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
 	ds.MeetingUser_UserID(id).Lazy(&c.UserID)
-	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
+	ds.MeetingUser_VoteDelegatedToIDs(id).Lazy(&c.VoteDelegatedToIDs)
 	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
 	ds.MeetingUser_VoteWeight(id).Lazy(&c.VoteWeight)
 	return &c
@@ -4361,13 +4367,14 @@ func (b *meetingUserBuilder) User() *userBuilder {
 	}
 }
 
-func (b *meetingUserBuilder) VoteDelegatedTo() *meetingUserBuilder {
+func (b *meetingUserBuilder) VoteDelegatedToList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "VoteDelegatedToID",
-			relField: "VoteDelegatedTo",
+			idField:  "VoteDelegatedToIDs",
+			relField: "VoteDelegatedToList",
+			many:     true,
 			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
@@ -7079,6 +7086,7 @@ type PollConfigApproval struct {
 	ID                    int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	Poll                  *Poll
 }
 
@@ -7093,6 +7101,7 @@ func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigApproval
 	ds.PollConfigApproval_ID(id).Lazy(&c.ID)
 	ds.PollConfigApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigApproval_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigApproval_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	return &c
 }
 
@@ -7132,6 +7141,7 @@ type PollConfigRatingApproval struct {
 	MinOptionsAmount      int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	Poll                  *Poll
 }
 
@@ -7149,6 +7159,7 @@ func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, idI any) *PollConfigRa
 	ds.PollConfigRatingApproval_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
 	ds.PollConfigRatingApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingApproval_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigRatingApproval_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	return &c
 }
 
@@ -7189,6 +7200,7 @@ type PollConfigRatingScore struct {
 	MinVoteSum            int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	Poll                  *Poll
 }
 
@@ -7207,6 +7219,7 @@ func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, idI any) *PollConfigRatin
 	ds.PollConfigRatingScore_MinVoteSum(id).Lazy(&c.MinVoteSum)
 	ds.PollConfigRatingScore_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigRatingScore_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigRatingScore_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	return &c
 }
 
@@ -7246,6 +7259,7 @@ type PollConfigSelection struct {
 	MinOptionsAmount      int
 	OnehundredPercentBase string
 	PollID                int
+	RequiredMajority      string
 	StrikeOut             bool
 	Poll                  *Poll
 }
@@ -7264,6 +7278,7 @@ func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, idI any) *PollConfigSelecti
 	ds.PollConfigSelection_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
 	ds.PollConfigSelection_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.PollConfigSelection_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigSelection_RequiredMajority(id).Lazy(&c.RequiredMajority)
 	ds.PollConfigSelection_StrikeOut(id).Lazy(&c.StrikeOut)
 	return &c
 }
