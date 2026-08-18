@@ -21,7 +21,7 @@ import (
 // But for security reasons, it can not include files outside the directory.
 // Therefore it is necessary to copry the files to create the sql-schema to this
 // folder. The embedding is necessary, to other repositories like the
-// vote-service, do not need to include the meta-repo as a sub repo.
+// vote-service, to not need to include the meta-repo as a sub repo.
 
 //go:generate go run ./copy_sql
 
@@ -41,13 +41,12 @@ func RunTests(m *testing.M) int {
 	pool, err = dockertest.NewPool(ctx, "",
 		dockertest.WithMaxWait(2*time.Minute),
 	)
+	defer pool.Close(ctx)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error: %v", err)
+		return 1
 	}
 	code := m.Run()
-	// Close removes all tracked containers/networks and closes the client.
-	// Call before os.Exit — deferred functions do not run after os.Exit.
-	pool.Close(ctx)
 	return code
 }
 
@@ -112,7 +111,7 @@ func NewPostgresTest(t *testing.T) (*PostgresTest, error) {
 		return nil, fmt.Errorf("create test database: %w", err)
 	}
 
-	addr := fmt.Sprintf(`user=postgres password='openslides' host=localhost port=%s dbname=%s`, port, database)
+	addr := fmt.Sprintf(`user=postgres password='openslides' host=127.0.0.1 port=%s dbname=%s`, port, database)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
@@ -122,7 +121,7 @@ func NewPostgresTest(t *testing.T) (*PostgresTest, error) {
 		pgxConfig: config,
 
 		Env: map[string]string{
-			"DATABASE_HOST": "localhost",
+			"DATABASE_HOST": "127.0.0.1",
 			"DATABASE_PORT": port,
 			"DATABASE_NAME": database,
 			"DATABASE_USER": "postgres",
@@ -222,10 +221,13 @@ func (tp *PostgresTest) AddData(ctx context.Context, data string) error {
 }
 
 // Flow returns a flow that is using the postgres instance.
-func (tp *PostgresTest) Flow() (*datastore.FlowPostgres, error) {
-	flow, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
+func (tp *PostgresTest) Flow(ctx context.Context) (*datastore.FlowPostgres, error) {
+	flow, init, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		return nil, fmt.Errorf("create postgres flow: %w", err)
+	}
+	if err := init(ctx); err != nil {
+		return nil, fmt.Errorf("init postgres: %w", err)
 	}
 	return flow, nil
 }
