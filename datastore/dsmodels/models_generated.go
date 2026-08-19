@@ -4067,6 +4067,7 @@ type MeetingUser struct {
 	AssignmentCandidateIDs        []int
 	ChatMessageIDs                []int
 	Comment                       string
+	EntitledAtPollIDs             []int
 	GroupIDs                      []int
 	HistoryEntryIDs               []int
 	ID                            int
@@ -4089,6 +4090,7 @@ type MeetingUser struct {
 	ActingBallotList              []PollBallotUser
 	AssignmentCandidateList       []AssignmentCandidate
 	ChatMessageList               []ChatMessage
+	EntitledAtPollList            []Poll
 	GroupList                     []Group
 	HistoryEntryList              []HistoryEntry
 	Meeting                       *Meeting
@@ -4118,6 +4120,7 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, idI any) *MeetingUser {
 	ds.MeetingUser_AssignmentCandidateIDs(id).Lazy(&c.AssignmentCandidateIDs)
 	ds.MeetingUser_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
 	ds.MeetingUser_Comment(id).Lazy(&c.Comment)
+	ds.MeetingUser_EntitledAtPollIDs(id).Lazy(&c.EntitledAtPollIDs)
 	ds.MeetingUser_GroupIDs(id).Lazy(&c.GroupIDs)
 	ds.MeetingUser_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.MeetingUser_ID(id).Lazy(&c.ID)
@@ -4180,6 +4183,19 @@ func (b *meetingUserBuilder) ChatMessageList() *chatMessageBuilder {
 			relField: "ChatMessageList",
 			many:     true,
 			conv:     func(p *ChatMessage) ChatMessage { return *p },
+		},
+	}
+}
+
+func (b *meetingUserBuilder) EntitledAtPollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "EntitledAtPollIDs",
+			relField: "EntitledAtPollList",
+			many:     true,
+			conv:     func(p *Poll) Poll { return *p },
 		},
 	}
 }
@@ -6556,35 +6572,37 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 
 // Poll has all fields from poll.
 type Poll struct {
-	AllowInvalid      bool
-	AllowVoteSplit    bool
-	Anonymized        bool
-	BallotIDs         []int
-	BallotUserIDs     []int
-	ConfigID          string
-	ContentObjectID   string
-	EntitledGroupIDs  []int
-	HistoryEntryIDs   []int
-	ID                int
-	LiveVotingEnabled bool
-	MeetingID         int
-	OptionIDs         []int
-	ProjectionIDs     []int
-	Published         bool
-	Result            string
-	SequentialNumber  int
-	State             string
-	Title             string
-	Visibility        string
-	BallotList        []PollBallot
-	BallotUserList    []PollBallotUser
-	Config            PollConfigUnion
-	ContentObject     PollContentObjectUnion
-	EntitledGroupList []Group
-	HistoryEntryList  []HistoryEntry
-	Meeting           *Meeting
-	OptionList        []PollOption
-	ProjectionList    []Projection
+	AllowInvalid            bool
+	AllowVoteSplit          bool
+	Anonymized              bool
+	BallotIDs               []int
+	BallotUserIDs           []int
+	ConfigID                string
+	ContentObjectID         string
+	EntitledGroupIDs        []int
+	EntitledMeetingUserIDs  []int
+	HistoryEntryIDs         []int
+	ID                      int
+	LiveVotingEnabled       bool
+	MeetingID               int
+	OptionIDs               []int
+	ProjectionIDs           []int
+	Published               bool
+	Result                  string
+	SequentialNumber        int
+	State                   string
+	Title                   string
+	Visibility              string
+	BallotList              []PollBallot
+	BallotUserList          []PollBallotUser
+	Config                  PollConfigUnion
+	ContentObject           PollContentObjectUnion
+	EntitledGroupList       []Group
+	EntitledMeetingUserList []MeetingUser
+	HistoryEntryList        []HistoryEntry
+	Meeting                 *Meeting
+	OptionList              []PollOption
+	ProjectionList          []Projection
 }
 
 type pollBuilder struct {
@@ -6602,6 +6620,7 @@ func (b *pollBuilder) lazy(ds *Fetch, idI any) *Poll {
 	ds.Poll_ConfigID(id).Lazy(&c.ConfigID)
 	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Poll_EntitledGroupIDs(id).Lazy(&c.EntitledGroupIDs)
+	ds.Poll_EntitledMeetingUserIDs(id).Lazy(&c.EntitledMeetingUserIDs)
 	ds.Poll_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
 	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
@@ -6825,6 +6844,19 @@ func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 			relField: "EntitledGroupList",
 			many:     true,
 			conv:     func(p *Group) Group { return *p },
+		},
+	}
+}
+
+func (b *pollBuilder) EntitledMeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "EntitledMeetingUserIDs",
+			relField: "EntitledMeetingUserList",
+			many:     true,
+			conv:     func(p *MeetingUser) MeetingUser { return *p },
 		},
 	}
 }

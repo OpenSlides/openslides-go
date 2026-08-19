@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '67b2c321035c223f8434e094974113be'
+-- MODELS_YML_CHECKSUM = '97d3333defc0706b67f485a5a5ffe20f'
 
 
 -- ENUM definitions
@@ -2810,6 +2810,22 @@ CREATE TABLE nm_meeting_user_vote_delegated_to_ids_meeting_user_t (
 CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_tee86852 ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegations_from_id);
 CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_t54a80eb ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegated_to_id);
 
+CREATE TABLE nm_meeting_user_entitled_at_poll_ids_poll_t (
+    meeting_user_id integer
+        CONSTRAINT required_nm_meeting_user_entitled_at_poll_ids_poll_t_meef9cfab5 NOT NULL
+        CONSTRAINT fk_nm_meeting_user_entitled_at_poll_ids_poll_t_meeting_u4b04998 REFERENCES meeting_user_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    poll_id integer
+        CONSTRAINT required_nm_meeting_user_entitled_at_poll_ids_poll_t_poll_id NOT NULL
+        CONSTRAINT fk_nm_meeting_user_entitled_at_poll_ids_poll_t_poll_id_pda65800 REFERENCES poll_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    CONSTRAINT pk_nm_meeting_user_entitled_at_poll_ids_poll_t PRIMARY KEY (meeting_user_id, poll_id)
+);
+CREATE INDEX idx_nm_meeting_user_entitled_at_poll_ids_poll_t_meeting_user_id ON nm_meeting_user_entitled_at_poll_ids_poll_t (meeting_user_id);
+CREATE INDEX idx_nm_meeting_user_entitled_at_poll_ids_poll_t_poll_id ON nm_meeting_user_entitled_at_poll_ids_poll_t (poll_id);
+
 CREATE TABLE nm_meeting_user_structure_level_ids_structure_level_t (
     meeting_user_id integer
         CONSTRAINT required_nm_meeting_user_structure_level_ids_structure_l456f3b7 NOT NULL
@@ -3208,6 +3224,7 @@ CREATE VIEW "meeting_user" AS SELECT *,
 (select array_agg(p.id ORDER BY p.id) from poll_option_t p where p.meeting_user_id = m.id) as poll_option_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_ballot_user_t p where p.acting_meeting_user_id = m.id) as acting_ballot_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_ballot_user_t p where p.represented_meeting_user_id = m.id) as represented_ballot_ids,
+(select array_agg(n.poll_id ORDER BY n.poll_id) from nm_meeting_user_entitled_at_poll_ids_poll_t n where n.meeting_user_id = m.id) as entitled_at_poll_ids,
 (select array_agg(c.id ORDER BY c.id) from chat_message_t c where c.meeting_user_id = m.id) as chat_message_ids,
 (select array_agg(n.group_id ORDER BY n.group_id) from nm_group_meeting_user_ids_meeting_user_t n where n.meeting_user_id = m.id) as group_ids,
 (select array_agg(n.structure_level_id ORDER BY n.structure_level_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.meeting_user_id = m.id) as structure_level_ids,
@@ -3331,6 +3348,7 @@ CREATE VIEW "poll" AS SELECT *,
 (select array_agg(pb.id ORDER BY pb.id) from poll_ballot_t pb where pb.poll_id = p.id) as ballot_ids,
 (select array_agg(pb.id ORDER BY pb.id) from poll_ballot_user_t pb where pb.poll_id = p.id) as ballot_user_ids,
 (select array_agg(n.group_id ORDER BY n.group_id) from nm_group_poll_ids_poll_t n where n.poll_id = p.id) as entitled_group_ids,
+(select array_agg(n.meeting_user_id ORDER BY n.meeting_user_id) from nm_meeting_user_entitled_at_poll_ids_poll_t n where n.poll_id = p.id) as entitled_meeting_user_ids,
 (select array_agg(pt.id ORDER BY pt.id) from projection_t pt where pt.content_object_id_poll_id = p.id) as projection_ids,
 (select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_poll_id = p.id) as history_entry_ids
 FROM poll_t p;
@@ -4874,6 +4892,11 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','vote_d
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
+CREATE TRIGGER tr_log_nm_meeting_user_entitled_at_poll_ids_poll_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_entitled_at_poll_ids_poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','meeting_user_id','entitled_at_poll_ids','poll','poll_id','entitled_meeting_user_ids');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_entitled_at_poll_ids_poll_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
 CREATE TRIGGER tr_log_nm_meeting_user_structure_level_ids_structure_level_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_structure_level_ids_structure_level_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','meeting_user_id','structure_level_ids','structure_level','structure_level_id','meeting_user_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_structure_level_ids_structure_level_t
@@ -5580,6 +5603,14 @@ CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_i
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
 
 
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_entitled_at_poll_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_entitled_at_poll_ids_poll_t', 'meeting_user_id', 'meeting_user', 'poll_id', 'poll', 'meeting_id', 'entitled_at_poll_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_entitled_meeting_user_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_entitled_at_poll_ids_poll_t', 'poll_id', 'poll', 'meeting_user_id', 'meeting_user', 'meeting_id', 'entitled_meeting_user_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_entitled_at_poll_ids_058a2c8 AFTER INSERT ON nm_meeting_user_entitled_at_poll_ids_poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('meeting_user_id', 'meeting_user', 'poll_id', 'poll', 'meeting_id', 'entitled_at_poll_ids');
+
+
 CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_structure_level_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_structure_level_ids_structure_level_t', 'meeting_user_id', 'meeting_user', 'structure_level_id', 'structure_level', 'meeting_id', 'structure_level_ids');
 CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_t_meeting_user_ids AFTER INSERT ON structure_level_t INITIALLY DEFERRED
@@ -6179,6 +6210,7 @@ SQL nt:nt => meeting_user/vote_delegations_from_ids:-> meeting_user/vote_delegat
 SQL nr:1r => meeting_user/poll_option_ids:-> poll_option/meeting_user_id
 SQL nt:1rR => meeting_user/acting_ballot_ids:-> poll_ballot_user/acting_meeting_user_id
 SQL nt:1rR => meeting_user/represented_ballot_ids:-> poll_ballot_user/represented_meeting_user_id
+SQL nt:nt => meeting_user/entitled_at_poll_ids:-> poll/entitled_meeting_user_ids
 SQL nt:1r => meeting_user/chat_message_ids:-> chat_message/meeting_user_id
 SQL ntR:nt => meeting_user/group_ids:-> group/meeting_user_ids
 SQL nt:nt => meeting_user/structure_level_ids:-> structure_level/meeting_user_ids
@@ -6301,6 +6333,7 @@ FIELD 1GrR:nt,nt,nt => poll/content_object_id:-> motion/poll_ids,assignment/poll
 SQL nr:1rR => poll/ballot_ids:-> poll_ballot/poll_id
 SQL nr:1rR => poll/ballot_user_ids:-> poll_ballot_user/poll_id
 SQL nt:nt => poll/entitled_group_ids:-> group/poll_ids
+SQL nt:nt => poll/entitled_meeting_user_ids:-> meeting_user/entitled_at_poll_ids
 SQL nt:1GrR => poll/projection_ids:-> projection/content_object_id
 FIELD 1rR:nr => poll/meeting_id:-> meeting/poll_ids
 SQL nt:1Gr => poll/history_entry_ids:-> history_entry/model_id
