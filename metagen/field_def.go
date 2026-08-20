@@ -146,8 +146,8 @@ var RelationFields = map[string]string{
 	"poll_config_rating_score/poll_id":                                       "poll/config_id",
 	"poll_config_selection/poll_id":                                          "poll/config_id",
 	"poll_config_stv_scottish/poll_id":                                       "poll/config_id",
-	"poll_option/meeting_user_id":                                            "meeting_user/poll_option_ids",
 	"poll_option/poll_id":                                                    "poll/option_ids",
+	"poll_option/user_id":                                                    "user/poll_option_ids",
 	"projection/current_projector_id":                                        "projector/current_projection_ids",
 	"projection/history_projector_id":                                        "projector/history_projection_ids",
 	"projection/meeting_id":                                                  "meeting/all_projection_ids",
@@ -303,7 +303,6 @@ var RelationListFields = map[string]string{
 	"meeting_user/motion_supporter_ids":                        "motion_supporter/meeting_user_id",
 	"meeting_user/motion_working_group_speaker_ids":            "motion_working_group_speaker/meeting_user_id",
 	"meeting_user/personal_note_ids":                           "personal_note/meeting_user_id",
-	"meeting_user/poll_option_ids":                             "poll_option/meeting_user_id",
 	"meeting_user/represented_ballot_ids":                      "poll_ballot_user/represented_meeting_user_id",
 	"meeting_user/speaker_ids":                                 "speaker/meeting_user_id",
 	"meeting_user/structure_level_ids":                         "structure_level/meeting_user_ids",
@@ -378,6 +377,7 @@ var RelationListFields = map[string]string{
 	"user/is_present_in_meeting_ids":                           "meeting/present_user_ids",
 	"user/meeting_ids":                                         "meeting/user_ids",
 	"user/meeting_user_ids":                                    "meeting_user/user_id",
+	"user/poll_option_ids":                                     "poll_option/user_id",
 }
 
 // GenericRelationFields is a map from are all (single) generic relation fields
@@ -856,7 +856,6 @@ var RestrictionModes = map[string]string{
 	"meeting_user/motion_supporter_ids":             "A",
 	"meeting_user/motion_working_group_speaker_ids": "A",
 	"meeting_user/number":                           "A",
-	"meeting_user/poll_option_ids":                  "A",
 	"meeting_user/represented_ballot_ids":           "A",
 	"meeting_user/speaker_ids":                      "A",
 	"meeting_user/structure_level_ids":              "A",
@@ -1193,11 +1192,11 @@ var RestrictionModes = map[string]string{
 	"poll_config_stv_scottish/posts":   "A",
 
 	// poll_option
-	"poll_option/id":              "A",
-	"poll_option/meeting_user_id": "A",
-	"poll_option/poll_id":         "A",
-	"poll_option/text":            "A",
-	"poll_option/weight":          "A",
+	"poll_option/id":      "A",
+	"poll_option/poll_id": "A",
+	"poll_option/text":    "A",
+	"poll_option/user_id": "A",
+	"poll_option/weight":  "A",
 
 	// projection
 	"projection/content_object_id":    "A",
@@ -1393,6 +1392,7 @@ var RestrictionModes = map[string]string{
 	"user/last_login":                    "A",
 	"user/last_name":                     "A",
 	"user/meeting_user_ids":              "A",
+	"user/poll_option_ids":               "A",
 	"user/pronoun":                       "A",
 	"user/title":                         "A",
 	"user/email":                         "B",

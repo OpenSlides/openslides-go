@@ -2444,15 +2444,6 @@ func (r *Fetch) MeetingUser_PersonalNoteIDs(meetingUserID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingUser_PollOptionIDs(meetingUserID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting_user", meetingUserID, "poll_option_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) MeetingUser_RepresentedBallotIDs(meetingUserID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "represented_ballot_ids")
 	if err != nil {
@@ -6863,15 +6854,6 @@ func (r *Fetch) PollOption_ID(pollOptionID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollOption_MeetingUserID(pollOptionID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("poll_option", pollOptionID, "meeting_user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
 func (r *Fetch) PollOption_PollID(pollOptionID int) *ValueInt {
 	key, err := dskey.FromParts("poll_option", pollOptionID, "poll_id")
 	if err != nil {
@@ -6888,6 +6870,15 @@ func (r *Fetch) PollOption_Text(pollOptionID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) PollOption_UserID(pollOptionID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("poll_option", pollOptionID, "user_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollOption_Weight(pollOptionID int) *ValueInt {
@@ -8769,6 +8760,15 @@ func (r *Fetch) User_Password(userID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) User_PollOptionIDs(userID int) *ValueIntSlice {
+	key, err := dskey.FromParts("user", userID, "poll_option_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) User_Pronoun(userID int) *ValueString {

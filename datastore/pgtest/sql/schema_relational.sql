@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '97d3333defc0706b67f485a5a5ffe20f'
+-- MODELS_YML_CHECKSUM = 'a1cd5f8333a13e3d7018f72cb477d598'
 
 
 -- ENUM definitions
@@ -2143,7 +2143,7 @@ CREATE TABLE poll_option_t (
         CONSTRAINT required_poll_option_poll_id NOT NULL,
     weight integer,
     text varchar(256),
-    meeting_user_id integer
+    user_id integer
 );
 
 
@@ -3221,7 +3221,6 @@ CREATE VIEW "meeting_user" AS SELECT *,
 (select array_agg(a.id ORDER BY a.id) from assignment_candidate_t a where a.meeting_user_id = m.id) as assignment_candidate_ids,
 (select array_agg(n.vote_delegated_to_id ORDER BY n.vote_delegated_to_id) from nm_meeting_user_vote_delegated_to_ids_meeting_user_t n where n.vote_delegations_from_id = m.id) as vote_delegated_to_ids,
 (select array_agg(n.vote_delegations_from_id ORDER BY n.vote_delegations_from_id) from nm_meeting_user_vote_delegated_to_ids_meeting_user_t n where n.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
-(select array_agg(p.id ORDER BY p.id) from poll_option_t p where p.meeting_user_id = m.id) as poll_option_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_ballot_user_t p where p.acting_meeting_user_id = m.id) as acting_ballot_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_ballot_user_t p where p.represented_meeting_user_id = m.id) as represented_ballot_ids,
 (select array_agg(n.poll_id ORDER BY n.poll_id) from nm_meeting_user_entitled_at_poll_ids_poll_t n where n.meeting_user_id = m.id) as entitled_at_poll_ids,
@@ -3475,6 +3474,7 @@ CREATE VIEW "user" AS SELECT *,
 ,
 (select array_agg(n.committee_id ORDER BY n.committee_id) from nm_committee_manager_ids_user_t n where n.user_id = u.id) as committee_management_ids,
 (select array_agg(m.id ORDER BY m.id) from meeting_user_t m where m.user_id = u.id) as meeting_user_ids,
+(select array_agg(p.id ORDER BY p.id) from poll_option_t p where p.user_id = u.id) as poll_option_ids,
 (select array_agg(h.id ORDER BY h.id) from history_position_t h where h.user_id = u.id) as history_position_ids,
 (select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_user_id = u.id) as history_entry_ids,
 (
@@ -3783,8 +3783,8 @@ CREATE INDEX idx_poll_ballot_user_t_represented_meeting_user_id ON poll_ballot_u
 
 ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_option_t_poll_id ON poll_option_t (poll_id);
-ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_meeting_user_id_meeting_user_t_id FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_option_t_meeting_user_id ON poll_option_t (meeting_user_id);
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_user_id_user_t_id FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_user_id ON poll_option_t (user_id);
 
 ALTER TABLE projection_t ADD CONSTRAINT fk_projection_t_current_projector_id_projector_t_id FOREIGN KEY(current_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_projection_t_current_projector_id ON projection_t (current_projector_id);
@@ -5200,8 +5200,8 @@ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_e
 
 CREATE TRIGGER tr_log_poll_option_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'option_ids');
-CREATE TRIGGER tr_log_poll_option_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'poll_option_ids');
+CREATE TRIGGER tr_log_poll_option_t_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON poll_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'user_id', 'poll_option_ids');
 
 CREATE TRIGGER tr_log_projection AFTER INSERT OR UPDATE OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('projection');
@@ -6207,7 +6207,6 @@ SQL nt:1r => meeting_user/motion_submitter_ids:-> motion_submitter/meeting_user_
 SQL nt:1r => meeting_user/assignment_candidate_ids:-> assignment_candidate/meeting_user_id
 SQL nt:nt => meeting_user/vote_delegated_to_ids:-> meeting_user/vote_delegations_from_ids
 SQL nt:nt => meeting_user/vote_delegations_from_ids:-> meeting_user/vote_delegated_to_ids
-SQL nr:1r => meeting_user/poll_option_ids:-> poll_option/meeting_user_id
 SQL nt:1rR => meeting_user/acting_ballot_ids:-> poll_ballot_user/acting_meeting_user_id
 SQL nt:1rR => meeting_user/represented_ballot_ids:-> poll_ballot_user/represented_meeting_user_id
 SQL nt:nt => meeting_user/entitled_at_poll_ids:-> poll/entitled_meeting_user_ids
@@ -6357,7 +6356,7 @@ SQL 1tR:1GrR => poll_config_selection/poll_id:-> poll/config_id
 SQL 1tR:1GrR => poll_config_stv_scottish/poll_id:-> poll/config_id
 
 FIELD 1rR:nt => poll_option/poll_id:-> poll/option_ids
-FIELD 1r:nr => poll_option/meeting_user_id:-> meeting_user/poll_option_ids
+FIELD 1r:nr => poll_option/user_id:-> user/poll_option_ids
 
 FIELD 1r:nt => projection/current_projector_id:-> projector/current_projection_ids
 FIELD 1r:nt => projection/preview_projector_id:-> projector/preview_projection_ids
@@ -6427,6 +6426,7 @@ SQL nts:nts => user/committee_ids:-> committee/user_ids
 SQL nt:nt => user/committee_management_ids:-> committee/manager_ids
 SQL nt:1rR => user/meeting_user_ids:-> meeting_user/user_id
 FIELD 1r:nt => user/home_committee_id:-> committee/native_user_ids
+SQL nr:1r => user/poll_option_ids:-> poll_option/user_id
 SQL nt:1r => user/history_position_ids:-> history_position/user_id
 SQL nt:1Gr => user/history_entry_ids:-> history_entry/model_id
 SQL nts:nts => user/meeting_ids:-> meeting/user_ids
