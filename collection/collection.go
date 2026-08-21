@@ -40,6 +40,7 @@ func openWithMeta(path string, meta []byte) (Collection, error) {
 	return wrapper.Collection, nil
 }
 
+// Meta contains global infos for collections
 type Meta struct {
 	EnumDefinitions map[string][]string `yaml:"enum_definitions"`
 }

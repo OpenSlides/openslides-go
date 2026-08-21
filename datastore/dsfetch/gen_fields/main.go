@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -24,9 +23,6 @@ var tmplValue string
 
 //go:embed header.go.tmpl
 var tmplHeader string
-
-//go:embed enum.go.tmpl
-var tmplEnum string
 
 //go:embed field.go.tmpl
 var tmplField string
@@ -51,10 +47,6 @@ func run(w io.Writer) error {
 
 	if err := genValueTypes(buf); err != nil {
 		return fmt.Errorf("generate value types: %w", err)
-	}
-
-	if err := genEnums(buf, fromYml); err != nil {
-		return fmt.Errorf("generate enums types: %w", err)
 	}
 
 	if err := genFieldMethods(buf, fromYml); err != nil {
@@ -146,68 +138,6 @@ func zeroValue(t string) string {
 		return "nil"
 	}
 	return "unknown type " + t
-}
-
-func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error {
-	// Make sure the types are in the same order every time go generate runs.
-	type enumField struct {
-		GoName   string
-		RawValue string
-	}
-
-	enumMap := make(map[string][]enumField)
-	for colName, col := range fromYML {
-		for fieldName, field := range col.Fields {
-			if len(field.Enum.Values) > 0 || field.Enum.GlobalName != "" {
-				name := enumName(colName, fieldName, field)
-				enumMap[name] = []enumField{}
-				for _, enumValue := range field.Enum.Values {
-					goEnumName := goName(strings.ReplaceAll(enumValue, "-", "_"))
-					if goEnumName == "" {
-						goEnumName = "empty"
-					}
-
-					enumMap[name] = append(enumMap[name], enumField{
-						GoName:   goEnumName,
-						RawValue: enumValue,
-					})
-				}
-			}
-		}
-	}
-
-	type enumData struct {
-		GoName string
-		Fields []enumField
-	}
-
-	enums := []enumData{}
-	for name, values := range enumMap {
-		enums = append(enums, enumData{
-			GoName: name,
-			Fields: values,
-		})
-	}
-
-	slices.SortFunc(enums, func(a, b enumData) int {
-		return strings.Compare(a.GoName, b.GoName)
-	})
-
-	tmpl, err := template.New("value_enum.go").Parse(tmplEnum)
-	if err != nil {
-		return fmt.Errorf("parsing template: %w", err)
-	}
-
-	for _, e := range enums {
-		if err := tmpl.Execute(buf, map[string]any{
-			"Name":   e.GoName,
-			"Values": e.Fields,
-		}); err != nil {
-			return fmt.Errorf("executing template: %w", err)
-		}
-	}
-
-	return nil
 }
 
 func genFieldMethods(buf *bytes.Buffer, fromYML map[string]collection.Collection) error {
@@ -311,7 +241,7 @@ func valueType(collection string, fieldName string, field *collection.Field) str
 	}
 
 	if field.Enum.GlobalName != "" || len(field.Enum.Values) != 0 {
-		return fmt.Sprintf("ValueEnum[%s]", enumName(collection, fieldName, field))
+		return fmt.Sprintf("ValueEnum[dstypes.%s]", enumName(collection, fieldName, field))
 	}
 
 	switch collectionType {

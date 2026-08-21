@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/fastjson"
 	"github.com/shopspring/decimal"
 )
@@ -716,301 +717,6 @@ func (v *ValueStringSlice) setLazy(p []byte) error {
 	return nil
 }
 
-// ActionWorker_State represents the ActionWorker_State enum type.
-type ActionWorker_State string
-
-const (
-	ActionWorker_StateRunning ActionWorker_State = "running"
-	ActionWorker_StateEnd     ActionWorker_State = "end"
-	ActionWorker_StateAborted ActionWorker_State = "aborted"
-)
-
-// AgendaItem_Type represents the AgendaItem_Type enum type.
-type AgendaItem_Type string
-
-const (
-	AgendaItem_TypeCommon   AgendaItem_Type = "common"
-	AgendaItem_TypeInternal AgendaItem_Type = "internal"
-	AgendaItem_TypeHidden   AgendaItem_Type = "hidden"
-)
-
-// Assignment_Phase represents the Assignment_Phase enum type.
-type Assignment_Phase string
-
-const (
-	Assignment_PhaseSearch   Assignment_Phase = "search"
-	Assignment_PhaseVoting   Assignment_Phase = "voting"
-	Assignment_PhaseFinished Assignment_Phase = "finished"
-)
-
-// BallotPaperSelection represents the BallotPaperSelection enum type.
-type BallotPaperSelection string
-
-const (
-	BallotPaperSelectionNUMBEROFDELEGATES       BallotPaperSelection = "NUMBER_OF_DELEGATES"
-	BallotPaperSelectionNUMBEROFALLPARTICIPANTS BallotPaperSelection = "NUMBER_OF_ALL_PARTICIPANTS"
-	BallotPaperSelectionCUSTOMNUMBER            BallotPaperSelection = "CUSTOM_NUMBER"
-)
-
-// ImportPreview_Name represents the ImportPreview_Name enum type.
-type ImportPreview_Name string
-
-const (
-	ImportPreview_NameAccount     ImportPreview_Name = "account"
-	ImportPreview_NameParticipant ImportPreview_Name = "participant"
-	ImportPreview_NameTopic       ImportPreview_Name = "topic"
-	ImportPreview_NameCommittee   ImportPreview_Name = "committee"
-	ImportPreview_NameMotion      ImportPreview_Name = "motion"
-)
-
-// ImportPreview_State represents the ImportPreview_State enum type.
-type ImportPreview_State string
-
-const (
-	ImportPreview_StateWarning ImportPreview_State = "warning"
-	ImportPreview_StateError   ImportPreview_State = "error"
-	ImportPreview_StateDone    ImportPreview_State = "done"
-)
-
-// Languages represents the Languages enum type.
-type Languages string
-
-const (
-	LanguagesEn Languages = "en"
-	LanguagesDe Languages = "de"
-	LanguagesIt Languages = "it"
-	LanguagesEs Languages = "es"
-	LanguagesRu Languages = "ru"
-	LanguagesCs Languages = "cs"
-	LanguagesFr Languages = "fr"
-)
-
-// Meeting_AgendaItemCreation represents the Meeting_AgendaItemCreation enum type.
-type Meeting_AgendaItemCreation string
-
-const (
-	Meeting_AgendaItemCreationAlways     Meeting_AgendaItemCreation = "always"
-	Meeting_AgendaItemCreationNever      Meeting_AgendaItemCreation = "never"
-	Meeting_AgendaItemCreationDefaultYes Meeting_AgendaItemCreation = "default_yes"
-	Meeting_AgendaItemCreationDefaultNo  Meeting_AgendaItemCreation = "default_no"
-)
-
-// Meeting_AgendaNewItemsDefaultVisibility represents the Meeting_AgendaNewItemsDefaultVisibility enum type.
-type Meeting_AgendaNewItemsDefaultVisibility string
-
-const (
-	Meeting_AgendaNewItemsDefaultVisibilityCommon   Meeting_AgendaNewItemsDefaultVisibility = "common"
-	Meeting_AgendaNewItemsDefaultVisibilityInternal Meeting_AgendaNewItemsDefaultVisibility = "internal"
-	Meeting_AgendaNewItemsDefaultVisibilityHidden   Meeting_AgendaNewItemsDefaultVisibility = "hidden"
-)
-
-// Meeting_AgendaNumeralSystem represents the Meeting_AgendaNumeralSystem enum type.
-type Meeting_AgendaNumeralSystem string
-
-const (
-	Meeting_AgendaNumeralSystemArabic Meeting_AgendaNumeralSystem = "arabic"
-	Meeting_AgendaNumeralSystemRoman  Meeting_AgendaNumeralSystem = "roman"
-)
-
-// Meeting_ApplauseType represents the Meeting_ApplauseType enum type.
-type Meeting_ApplauseType string
-
-const (
-	Meeting_ApplauseTypeApplauseTypeBar       Meeting_ApplauseType = "applause-type-bar"
-	Meeting_ApplauseTypeApplauseTypeParticles Meeting_ApplauseType = "applause-type-particles"
-)
-
-// Meeting_ExportCsvEncoding represents the Meeting_ExportCsvEncoding enum type.
-type Meeting_ExportCsvEncoding string
-
-const (
-	Meeting_ExportCsvEncodingUtf8      Meeting_ExportCsvEncoding = "utf-8"
-	Meeting_ExportCsvEncodingIso885915 Meeting_ExportCsvEncoding = "iso-8859-15"
-)
-
-// Meeting_ExportPdfPagenumberAlignment represents the Meeting_ExportPdfPagenumberAlignment enum type.
-type Meeting_ExportPdfPagenumberAlignment string
-
-const (
-	Meeting_ExportPdfPagenumberAlignmentLeft   Meeting_ExportPdfPagenumberAlignment = "left"
-	Meeting_ExportPdfPagenumberAlignmentRight  Meeting_ExportPdfPagenumberAlignment = "right"
-	Meeting_ExportPdfPagenumberAlignmentCenter Meeting_ExportPdfPagenumberAlignment = "center"
-)
-
-// Meeting_ExportPdfPagesize represents the Meeting_ExportPdfPagesize enum type.
-type Meeting_ExportPdfPagesize string
-
-const (
-	Meeting_ExportPdfPagesizeA4 Meeting_ExportPdfPagesize = "A4"
-	Meeting_ExportPdfPagesizeA5 Meeting_ExportPdfPagesize = "A5"
-)
-
-// Meeting_MotionPollProjectionNameOrderFirst represents the Meeting_MotionPollProjectionNameOrderFirst enum type.
-type Meeting_MotionPollProjectionNameOrderFirst string
-
-const (
-	Meeting_MotionPollProjectionNameOrderFirstFirstName Meeting_MotionPollProjectionNameOrderFirst = "first_name"
-	Meeting_MotionPollProjectionNameOrderFirstLastName  Meeting_MotionPollProjectionNameOrderFirst = "last_name"
-)
-
-// Meeting_MotionsAmendmentsTextMode represents the Meeting_MotionsAmendmentsTextMode enum type.
-type Meeting_MotionsAmendmentsTextMode string
-
-const (
-	Meeting_MotionsAmendmentsTextModeFreestyle Meeting_MotionsAmendmentsTextMode = "freestyle"
-	Meeting_MotionsAmendmentsTextModeFulltext  Meeting_MotionsAmendmentsTextMode = "fulltext"
-	Meeting_MotionsAmendmentsTextModeParagraph Meeting_MotionsAmendmentsTextMode = "paragraph"
-)
-
-// Meeting_MotionsDefaultLineNumbering represents the Meeting_MotionsDefaultLineNumbering enum type.
-type Meeting_MotionsDefaultLineNumbering string
-
-const (
-	Meeting_MotionsDefaultLineNumberingOutside Meeting_MotionsDefaultLineNumbering = "outside"
-	Meeting_MotionsDefaultLineNumberingInline  Meeting_MotionsDefaultLineNumbering = "inline"
-	Meeting_MotionsDefaultLineNumberingNone    Meeting_MotionsDefaultLineNumbering = "none"
-)
-
-// Meeting_MotionsDefaultSorting represents the Meeting_MotionsDefaultSorting enum type.
-type Meeting_MotionsDefaultSorting string
-
-const (
-	Meeting_MotionsDefaultSortingNumber Meeting_MotionsDefaultSorting = "number"
-	Meeting_MotionsDefaultSortingWeight Meeting_MotionsDefaultSorting = "weight"
-)
-
-// Meeting_MotionsNumberType represents the Meeting_MotionsNumberType enum type.
-type Meeting_MotionsNumberType string
-
-const (
-	Meeting_MotionsNumberTypePerCategory      Meeting_MotionsNumberType = "per_category"
-	Meeting_MotionsNumberTypeSeriallyNumbered Meeting_MotionsNumberType = "serially_numbered"
-	Meeting_MotionsNumberTypeManually         Meeting_MotionsNumberType = "manually"
-)
-
-// Meeting_MotionsRecommendationTextMode represents the Meeting_MotionsRecommendationTextMode enum type.
-type Meeting_MotionsRecommendationTextMode string
-
-const (
-	Meeting_MotionsRecommendationTextModeOriginal Meeting_MotionsRecommendationTextMode = "original"
-	Meeting_MotionsRecommendationTextModeChanged  Meeting_MotionsRecommendationTextMode = "changed"
-	Meeting_MotionsRecommendationTextModeDiff     Meeting_MotionsRecommendationTextMode = "diff"
-	Meeting_MotionsRecommendationTextModeAgreed   Meeting_MotionsRecommendationTextMode = "agreed"
-)
-
-// Meeting_UsersPdfWlanEncryption represents the Meeting_UsersPdfWlanEncryption enum type.
-type Meeting_UsersPdfWlanEncryption string
-
-const (
-	Meeting_UsersPdfWlanEncryptionempty  Meeting_UsersPdfWlanEncryption = ""
-	Meeting_UsersPdfWlanEncryptionWEP    Meeting_UsersPdfWlanEncryption = "WEP"
-	Meeting_UsersPdfWlanEncryptionWPA    Meeting_UsersPdfWlanEncryption = "WPA"
-	Meeting_UsersPdfWlanEncryptionNopass Meeting_UsersPdfWlanEncryption = "nopass"
-)
-
-// MotionChangeRecommendation_Type represents the MotionChangeRecommendation_Type enum type.
-type MotionChangeRecommendation_Type string
-
-const (
-	MotionChangeRecommendation_TypeReplacement MotionChangeRecommendation_Type = "replacement"
-	MotionChangeRecommendation_TypeInsertion   MotionChangeRecommendation_Type = "insertion"
-	MotionChangeRecommendation_TypeDeletion    MotionChangeRecommendation_Type = "deletion"
-	MotionChangeRecommendation_TypeOther       MotionChangeRecommendation_Type = "other"
-)
-
-// MotionState_CssClass represents the MotionState_CssClass enum type.
-type MotionState_CssClass string
-
-const (
-	MotionState_CssClassGrey      MotionState_CssClass = "grey"
-	MotionState_CssClassRed       MotionState_CssClass = "red"
-	MotionState_CssClassGreen     MotionState_CssClass = "green"
-	MotionState_CssClassLightblue MotionState_CssClass = "lightblue"
-	MotionState_CssClassYellow    MotionState_CssClass = "yellow"
-)
-
-// MotionState_MergeAmendmentIntoFinal represents the MotionState_MergeAmendmentIntoFinal enum type.
-type MotionState_MergeAmendmentIntoFinal string
-
-const (
-	MotionState_MergeAmendmentIntoFinalDoNotMerge MotionState_MergeAmendmentIntoFinal = "do_not_merge"
-	MotionState_MergeAmendmentIntoFinalUndefined  MotionState_MergeAmendmentIntoFinal = "undefined"
-	MotionState_MergeAmendmentIntoFinalDoMerge    MotionState_MergeAmendmentIntoFinal = "do_merge"
-)
-
-// OnehundredPercentBases represents the OnehundredPercentBases enum type.
-type OnehundredPercentBases string
-
-const (
-	OnehundredPercentBasesY               OnehundredPercentBases = "Y"
-	OnehundredPercentBasesYN              OnehundredPercentBases = "YN"
-	OnehundredPercentBasesYNA             OnehundredPercentBases = "YNA"
-	OnehundredPercentBasesN               OnehundredPercentBases = "N"
-	OnehundredPercentBasesValid           OnehundredPercentBases = "valid"
-	OnehundredPercentBasesCast            OnehundredPercentBases = "cast"
-	OnehundredPercentBasesEntitled        OnehundredPercentBases = "entitled"
-	OnehundredPercentBasesEntitledPresent OnehundredPercentBases = "entitled_present"
-	OnehundredPercentBasesDisabled        OnehundredPercentBases = "disabled"
-)
-
-// PollBackends represents the PollBackends enum type.
-type PollBackends string
-
-const (
-	PollBackendsLong PollBackends = "long"
-	PollBackendsFast PollBackends = "fast"
-)
-
-// Poll_Pollmethod represents the Poll_Pollmethod enum type.
-type Poll_Pollmethod string
-
-const (
-	Poll_PollmethodY   Poll_Pollmethod = "Y"
-	Poll_PollmethodYN  Poll_Pollmethod = "YN"
-	Poll_PollmethodYNA Poll_Pollmethod = "YNA"
-	Poll_PollmethodN   Poll_Pollmethod = "N"
-)
-
-// Poll_State represents the Poll_State enum type.
-type Poll_State string
-
-const (
-	Poll_StateCreated   Poll_State = "created"
-	Poll_StateStarted   Poll_State = "started"
-	Poll_StateFinished  Poll_State = "finished"
-	Poll_StatePublished Poll_State = "published"
-)
-
-// Poll_Type represents the Poll_Type enum type.
-type Poll_Type string
-
-const (
-	Poll_TypeAnalog          Poll_Type = "analog"
-	Poll_TypeNamed           Poll_Type = "named"
-	Poll_TypePseudoanonymous Poll_Type = "pseudoanonymous"
-	Poll_TypeCryptographic   Poll_Type = "cryptographic"
-)
-
-// Speaker_SpeechState represents the Speaker_SpeechState enum type.
-type Speaker_SpeechState string
-
-const (
-	Speaker_SpeechStateContribution       Speaker_SpeechState = "contribution"
-	Speaker_SpeechStatePro                Speaker_SpeechState = "pro"
-	Speaker_SpeechStateContra             Speaker_SpeechState = "contra"
-	Speaker_SpeechStateIntervention       Speaker_SpeechState = "intervention"
-	Speaker_SpeechStateInterposedQuestion Speaker_SpeechState = "interposed_question"
-)
-
-// User_OrganizationManagementLevel represents the User_OrganizationManagementLevel enum type.
-type User_OrganizationManagementLevel string
-
-const (
-	User_OrganizationManagementLevelSuperadmin            User_OrganizationManagementLevel = "superadmin"
-	User_OrganizationManagementLevelCanManageOrganization User_OrganizationManagementLevel = "can_manage_organization"
-	User_OrganizationManagementLevelCanManageUsers        User_OrganizationManagementLevel = "can_manage_users"
-)
-
 func (r *Fetch) ActionWorker_Created(actionWorkerID int) *ValueInt {
 	key, err := dskey.FromParts("action_worker", actionWorkerID, "created")
 	if err != nil {
@@ -1047,13 +753,13 @@ func (r *Fetch) ActionWorker_Result(actionWorkerID int) *ValueJSON {
 	return &ValueJSON{fetch: r, key: key}
 }
 
-func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueEnum[ActionWorker_State] {
+func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueEnum[dstypes.ActionWorker_State] {
 	key, err := dskey.FromParts("action_worker", actionWorkerID, "state")
 	if err != nil {
-		return &ValueEnum[ActionWorker_State]{err: err}
+		return &ValueEnum[dstypes.ActionWorker_State]{err: err}
 	}
 
-	return &ValueEnum[ActionWorker_State]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.ActionWorker_State]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
@@ -1200,13 +906,13 @@ func (r *Fetch) AgendaItem_TagIDs(agendaItemID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) AgendaItem_Type(agendaItemID int) *ValueEnum[AgendaItem_Type] {
+func (r *Fetch) AgendaItem_Type(agendaItemID int) *ValueEnum[dstypes.AgendaItem_Type] {
 	key, err := dskey.FromParts("agenda_item", agendaItemID, "type")
 	if err != nil {
-		return &ValueEnum[AgendaItem_Type]{err: err}
+		return &ValueEnum[dstypes.AgendaItem_Type]{err: err}
 	}
 
-	return &ValueEnum[AgendaItem_Type]{fetch: r, key: key}
+	return &ValueEnum[dstypes.AgendaItem_Type]{fetch: r, key: key}
 }
 
 func (r *Fetch) AgendaItem_Weight(agendaItemID int) *ValueInt {
@@ -1362,13 +1068,13 @@ func (r *Fetch) Assignment_OpenPosts(assignmentID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Assignment_Phase(assignmentID int) *ValueEnum[Assignment_Phase] {
+func (r *Fetch) Assignment_Phase(assignmentID int) *ValueEnum[dstypes.Assignment_Phase] {
 	key, err := dskey.FromParts("assignment", assignmentID, "phase")
 	if err != nil {
-		return &ValueEnum[Assignment_Phase]{err: err}
+		return &ValueEnum[dstypes.Assignment_Phase]{err: err}
 	}
 
-	return &ValueEnum[Assignment_Phase]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Assignment_Phase]{fetch: r, key: key}
 }
 
 func (r *Fetch) Assignment_PollIDs(assignmentID int) *ValueIntSlice {
@@ -2028,13 +1734,13 @@ func (r *Fetch) ImportPreview_ID(importPreviewID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) ImportPreview_Name(importPreviewID int) *ValueEnum[ImportPreview_Name] {
+func (r *Fetch) ImportPreview_Name(importPreviewID int) *ValueEnum[dstypes.ImportPreview_Name] {
 	key, err := dskey.FromParts("import_preview", importPreviewID, "name")
 	if err != nil {
-		return &ValueEnum[ImportPreview_Name]{err: err}
+		return &ValueEnum[dstypes.ImportPreview_Name]{err: err}
 	}
 
-	return &ValueEnum[ImportPreview_Name]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.ImportPreview_Name]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) ImportPreview_Result(importPreviewID int) *ValueJSON {
@@ -2046,13 +1752,13 @@ func (r *Fetch) ImportPreview_Result(importPreviewID int) *ValueJSON {
 	return &ValueJSON{fetch: r, key: key}
 }
 
-func (r *Fetch) ImportPreview_State(importPreviewID int) *ValueEnum[ImportPreview_State] {
+func (r *Fetch) ImportPreview_State(importPreviewID int) *ValueEnum[dstypes.ImportPreview_State] {
 	key, err := dskey.FromParts("import_preview", importPreviewID, "state")
 	if err != nil {
-		return &ValueEnum[ImportPreview_State]{err: err}
+		return &ValueEnum[dstypes.ImportPreview_State]{err: err}
 	}
 
-	return &ValueEnum[ImportPreview_State]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.ImportPreview_State]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) ListOfSpeakers_Closed(listOfSpeakersID int) *ValueBool {
@@ -2685,13 +2391,13 @@ func (r *Fetch) Meeting_AgendaEnableNumbering(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AgendaItemCreation(meetingID int) *ValueEnum[Meeting_AgendaItemCreation] {
+func (r *Fetch) Meeting_AgendaItemCreation(meetingID int) *ValueEnum[dstypes.Meeting_AgendaItemCreation] {
 	key, err := dskey.FromParts("meeting", meetingID, "agenda_item_creation")
 	if err != nil {
-		return &ValueEnum[Meeting_AgendaItemCreation]{err: err}
+		return &ValueEnum[dstypes.Meeting_AgendaItemCreation]{err: err}
 	}
 
-	return &ValueEnum[Meeting_AgendaItemCreation]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_AgendaItemCreation]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AgendaItemIDs(meetingID int) *ValueIntSlice {
@@ -2703,13 +2409,13 @@ func (r *Fetch) Meeting_AgendaItemIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AgendaNewItemsDefaultVisibility(meetingID int) *ValueEnum[Meeting_AgendaNewItemsDefaultVisibility] {
+func (r *Fetch) Meeting_AgendaNewItemsDefaultVisibility(meetingID int) *ValueEnum[dstypes.Meeting_AgendaNewItemsDefaultVisibility] {
 	key, err := dskey.FromParts("meeting", meetingID, "agenda_new_items_default_visibility")
 	if err != nil {
-		return &ValueEnum[Meeting_AgendaNewItemsDefaultVisibility]{err: err}
+		return &ValueEnum[dstypes.Meeting_AgendaNewItemsDefaultVisibility]{err: err}
 	}
 
-	return &ValueEnum[Meeting_AgendaNewItemsDefaultVisibility]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_AgendaNewItemsDefaultVisibility]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AgendaNumberPrefix(meetingID int) *ValueString {
@@ -2721,13 +2427,13 @@ func (r *Fetch) Meeting_AgendaNumberPrefix(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AgendaNumeralSystem(meetingID int) *ValueEnum[Meeting_AgendaNumeralSystem] {
+func (r *Fetch) Meeting_AgendaNumeralSystem(meetingID int) *ValueEnum[dstypes.Meeting_AgendaNumeralSystem] {
 	key, err := dskey.FromParts("meeting", meetingID, "agenda_numeral_system")
 	if err != nil {
-		return &ValueEnum[Meeting_AgendaNumeralSystem]{err: err}
+		return &ValueEnum[dstypes.Meeting_AgendaNumeralSystem]{err: err}
 	}
 
-	return &ValueEnum[Meeting_AgendaNumeralSystem]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_AgendaNumeralSystem]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AgendaShowInternalItemsOnProjector(meetingID int) *ValueBool {
@@ -2829,13 +2535,13 @@ func (r *Fetch) Meeting_ApplauseTimeout(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_ApplauseType(meetingID int) *ValueEnum[Meeting_ApplauseType] {
+func (r *Fetch) Meeting_ApplauseType(meetingID int) *ValueEnum[dstypes.Meeting_ApplauseType] {
 	key, err := dskey.FromParts("meeting", meetingID, "applause_type")
 	if err != nil {
-		return &ValueEnum[Meeting_ApplauseType]{err: err}
+		return &ValueEnum[dstypes.Meeting_ApplauseType]{err: err}
 	}
 
-	return &ValueEnum[Meeting_ApplauseType]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_ApplauseType]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AssignmentCandidateIDs(meetingID int) *ValueIntSlice {
@@ -2874,22 +2580,22 @@ func (r *Fetch) Meeting_AssignmentPollBallotPaperNumber(meetingID int) *ValueInt
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *ValueEnum[BallotPaperSelection] {
+func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *ValueEnum[dstypes.BallotPaperSelection] {
 	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_ballot_paper_selection")
 	if err != nil {
-		return &ValueEnum[BallotPaperSelection]{err: err}
+		return &ValueEnum[dstypes.BallotPaperSelection]{err: err}
 	}
 
-	return &ValueEnum[BallotPaperSelection]{fetch: r, key: key}
+	return &ValueEnum[dstypes.BallotPaperSelection]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueEnum[PollBackends] {
+func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueEnum[dstypes.PollBackends] {
 	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_backend")
 	if err != nil {
-		return &ValueEnum[PollBackends]{err: err}
+		return &ValueEnum[dstypes.PollBackends]{err: err}
 	}
 
-	return &ValueEnum[PollBackends]{fetch: r, key: key}
+	return &ValueEnum[dstypes.PollBackends]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
@@ -2910,13 +2616,13 @@ func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueString 
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[OnehundredPercentBases] {
+func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[dstypes.OnehundredPercentBases] {
 	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[OnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.OnehundredPercentBases]{err: err}
 	}
 
-	return &ValueEnum[OnehundredPercentBases]{fetch: r, key: key}
+	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultType(meetingID int) *ValueString {
@@ -3252,13 +2958,13 @@ func (r *Fetch) Meeting_EndTime(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_ExportCsvEncoding(meetingID int) *ValueEnum[Meeting_ExportCsvEncoding] {
+func (r *Fetch) Meeting_ExportCsvEncoding(meetingID int) *ValueEnum[dstypes.Meeting_ExportCsvEncoding] {
 	key, err := dskey.FromParts("meeting", meetingID, "export_csv_encoding")
 	if err != nil {
-		return &ValueEnum[Meeting_ExportCsvEncoding]{err: err}
+		return &ValueEnum[dstypes.Meeting_ExportCsvEncoding]{err: err}
 	}
 
-	return &ValueEnum[Meeting_ExportCsvEncoding]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_ExportCsvEncoding]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ExportCsvSeparator(meetingID int) *ValueString {
@@ -3324,22 +3030,22 @@ func (r *Fetch) Meeting_ExportPdfPageMarginTop(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueEnum[Meeting_ExportPdfPagenumberAlignment] {
+func (r *Fetch) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueEnum[dstypes.Meeting_ExportPdfPagenumberAlignment] {
 	key, err := dskey.FromParts("meeting", meetingID, "export_pdf_pagenumber_alignment")
 	if err != nil {
-		return &ValueEnum[Meeting_ExportPdfPagenumberAlignment]{err: err}
+		return &ValueEnum[dstypes.Meeting_ExportPdfPagenumberAlignment]{err: err}
 	}
 
-	return &ValueEnum[Meeting_ExportPdfPagenumberAlignment]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_ExportPdfPagenumberAlignment]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueEnum[Meeting_ExportPdfPagesize] {
+func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueEnum[dstypes.Meeting_ExportPdfPagesize] {
 	key, err := dskey.FromParts("meeting", meetingID, "export_pdf_pagesize")
 	if err != nil {
-		return &ValueEnum[Meeting_ExportPdfPagesize]{err: err}
+		return &ValueEnum[dstypes.Meeting_ExportPdfPagesize]{err: err}
 	}
 
-	return &ValueEnum[Meeting_ExportPdfPagesize]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_ExportPdfPagesize]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
@@ -3504,13 +3210,13 @@ func (r *Fetch) Meeting_JitsiRoomPassword(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_Language(meetingID int) *ValueEnum[Languages] {
+func (r *Fetch) Meeting_Language(meetingID int) *ValueEnum[dstypes.Languages] {
 	key, err := dskey.FromParts("meeting", meetingID, "language")
 	if err != nil {
-		return &ValueEnum[Languages]{err: err}
+		return &ValueEnum[dstypes.Languages]{err: err}
 	}
 
-	return &ValueEnum[Languages]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Languages]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersAllowMultipleSpeakers(meetingID int) *ValueBool {
@@ -3891,22 +3597,22 @@ func (r *Fetch) Meeting_MotionPollBallotPaperNumber(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueEnum[BallotPaperSelection] {
+func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueEnum[dstypes.BallotPaperSelection] {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_ballot_paper_selection")
 	if err != nil {
-		return &ValueEnum[BallotPaperSelection]{err: err}
+		return &ValueEnum[dstypes.BallotPaperSelection]{err: err}
 	}
 
-	return &ValueEnum[BallotPaperSelection]{fetch: r, key: key}
+	return &ValueEnum[dstypes.BallotPaperSelection]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueEnum[PollBackends] {
+func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueEnum[dstypes.PollBackends] {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_backend")
 	if err != nil {
-		return &ValueEnum[PollBackends]{err: err}
+		return &ValueEnum[dstypes.PollBackends]{err: err}
 	}
 
-	return &ValueEnum[PollBackends]{fetch: r, key: key}
+	return &ValueEnum[dstypes.PollBackends]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
@@ -3927,13 +3633,13 @@ func (r *Fetch) Meeting_MotionPollDefaultMethod(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[OnehundredPercentBases] {
+func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[dstypes.OnehundredPercentBases] {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[OnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.OnehundredPercentBases]{err: err}
 	}
 
-	return &ValueEnum[OnehundredPercentBases]{fetch: r, key: key}
+	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
@@ -3954,13 +3660,13 @@ func (r *Fetch) Meeting_MotionPollProjectionMaxColumns(meetingID int) *ValueInt 
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueEnum[Meeting_MotionPollProjectionNameOrderFirst] {
+func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst] {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_name_order_first")
 	if err != nil {
-		return &ValueEnum[Meeting_MotionPollProjectionNameOrderFirst]{err: err}
+		return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{err: err}
 	}
 
-	return &ValueEnum[Meeting_MotionPollProjectionNameOrderFirst]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
@@ -4053,13 +3759,13 @@ func (r *Fetch) Meeting_MotionsAmendmentsPrefix(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueEnum[Meeting_MotionsAmendmentsTextMode] {
+func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueEnum[dstypes.Meeting_MotionsAmendmentsTextMode] {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_amendments_text_mode")
 	if err != nil {
-		return &ValueEnum[Meeting_MotionsAmendmentsTextMode]{err: err}
+		return &ValueEnum[dstypes.Meeting_MotionsAmendmentsTextMode]{err: err}
 	}
 
-	return &ValueEnum[Meeting_MotionsAmendmentsTextMode]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_MotionsAmendmentsTextMode]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
@@ -4089,22 +3795,22 @@ func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueI
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Meeting_MotionsDefaultLineNumbering(meetingID int) *ValueEnum[Meeting_MotionsDefaultLineNumbering] {
+func (r *Fetch) Meeting_MotionsDefaultLineNumbering(meetingID int) *ValueEnum[dstypes.Meeting_MotionsDefaultLineNumbering] {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_default_line_numbering")
 	if err != nil {
-		return &ValueEnum[Meeting_MotionsDefaultLineNumbering]{err: err}
+		return &ValueEnum[dstypes.Meeting_MotionsDefaultLineNumbering]{err: err}
 	}
 
-	return &ValueEnum[Meeting_MotionsDefaultLineNumbering]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_MotionsDefaultLineNumbering]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionsDefaultSorting(meetingID int) *ValueEnum[Meeting_MotionsDefaultSorting] {
+func (r *Fetch) Meeting_MotionsDefaultSorting(meetingID int) *ValueEnum[dstypes.Meeting_MotionsDefaultSorting] {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_default_sorting")
 	if err != nil {
-		return &ValueEnum[Meeting_MotionsDefaultSorting]{err: err}
+		return &ValueEnum[dstypes.Meeting_MotionsDefaultSorting]{err: err}
 	}
 
-	return &ValueEnum[Meeting_MotionsDefaultSorting]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_MotionsDefaultSorting]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsDefaultWorkflowID(meetingID int) *ValueInt {
@@ -4260,13 +3966,13 @@ func (r *Fetch) Meeting_MotionsNumberMinDigits(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionsNumberType(meetingID int) *ValueEnum[Meeting_MotionsNumberType] {
+func (r *Fetch) Meeting_MotionsNumberType(meetingID int) *ValueEnum[dstypes.Meeting_MotionsNumberType] {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_number_type")
 	if err != nil {
-		return &ValueEnum[Meeting_MotionsNumberType]{err: err}
+		return &ValueEnum[dstypes.Meeting_MotionsNumberType]{err: err}
 	}
 
-	return &ValueEnum[Meeting_MotionsNumberType]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_MotionsNumberType]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsNumberWithBlank(meetingID int) *ValueBool {
@@ -4305,13 +4011,13 @@ func (r *Fetch) Meeting_MotionsReasonRequired(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionsRecommendationTextMode(meetingID int) *ValueEnum[Meeting_MotionsRecommendationTextMode] {
+func (r *Fetch) Meeting_MotionsRecommendationTextMode(meetingID int) *ValueEnum[dstypes.Meeting_MotionsRecommendationTextMode] {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_recommendation_text_mode")
 	if err != nil {
-		return &ValueEnum[Meeting_MotionsRecommendationTextMode]{err: err}
+		return &ValueEnum[dstypes.Meeting_MotionsRecommendationTextMode]{err: err}
 	}
 
-	return &ValueEnum[Meeting_MotionsRecommendationTextMode]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_MotionsRecommendationTextMode]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsRecommendationsBy(meetingID int) *ValueString {
@@ -4404,13 +4110,13 @@ func (r *Fetch) Meeting_PollBallotPaperNumber(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueEnum[BallotPaperSelection] {
+func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueEnum[dstypes.BallotPaperSelection] {
 	key, err := dskey.FromParts("meeting", meetingID, "poll_ballot_paper_selection")
 	if err != nil {
-		return &ValueEnum[BallotPaperSelection]{err: err}
+		return &ValueEnum[dstypes.BallotPaperSelection]{err: err}
 	}
 
-	return &ValueEnum[BallotPaperSelection]{fetch: r, key: key}
+	return &ValueEnum[dstypes.BallotPaperSelection]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_PollCandidateIDs(meetingID int) *ValueIntSlice {
@@ -4449,13 +4155,13 @@ func (r *Fetch) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollDefaultBackend(meetingID int) *ValueEnum[PollBackends] {
+func (r *Fetch) Meeting_PollDefaultBackend(meetingID int) *ValueEnum[dstypes.PollBackends] {
 	key, err := dskey.FromParts("meeting", meetingID, "poll_default_backend")
 	if err != nil {
-		return &ValueEnum[PollBackends]{err: err}
+		return &ValueEnum[dstypes.PollBackends]{err: err}
 	}
 
-	return &ValueEnum[PollBackends]{fetch: r, key: key}
+	return &ValueEnum[dstypes.PollBackends]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_PollDefaultGroupIDs(meetingID int) *ValueIntSlice {
@@ -4485,13 +4191,13 @@ func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[OnehundredPercentBases] {
+func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[dstypes.OnehundredPercentBases] {
 	key, err := dskey.FromParts("meeting", meetingID, "poll_default_onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[OnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.OnehundredPercentBases]{err: err}
 	}
 
-	return &ValueEnum[OnehundredPercentBases]{fetch: r, key: key}
+	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_PollDefaultType(meetingID int) *ValueString {
@@ -4818,13 +4524,13 @@ func (r *Fetch) Meeting_UsersPdfWelcometitle(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_UsersPdfWlanEncryption(meetingID int) *ValueEnum[Meeting_UsersPdfWlanEncryption] {
+func (r *Fetch) Meeting_UsersPdfWlanEncryption(meetingID int) *ValueEnum[dstypes.Meeting_UsersPdfWlanEncryption] {
 	key, err := dskey.FromParts("meeting", meetingID, "users_pdf_wlan_encryption")
 	if err != nil {
-		return &ValueEnum[Meeting_UsersPdfWlanEncryption]{err: err}
+		return &ValueEnum[dstypes.Meeting_UsersPdfWlanEncryption]{err: err}
 	}
 
-	return &ValueEnum[Meeting_UsersPdfWlanEncryption]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Meeting_UsersPdfWlanEncryption]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_UsersPdfWlanPassword(meetingID int) *ValueString {
@@ -5133,13 +4839,13 @@ func (r *Fetch) MotionChangeRecommendation_Text(motionChangeRecommendationID int
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionChangeRecommendation_Type(motionChangeRecommendationID int) *ValueEnum[MotionChangeRecommendation_Type] {
+func (r *Fetch) MotionChangeRecommendation_Type(motionChangeRecommendationID int) *ValueEnum[dstypes.MotionChangeRecommendation_Type] {
 	key, err := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "type")
 	if err != nil {
-		return &ValueEnum[MotionChangeRecommendation_Type]{err: err}
+		return &ValueEnum[dstypes.MotionChangeRecommendation_Type]{err: err}
 	}
 
-	return &ValueEnum[MotionChangeRecommendation_Type]{fetch: r, key: key}
+	return &ValueEnum[dstypes.MotionChangeRecommendation_Type]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCommentSection_CommentIDs(motionCommentSectionID int) *ValueIntSlice {
@@ -5358,13 +5064,13 @@ func (r *Fetch) MotionState_AllowSupport(motionStateID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionState_CssClass(motionStateID int) *ValueEnum[MotionState_CssClass] {
+func (r *Fetch) MotionState_CssClass(motionStateID int) *ValueEnum[dstypes.MotionState_CssClass] {
 	key, err := dskey.FromParts("motion_state", motionStateID, "css_class")
 	if err != nil {
-		return &ValueEnum[MotionState_CssClass]{err: err}
+		return &ValueEnum[dstypes.MotionState_CssClass]{err: err}
 	}
 
-	return &ValueEnum[MotionState_CssClass]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.MotionState_CssClass]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMaybeInt {
@@ -5403,13 +5109,13 @@ func (r *Fetch) MotionState_MeetingID(motionStateID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionState_MergeAmendmentIntoFinal(motionStateID int) *ValueEnum[MotionState_MergeAmendmentIntoFinal] {
+func (r *Fetch) MotionState_MergeAmendmentIntoFinal(motionStateID int) *ValueEnum[dstypes.MotionState_MergeAmendmentIntoFinal] {
 	key, err := dskey.FromParts("motion_state", motionStateID, "merge_amendment_into_final")
 	if err != nil {
-		return &ValueEnum[MotionState_MergeAmendmentIntoFinal]{err: err}
+		return &ValueEnum[dstypes.MotionState_MergeAmendmentIntoFinal]{err: err}
 	}
 
-	return &ValueEnum[MotionState_MergeAmendmentIntoFinal]{fetch: r, key: key}
+	return &ValueEnum[dstypes.MotionState_MergeAmendmentIntoFinal]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_MotionIDs(motionStateID int) *ValueIntSlice {
@@ -6429,13 +6135,13 @@ func (r *Fetch) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueEnum[Languages] {
+func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueEnum[dstypes.Languages] {
 	key, err := dskey.FromParts("organization", organizationID, "default_language")
 	if err != nil {
-		return &ValueEnum[Languages]{err: err}
+		return &ValueEnum[dstypes.Languages]{err: err}
 	}
 
-	return &ValueEnum[Languages]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Languages]{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_Description(organizationID int) *ValueString {
@@ -6942,13 +6648,13 @@ func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Poll_Backend(pollID int) *ValueEnum[PollBackends] {
+func (r *Fetch) Poll_Backend(pollID int) *ValueEnum[dstypes.PollBackends] {
 	key, err := dskey.FromParts("poll", pollID, "backend")
 	if err != nil {
-		return &ValueEnum[PollBackends]{err: err}
+		return &ValueEnum[dstypes.PollBackends]{err: err}
 	}
 
-	return &ValueEnum[PollBackends]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.PollBackends]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
@@ -7095,13 +6801,13 @@ func (r *Fetch) Poll_MinVotesAmount(pollID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_OnehundredPercentBase(pollID int) *ValueEnum[OnehundredPercentBases] {
+func (r *Fetch) Poll_OnehundredPercentBase(pollID int) *ValueEnum[dstypes.OnehundredPercentBases] {
 	key, err := dskey.FromParts("poll", pollID, "onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[OnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.OnehundredPercentBases]{err: err}
 	}
 
-	return &ValueEnum[OnehundredPercentBases]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Poll_OptionIDs(pollID int) *ValueIntSlice {
@@ -7113,13 +6819,13 @@ func (r *Fetch) Poll_OptionIDs(pollID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_Pollmethod(pollID int) *ValueEnum[Poll_Pollmethod] {
+func (r *Fetch) Poll_Pollmethod(pollID int) *ValueEnum[dstypes.Poll_Pollmethod] {
 	key, err := dskey.FromParts("poll", pollID, "pollmethod")
 	if err != nil {
-		return &ValueEnum[Poll_Pollmethod]{err: err}
+		return &ValueEnum[dstypes.Poll_Pollmethod]{err: err}
 	}
 
-	return &ValueEnum[Poll_Pollmethod]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Poll_Pollmethod]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Poll_ProjectionIDs(pollID int) *ValueIntSlice {
@@ -7140,13 +6846,13 @@ func (r *Fetch) Poll_SequentialNumber(pollID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Poll_State(pollID int) *ValueEnum[Poll_State] {
+func (r *Fetch) Poll_State(pollID int) *ValueEnum[dstypes.Poll_State] {
 	key, err := dskey.FromParts("poll", pollID, "state")
 	if err != nil {
-		return &ValueEnum[Poll_State]{err: err}
+		return &ValueEnum[dstypes.Poll_State]{err: err}
 	}
 
-	return &ValueEnum[Poll_State]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Poll_State]{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_Title(pollID int) *ValueString {
@@ -7158,13 +6864,13 @@ func (r *Fetch) Poll_Title(pollID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Poll_Type(pollID int) *ValueEnum[Poll_Type] {
+func (r *Fetch) Poll_Type(pollID int) *ValueEnum[dstypes.Poll_Type] {
 	key, err := dskey.FromParts("poll", pollID, "type")
 	if err != nil {
-		return &ValueEnum[Poll_Type]{err: err}
+		return &ValueEnum[dstypes.Poll_Type]{err: err}
 	}
 
-	return &ValueEnum[Poll_Type]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Poll_Type]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
@@ -7896,13 +7602,13 @@ func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueEnum[Speaker_SpeechState] {
+func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueEnum[dstypes.Speaker_SpeechState] {
 	key, err := dskey.FromParts("speaker", speakerID, "speech_state")
 	if err != nil {
-		return &ValueEnum[Speaker_SpeechState]{err: err}
+		return &ValueEnum[dstypes.Speaker_SpeechState]{err: err}
 	}
 
-	return &ValueEnum[Speaker_SpeechState]{fetch: r, key: key}
+	return &ValueEnum[dstypes.Speaker_SpeechState]{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_StructureLevelListOfSpeakersID(speakerID int) *ValueMaybeInt {
@@ -8895,13 +8601,13 @@ func (r *Fetch) User_OrganizationID(userID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) User_OrganizationManagementLevel(userID int) *ValueEnum[User_OrganizationManagementLevel] {
+func (r *Fetch) User_OrganizationManagementLevel(userID int) *ValueEnum[dstypes.User_OrganizationManagementLevel] {
 	key, err := dskey.FromParts("user", userID, "organization_management_level")
 	if err != nil {
-		return &ValueEnum[User_OrganizationManagementLevel]{err: err}
+		return &ValueEnum[dstypes.User_OrganizationManagementLevel]{err: err}
 	}
 
-	return &ValueEnum[User_OrganizationManagementLevel]{fetch: r, key: key}
+	return &ValueEnum[dstypes.User_OrganizationManagementLevel]{fetch: r, key: key}
 }
 
 func (r *Fetch) User_Password(userID int) *ValueString {

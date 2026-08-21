@@ -318,7 +318,7 @@ func valueType(collection string, fieldName string, field *collection.Field) str
 	}
 
 	if field.Enum.GlobalName != "" || len(field.Enum.Values) != 0 {
-		return fmt.Sprintf("dsfetch.%s", enumName(collection, fieldName, field))
+		return fmt.Sprintf("dstypes.%s", enumName(collection, fieldName, field))
 	}
 
 	switch collectionType {
