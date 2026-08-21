@@ -12,6 +12,9 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 )
 
+// TPermission is a type of all valid permission strings.
+type TPermission string
+
 // Permission holds the information which permissions and groups a user has.
 type Permission struct {
 	admin       bool
