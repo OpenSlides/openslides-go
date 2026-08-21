@@ -1320,10 +1320,9 @@ type HistoryEntryModelUnion interface {
 	isHistoryEntryModelUnion()
 }
 
-func (*Assignment) isHistoryEntryModelUnion()  {}
-func (*MeetingUser) isHistoryEntryModelUnion() {}
-func (*Motion) isHistoryEntryModelUnion()      {}
-func (*User) isHistoryEntryModelUnion()        {}
+func (*Assignment) isHistoryEntryModelUnion() {}
+func (*Motion) isHistoryEntryModelUnion()     {}
+func (*User) isHistoryEntryModelUnion()       {}
 
 type historyEntryModelUnionBuilder struct {
 	builder[historyEntryModelUnionBuilder, *historyEntryModelUnionBuilder, HistoryEntryModelUnion, HistoryEntryModelUnion]
@@ -1351,14 +1350,6 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) HistoryEntryMode
 			builder: builder[assignmentBuilder, *assignmentBuilder, Assignment, *Assignment]{
 				fetch: ds,
 				conv:  func(p *Assignment) Assignment { return *p },
-			},
-		}
-		return builder.lazy(ds, intId)
-	case "meeting_user":
-		builder := &meetingUserBuilder{
-			builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser, *MeetingUser]{
-				fetch: ds,
-				conv:  func(p *MeetingUser) MeetingUser { return *p },
 			},
 		}
 		return builder.lazy(ds, intId)
@@ -4058,7 +4049,6 @@ type MeetingUser struct {
 	Comment                       string
 	EntitledAtPollIDs             []int
 	GroupIDs                      []int
-	HistoryEntryIDs               []int
 	ID                            int
 	LockedOut                     bool
 	MeetingID                     int
@@ -4081,7 +4071,6 @@ type MeetingUser struct {
 	ChatMessageList               []ChatMessage
 	EntitledAtPollList            []Poll
 	GroupList                     []Group
-	HistoryEntryList              []HistoryEntry
 	Meeting                       *Meeting
 	MotionEditorList              []MotionEditor
 	MotionSubmitterList           []MotionSubmitter
@@ -4111,7 +4100,6 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, idI any) *MeetingUser {
 	ds.MeetingUser_Comment(id).Lazy(&c.Comment)
 	ds.MeetingUser_EntitledAtPollIDs(id).Lazy(&c.EntitledAtPollIDs)
 	ds.MeetingUser_GroupIDs(id).Lazy(&c.GroupIDs)
-	ds.MeetingUser_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.MeetingUser_ID(id).Lazy(&c.ID)
 	ds.MeetingUser_LockedOut(id).Lazy(&c.LockedOut)
 	ds.MeetingUser_MeetingID(id).Lazy(&c.MeetingID)
@@ -4198,19 +4186,6 @@ func (b *meetingUserBuilder) GroupList() *groupBuilder {
 			relField: "GroupList",
 			many:     true,
 			conv:     func(p *Group) Group { return *p },
-		},
-	}
-}
-
-func (b *meetingUserBuilder) HistoryEntryList() *historyEntryBuilder {
-	return &historyEntryBuilder{
-		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "HistoryEntryIDs",
-			relField: "HistoryEntryList",
-			many:     true,
-			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }

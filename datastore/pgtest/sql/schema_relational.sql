@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '256e3138edb0215813247a3d5e45bfa0'
+-- MODELS_YML_CHECKSUM = 'cb293bf1581a46c5a6160bc08fe7f369'
 
 
 -- ENUM definitions
@@ -1065,13 +1065,11 @@ CREATE TABLE history_entry_t (
     model_id varchar(100),
     model_id_assignment_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_assignment_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'assignment' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    model_id_meeting_user_id integer
-        CONSTRAINT generated_always_as_history_entry_model_id_meeting_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'meeting_user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     model_id_motion_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'motion' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     model_id_user_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','meeting_user','motion','user')),
+    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','user')),
     position_id integer
         CONSTRAINT required_history_entry_position_id NOT NULL,
     meeting_id integer
@@ -3227,8 +3225,7 @@ CREATE VIEW "meeting_user" AS SELECT *,
 (select array_agg(n.poll_id ORDER BY n.poll_id) from nm_meeting_user_entitled_at_poll_ids_poll_t n where n.meeting_user_id = m.id) as entitled_at_poll_ids,
 (select array_agg(c.id ORDER BY c.id) from chat_message_t c where c.meeting_user_id = m.id) as chat_message_ids,
 (select array_agg(n.group_id ORDER BY n.group_id) from nm_group_meeting_user_ids_meeting_user_t n where n.meeting_user_id = m.id) as group_ids,
-(select array_agg(n.structure_level_id ORDER BY n.structure_level_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.meeting_user_id = m.id) as structure_level_ids,
-(select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_meeting_user_id = m.id) as history_entry_ids
+(select array_agg(n.structure_level_id ORDER BY n.structure_level_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.meeting_user_id = m.id) as structure_level_ids
 FROM meeting_user_t m;
 
 
@@ -3540,8 +3537,6 @@ CREATE INDEX idx_group_t_meeting_id ON group_t (meeting_id);
 
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_assignment_id_assignment_t_id FOREIGN KEY(model_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_model_id_assignment_id ON history_entry_t (model_id_assignment_id);
-ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_meeting_user_id_meeting_user_t_id FOREIGN KEY(model_id_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_history_entry_t_model_id_meeting_user_id ON history_entry_t (model_id_meeting_user_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_motion_id_motion_t_id FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_model_id_motion_id ON history_entry_t (model_id_motion_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_user_id_user_t_id FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
@@ -4706,9 +4701,6 @@ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_e
 
 CREATE TRIGGER tr_log_assignment_model_id_assignment_id AFTER INSERT OR UPDATE OF model_id_assignment_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','model_id_assignment_id','history_entry_ids');
-
-CREATE TRIGGER tr_log_meeting_user_model_id_meeting_user_id AFTER INSERT OR UPDATE OF model_id_meeting_user_id OR DELETE ON history_entry_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','model_id_meeting_user_id','history_entry_ids');
 
 CREATE TRIGGER tr_log_motion_model_id_motion_id AFTER INSERT OR UPDATE OF model_id_motion_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','model_id_motion_id','history_entry_ids');
@@ -6068,7 +6060,7 @@ SQL nt:nt => group/poll_ids:-> poll/entitled_group_ids
 SQL nt:nt => group/used_in_meeting_poll_default_ids:-> meeting_poll_default/group_ids
 FIELD 1rR:nt => group/meeting_id:-> meeting/group_ids
 
-FIELD 1Gr:nt,nt,nt,nt => history_entry/model_id:-> assignment/history_entry_ids,meeting_user/history_entry_ids,motion/history_entry_ids,user/history_entry_ids
+FIELD 1Gr:nt,nt,nt => history_entry/model_id:-> assignment/history_entry_ids,motion/history_entry_ids,user/history_entry_ids
 FIELD 1rR:nt => history_entry/position_id:-> history_position/entry_ids
 FIELD 1r:nt => history_entry/meeting_id:-> meeting/relevant_history_entry_ids
 
@@ -6223,7 +6215,6 @@ SQL nt:nt => meeting_user/entitled_at_poll_ids:-> poll/entitled_meeting_user_ids
 SQL nt:1r => meeting_user/chat_message_ids:-> chat_message/meeting_user_id
 SQL ntR:nt => meeting_user/group_ids:-> group/meeting_user_ids
 SQL nt:nt => meeting_user/structure_level_ids:-> structure_level/meeting_user_ids
-SQL nt:1Gr => meeting_user/history_entry_ids:-> history_entry/model_id
 
 FIELD 1r:nt => motion/lead_motion_id:-> motion/amendment_ids
 SQL nt:1r => motion/amendment_ids:-> motion/lead_motion_id

@@ -2345,15 +2345,6 @@ func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MeetingUser_HistoryEntryIDs(meetingUserID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting_user", meetingUserID, "history_entry_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "id")
 	if err != nil {
