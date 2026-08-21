@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'cb293bf1581a46c5a6160bc08fe7f369'
+-- MODELS_YML_CHECKSUM = '0fc4611ca931b9872d70b2764ee7007c'
 
 
 -- ENUM definitions
@@ -1067,9 +1067,11 @@ CREATE TABLE history_entry_t (
         CONSTRAINT generated_always_as_history_entry_model_id_assignment_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'assignment' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     model_id_motion_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'motion' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    model_id_topic_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_topic_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'topic' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     model_id_user_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','user')),
+    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','topic','user')),
     position_id integer
         CONSTRAINT required_history_entry_position_id NOT NULL,
     meeting_id integer
@@ -3438,7 +3440,8 @@ CREATE VIEW "topic" AS SELECT *,
 (select a.id from agenda_item_t a where a.content_object_id_topic_id = t.id) as agenda_item_id,
 (select l.id from list_of_speakers_t l where l.content_object_id_topic_id = t.id) as list_of_speakers_id,
 (select array_agg(p.id ORDER BY p.id) from poll_t p where p.content_object_id_topic_id = t.id) as poll_ids,
-(select array_agg(p.id ORDER BY p.id) from projection_t p where p.content_object_id_topic_id = t.id) as projection_ids
+(select array_agg(p.id ORDER BY p.id) from projection_t p where p.content_object_id_topic_id = t.id) as projection_ids,
+(select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_topic_id = t.id) as history_entry_ids
 FROM topic_t t;
 
 
@@ -3539,6 +3542,8 @@ ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_assignmen
 CREATE INDEX idx_history_entry_t_model_id_assignment_id ON history_entry_t (model_id_assignment_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_motion_id_motion_t_id FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_model_id_motion_id ON history_entry_t (model_id_motion_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_topic_id_topic_t_id FOREIGN KEY(model_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_topic_id ON history_entry_t (model_id_topic_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_user_id_user_t_id FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_model_id_user_id ON history_entry_t (model_id_user_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_position_id_history_position_t_id FOREIGN KEY(position_id) REFERENCES history_position_t(id) INITIALLY DEFERRED;
@@ -4704,6 +4709,9 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','model_id
 
 CREATE TRIGGER tr_log_motion_model_id_motion_id AFTER INSERT OR UPDATE OF model_id_motion_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','model_id_motion_id','history_entry_ids');
+
+CREATE TRIGGER tr_log_topic_model_id_topic_id AFTER INSERT OR UPDATE OF model_id_topic_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','model_id_topic_id','history_entry_ids');
 
 CREATE TRIGGER tr_log_user_model_id_user_id AFTER INSERT OR UPDATE OF model_id_user_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_id','history_entry_ids');
@@ -6060,7 +6068,7 @@ SQL nt:nt => group/poll_ids:-> poll/entitled_group_ids
 SQL nt:nt => group/used_in_meeting_poll_default_ids:-> meeting_poll_default/group_ids
 FIELD 1rR:nt => group/meeting_id:-> meeting/group_ids
 
-FIELD 1Gr:nt,nt,nt => history_entry/model_id:-> assignment/history_entry_ids,motion/history_entry_ids,user/history_entry_ids
+FIELD 1Gr:nt,nt,nt,nt => history_entry/model_id:-> assignment/history_entry_ids,motion/history_entry_ids,topic/history_entry_ids,user/history_entry_ids
 FIELD 1rR:nt => history_entry/position_id:-> history_position/entry_ids
 FIELD 1r:nt => history_entry/meeting_id:-> meeting/relevant_history_entry_ids
 
@@ -6422,6 +6430,7 @@ SQL 1tR:1GrR => topic/list_of_speakers_id:-> list_of_speakers/content_object_id
 SQL nt:1GrR => topic/poll_ids:-> poll/content_object_id
 SQL nt:1GrR => topic/projection_ids:-> projection/content_object_id
 FIELD 1rR:nt => topic/meeting_id:-> meeting/topic_ids
+SQL nt:1Gr => topic/history_entry_ids:-> history_entry/model_id
 
 FIELD 1r:nr => user/gender_id:-> gender/user_ids
 SQL nt:nt => user/is_present_in_meeting_ids:-> meeting/present_user_ids

@@ -1322,6 +1322,7 @@ type HistoryEntryModelUnion interface {
 
 func (*Assignment) isHistoryEntryModelUnion() {}
 func (*Motion) isHistoryEntryModelUnion()     {}
+func (*Topic) isHistoryEntryModelUnion()      {}
 func (*User) isHistoryEntryModelUnion()       {}
 
 type historyEntryModelUnionBuilder struct {
@@ -1358,6 +1359,14 @@ func (b *historyEntryModelUnionBuilder) lazy(ds *Fetch, id any) HistoryEntryMode
 			builder: builder[motionBuilder, *motionBuilder, Motion, *Motion]{
 				fetch: ds,
 				conv:  func(p *Motion) Motion { return *p },
+			},
+		}
+		return builder.lazy(ds, intId)
+	case "topic":
+		builder := &topicBuilder{
+			builder: builder[topicBuilder, *topicBuilder, Topic, *Topic]{
+				fetch: ds,
+				conv:  func(p *Topic) Topic { return *p },
 			},
 		}
 		return builder.lazy(ds, intId)
@@ -8711,6 +8720,7 @@ func (r *Fetch) Theme(ids ...int) *themeBuilder {
 type Topic struct {
 	AgendaItemID                   int
 	AttachmentMeetingMediafileIDs  []int
+	HistoryEntryIDs                []int
 	ID                             int
 	ListOfSpeakersID               int
 	MeetingID                      int
@@ -8721,6 +8731,7 @@ type Topic struct {
 	Title                          string
 	AgendaItem                     *AgendaItem
 	AttachmentMeetingMediafileList []MeetingMediafile
+	HistoryEntryList               []HistoryEntry
 	ListOfSpeakers                 *ListOfSpeakers
 	Meeting                        *Meeting
 	PollList                       []Poll
@@ -8736,6 +8747,7 @@ func (b *topicBuilder) lazy(ds *Fetch, idI any) *Topic {
 	c := Topic{}
 	ds.Topic_AgendaItemID(id).Lazy(&c.AgendaItemID)
 	ds.Topic_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
+	ds.Topic_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.Topic_ID(id).Lazy(&c.ID)
 	ds.Topic_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
 	ds.Topic_MeetingID(id).Lazy(&c.MeetingID)
@@ -8773,6 +8785,19 @@ func (b *topicBuilder) AttachmentMeetingMediafileList() *meetingMediafileBuilder
 			relField: "AttachmentMeetingMediafileList",
 			many:     true,
 			conv:     func(p *MeetingMediafile) MeetingMediafile { return *p },
+		},
+	}
+}
+
+func (b *topicBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry, *HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
+			many:     true,
+			conv:     func(p *HistoryEntry) HistoryEntry { return *p },
 		},
 	}
 }

@@ -938,6 +938,7 @@ var collectionFields = [...]collectionField{
 	{"topic", "A"},
 	{"topic", "agenda_item_id"},
 	{"topic", "attachment_meeting_mediafile_ids"},
+	{"topic", "history_entry_ids"},
 	{"topic", "id"},
 	{"topic", "list_of_speakers_id"},
 	{"topic", "meeting_id"},
@@ -2860,102 +2861,104 @@ func collectionFieldToID(cf string) int {
 		return 934
 	case "topic/attachment_meeting_mediafile_ids":
 		return 935
-	case "topic/id":
+	case "topic/history_entry_ids":
 		return 936
-	case "topic/list_of_speakers_id":
+	case "topic/id":
 		return 937
-	case "topic/meeting_id":
+	case "topic/list_of_speakers_id":
 		return 938
-	case "topic/poll_ids":
+	case "topic/meeting_id":
 		return 939
-	case "topic/projection_ids":
+	case "topic/poll_ids":
 		return 940
-	case "topic/sequential_number":
+	case "topic/projection_ids":
 		return 941
-	case "topic/text":
+	case "topic/sequential_number":
 		return 942
-	case "topic/title":
+	case "topic/text":
 		return 943
-	case "user/A":
+	case "topic/title":
 		return 944
-	case "user/B":
+	case "user/A":
 		return 945
-	case "user/D":
+	case "user/B":
 		return 946
-	case "user/E":
+	case "user/D":
 		return 947
-	case "user/F":
+	case "user/E":
 		return 948
-	case "user/G":
+	case "user/F":
 		return 949
-	case "user/H":
+	case "user/G":
 		return 950
-	case "user/acting_ballot_ids":
+	case "user/H":
 		return 951
-	case "user/can_change_own_password":
+	case "user/acting_ballot_ids":
 		return 952
-	case "user/committee_ids":
+	case "user/can_change_own_password":
 		return 953
-	case "user/committee_management_ids":
+	case "user/committee_ids":
 		return 954
-	case "user/default_password":
+	case "user/committee_management_ids":
 		return 955
-	case "user/default_vote_weight":
+	case "user/default_password":
 		return 956
-	case "user/email":
+	case "user/default_vote_weight":
 		return 957
-	case "user/external":
+	case "user/email":
 		return 958
-	case "user/first_name":
+	case "user/external":
 		return 959
-	case "user/gender_id":
+	case "user/first_name":
 		return 960
-	case "user/history_entry_ids":
+	case "user/gender_id":
 		return 961
-	case "user/history_position_ids":
+	case "user/history_entry_ids":
 		return 962
-	case "user/home_committee_id":
+	case "user/history_position_ids":
 		return 963
-	case "user/id":
+	case "user/home_committee_id":
 		return 964
-	case "user/is_active":
+	case "user/id":
 		return 965
-	case "user/is_demo_user":
+	case "user/is_active":
 		return 966
-	case "user/is_physical_person":
+	case "user/is_demo_user":
 		return 967
-	case "user/is_present_in_meeting_ids":
+	case "user/is_physical_person":
 		return 968
-	case "user/last_email_sent":
+	case "user/is_present_in_meeting_ids":
 		return 969
-	case "user/last_login":
+	case "user/last_email_sent":
 		return 970
-	case "user/last_name":
+	case "user/last_login":
 		return 971
-	case "user/meeting_ids":
+	case "user/last_name":
 		return 972
-	case "user/meeting_user_ids":
+	case "user/meeting_ids":
 		return 973
-	case "user/member_number":
+	case "user/meeting_user_ids":
 		return 974
-	case "user/organization_id":
+	case "user/member_number":
 		return 975
-	case "user/organization_management_level":
+	case "user/organization_id":
 		return 976
-	case "user/password":
+	case "user/organization_management_level":
 		return 977
-	case "user/poll_option_ids":
+	case "user/password":
 		return 978
-	case "user/pronoun":
+	case "user/poll_option_ids":
 		return 979
-	case "user/represented_ballot_ids":
+	case "user/pronoun":
 		return 980
-	case "user/saml_id":
+	case "user/represented_ballot_ids":
 		return 981
-	case "user/title":
+	case "user/saml_id":
 		return 982
-	case "user/username":
+	case "user/title":
 		return 983
+	case "user/username":
+		return 984
 	default:
 		return -1
 	}

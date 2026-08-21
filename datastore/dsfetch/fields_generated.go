@@ -8465,6 +8465,15 @@ func (r *Fetch) Topic_AttachmentMeetingMediafileIDs(topicID int) *ValueIntSlice 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Topic_HistoryEntryIDs(topicID int) *ValueIntSlice {
+	key, err := dskey.FromParts("topic", topicID, "history_entry_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Topic_ID(topicID int) *ValueInt {
 	key, err := dskey.FromParts("topic", topicID, "id")
 	if err != nil {
