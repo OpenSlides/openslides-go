@@ -109,10 +109,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	//}
 
 	// Get OS User Id linked to IDP ID
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.OSUserID))
+	ctx, _ = context.WithCancel(a.AuthenticatedContext(ctx, p.OSUserID))
 
 	go func() {
-		defer cancelCtx()
+		// defer cancelCtx()
 
 		/*
 			var sessionIDs []string
