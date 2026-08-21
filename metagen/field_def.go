@@ -138,14 +138,17 @@ var RelationFields = map[string]string{
 	"poll_ballot/poll_ballot_user_id":                                        "poll_ballot_user/poll_ballot_id",
 	"poll_ballot/poll_id":                                                    "poll/ballot_ids",
 	"poll_ballot_user/acting_meeting_user_id":                                "meeting_user/acting_ballot_ids",
+	"poll_ballot_user/acting_user_id":                                        "user/acting_ballot_ids",
 	"poll_ballot_user/poll_ballot_id":                                        "poll_ballot/poll_ballot_user_id",
 	"poll_ballot_user/poll_id":                                               "poll/ballot_user_ids",
 	"poll_ballot_user/represented_meeting_user_id":                           "meeting_user/represented_ballot_ids",
+	"poll_ballot_user/represented_user_id":                                   "user/represented_ballot_ids",
 	"poll_config_approval/poll_id":                                           "poll/config_id",
 	"poll_config_rating_approval/poll_id":                                    "poll/config_id",
 	"poll_config_rating_score/poll_id":                                       "poll/config_id",
 	"poll_config_selection/poll_id":                                          "poll/config_id",
 	"poll_config_stv_scottish/poll_id":                                       "poll/config_id",
+	"poll_option/meeting_user_id":                                            "meeting_user/poll_option_ids",
 	"poll_option/poll_id":                                                    "poll/option_ids",
 	"poll_option/user_id":                                                    "user/poll_option_ids",
 	"projection/current_projector_id":                                        "projector/current_projection_ids",
@@ -303,6 +306,7 @@ var RelationListFields = map[string]string{
 	"meeting_user/motion_supporter_ids":                        "motion_supporter/meeting_user_id",
 	"meeting_user/motion_working_group_speaker_ids":            "motion_working_group_speaker/meeting_user_id",
 	"meeting_user/personal_note_ids":                           "personal_note/meeting_user_id",
+	"meeting_user/poll_option_ids":                             "poll_option/meeting_user_id",
 	"meeting_user/represented_ballot_ids":                      "poll_ballot_user/represented_meeting_user_id",
 	"meeting_user/speaker_ids":                                 "speaker/meeting_user_id",
 	"meeting_user/structure_level_ids":                         "structure_level/meeting_user_ids",
@@ -356,7 +360,6 @@ var RelationListFields = map[string]string{
 	"poll/ballot_user_ids":                                     "poll_ballot_user/poll_id",
 	"poll/entitled_group_ids":                                  "group/poll_ids",
 	"poll/entitled_meeting_user_ids":                           "meeting_user/entitled_at_poll_ids",
-	"poll/history_entry_ids":                                   "history_entry/model_id",
 	"poll/option_ids":                                          "poll_option/poll_id",
 	"poll/projection_ids":                                      "projection/content_object_id",
 	"projector/current_projection_ids":                         "projection/current_projector_id",
@@ -370,6 +373,7 @@ var RelationListFields = map[string]string{
 	"topic/attachment_meeting_mediafile_ids":                   "meeting_mediafile/attachment_ids",
 	"topic/poll_ids":                                           "poll/content_object_id",
 	"topic/projection_ids":                                     "projection/content_object_id",
+	"user/acting_ballot_ids":                                   "poll_ballot_user/acting_user_id",
 	"user/committee_ids":                                       "committee/user_ids",
 	"user/committee_management_ids":                            "committee/manager_ids",
 	"user/history_entry_ids":                                   "history_entry/model_id",
@@ -378,13 +382,14 @@ var RelationListFields = map[string]string{
 	"user/meeting_ids":                                         "meeting/user_ids",
 	"user/meeting_user_ids":                                    "meeting_user/user_id",
 	"user/poll_option_ids":                                     "poll_option/user_id",
+	"user/represented_ballot_ids":                              "poll_ballot_user/represented_user_id",
 }
 
 // GenericRelationFields is a map from are all (single) generic relation fields
 // to the fields, there relate to.
 var GenericRelationFields = map[string]map[string]string{
 	"agenda_item/content_object_id":      {"assignment": "agenda_item_id", "motion": "agenda_item_id", "motion_block": "agenda_item_id", "topic": "agenda_item_id"},
-	"history_entry/model_id":             {"assignment": "history_entry_ids", "meeting_user": "history_entry_ids", "motion": "history_entry_ids", "poll": "history_entry_ids", "user": "history_entry_ids"},
+	"history_entry/model_id":             {"assignment": "history_entry_ids", "meeting_user": "history_entry_ids", "motion": "history_entry_ids", "user": "history_entry_ids"},
 	"list_of_speakers/content_object_id": {"assignment": "list_of_speakers_id", "meeting_mediafile": "list_of_speakers_id", "motion": "list_of_speakers_id", "motion_block": "list_of_speakers_id", "topic": "list_of_speakers_id"},
 	"mediafile/owner_id":                 {"meeting": "mediafile_ids", "organization": "mediafile_ids"},
 	"personal_note/content_object_id":    {"motion": "personal_note_ids"},
@@ -521,13 +526,12 @@ var RestrictionModes = map[string]string{
 	"group/write_comment_section_ids":                    "A",
 
 	// history_entry
-	"history_entry/entries":                "A",
-	"history_entry/id":                     "A",
-	"history_entry/meeting_id":             "A",
-	"history_entry/model_id":               "A",
-	"history_entry/original_model_id":      "A",
-	"history_entry/position_id":            "A",
-	"history_entry/structured_information": "A",
+	"history_entry/entries":           "A",
+	"history_entry/id":                "A",
+	"history_entry/meeting_id":        "A",
+	"history_entry/model_id":          "A",
+	"history_entry/original_model_id": "A",
+	"history_entry/position_id":       "A",
 
 	// history_position
 	"history_position/entry_ids":        "A",
@@ -856,6 +860,7 @@ var RestrictionModes = map[string]string{
 	"meeting_user/motion_supporter_ids":             "A",
 	"meeting_user/motion_working_group_speaker_ids": "A",
 	"meeting_user/number":                           "A",
+	"meeting_user/poll_option_ids":                  "A",
 	"meeting_user/represented_ballot_ids":           "A",
 	"meeting_user/speaker_ids":                      "A",
 	"meeting_user/structure_level_ids":              "A",
@@ -1119,7 +1124,6 @@ var RestrictionModes = map[string]string{
 	"poll/content_object_id":         "A",
 	"poll/entitled_group_ids":        "A",
 	"poll/entitled_meeting_user_ids": "A",
-	"poll/history_entry_ids":         "A",
 	"poll/id":                        "A",
 	"poll/live_voting_enabled":       "A",
 	"poll/meeting_id":                "A",
@@ -1142,10 +1146,12 @@ var RestrictionModes = map[string]string{
 
 	// poll_ballot_user
 	"poll_ballot_user/acting_meeting_user_id":      "A",
+	"poll_ballot_user/acting_user_id":              "A",
 	"poll_ballot_user/id":                          "A",
 	"poll_ballot_user/poll_ballot_id":              "A",
 	"poll_ballot_user/poll_id":                     "A",
 	"poll_ballot_user/represented_meeting_user_id": "A",
+	"poll_ballot_user/represented_user_id":         "A",
 
 	// poll_config_approval
 	"poll_config_approval/allow_abstain":           "A",
@@ -1192,11 +1198,12 @@ var RestrictionModes = map[string]string{
 	"poll_config_stv_scottish/posts":   "A",
 
 	// poll_option
-	"poll_option/id":      "A",
-	"poll_option/poll_id": "A",
-	"poll_option/text":    "A",
-	"poll_option/user_id": "A",
-	"poll_option/weight":  "A",
+	"poll_option/id":              "A",
+	"poll_option/meeting_user_id": "A",
+	"poll_option/poll_id":         "A",
+	"poll_option/text":            "A",
+	"poll_option/user_id":         "A",
+	"poll_option/weight":          "A",
 
 	// projection
 	"projection/content_object_id":    "A",
@@ -1380,6 +1387,7 @@ var RestrictionModes = map[string]string{
 	"topic/title":                            "A",
 
 	// user
+	"user/acting_ballot_ids":             "A",
 	"user/default_vote_weight":           "A",
 	"user/first_name":                    "A",
 	"user/gender_id":                     "A",
@@ -1394,6 +1402,7 @@ var RestrictionModes = map[string]string{
 	"user/meeting_user_ids":              "A",
 	"user/poll_option_ids":               "A",
 	"user/pronoun":                       "A",
+	"user/represented_ballot_ids":        "A",
 	"user/title":                         "A",
 	"user/email":                         "B",
 	"user/is_active":                     "B",
