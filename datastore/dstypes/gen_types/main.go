@@ -16,6 +16,7 @@ import (
 	"text/template"
 
 	"github.com/OpenSlides/openslides-go/collection"
+	"github.com/OpenSlides/openslides-go/datastore/dsgen"
 )
 
 //go:embed header.go.tmpl
@@ -84,10 +85,10 @@ func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error
 	for colName, col := range fromYML {
 		for fieldName, field := range col.Fields {
 			if len(field.Enum.Values) > 0 || field.Enum.GlobalName != "" {
-				name := enumName(colName, fieldName, field)
+				name := dsgen.EnumName(colName, fieldName, field)
 				enumMap[name] = []enumField{}
 				for _, enumValue := range field.Enum.Values {
-					goEnumName := goName(strings.ReplaceAll(enumValue, "-", "_"))
+					goEnumName := dsgen.GoName(strings.ReplaceAll(enumValue, "-", "_"))
 					if goEnumName == "" {
 						goEnumName = "empty"
 					}
@@ -133,30 +134,4 @@ func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error
 	}
 
 	return nil
-}
-
-func goName(name string) string {
-	if name == "id" {
-		return "ID"
-	}
-
-	name = strings.ReplaceAll(name, "_$", "")
-
-	parts := strings.Split(name, "_")
-	for i := range parts {
-		parts[i] = strings.Title(parts[i])
-	}
-	name = strings.Join(parts, "")
-
-	name = strings.ReplaceAll(name, "Id", "ID")
-	return name
-}
-
-func enumName(collection string, fieldName string, field *collection.Field) string {
-	enumName := goName(collection) + "_" + goName(fieldName)
-	if field.Enum.GlobalName != "" {
-		enumName = goName(field.Enum.GlobalName)
-	}
-
-	return enumName
 }
