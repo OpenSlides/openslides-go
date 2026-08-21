@@ -165,4 +165,9 @@ projector_t
 VALUES (1, 1, 'main', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 SELECT nextval('projector_t_id_seq');
 
+
+INSERT INTO
+version (migration_index, migration_state)
+VALUES (100, 'finalized');
+
 COMMIT;
