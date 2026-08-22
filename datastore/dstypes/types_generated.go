@@ -40,15 +40,6 @@ const (
 	Assignment_PhaseFinished Assignment_Phase = "finished"
 )
 
-// BallotPaperSelection represents the BallotPaperSelection enum type.
-type BallotPaperSelection string
-
-const (
-	BallotPaperSelectionNUMBEROFDELEGATES       BallotPaperSelection = "NUMBER_OF_DELEGATES"
-	BallotPaperSelectionNUMBEROFALLPARTICIPANTS BallotPaperSelection = "NUMBER_OF_ALL_PARTICIPANTS"
-	BallotPaperSelectionCUSTOMNUMBER            BallotPaperSelection = "CUSTOM_NUMBER"
-)
-
 // ImportPreview_Name represents the ImportPreview_Name enum type.
 type ImportPreview_Name string
 
@@ -142,14 +133,6 @@ const (
 	Meeting_ExportPdfPagesizeA5 Meeting_ExportPdfPagesize = "A5"
 )
 
-// Meeting_MotionPollProjectionNameOrderFirst represents the Meeting_MotionPollProjectionNameOrderFirst enum type.
-type Meeting_MotionPollProjectionNameOrderFirst string
-
-const (
-	Meeting_MotionPollProjectionNameOrderFirstFirstName Meeting_MotionPollProjectionNameOrderFirst = "first_name"
-	Meeting_MotionPollProjectionNameOrderFirstLastName  Meeting_MotionPollProjectionNameOrderFirst = "last_name"
-)
-
 // Meeting_MotionsAmendmentsTextMode represents the Meeting_MotionsAmendmentsTextMode enum type.
 type Meeting_MotionsAmendmentsTextMode string
 
@@ -195,6 +178,14 @@ const (
 	Meeting_MotionsRecommendationTextModeAgreed   Meeting_MotionsRecommendationTextMode = "agreed"
 )
 
+// Meeting_PollProjectionNameOrderFirst represents the Meeting_PollProjectionNameOrderFirst enum type.
+type Meeting_PollProjectionNameOrderFirst string
+
+const (
+	Meeting_PollProjectionNameOrderFirstFirstName Meeting_PollProjectionNameOrderFirst = "first_name"
+	Meeting_PollProjectionNameOrderFirstLastName  Meeting_PollProjectionNameOrderFirst = "last_name"
+)
+
 // Meeting_UsersPdfWlanEncryption represents the Meeting_UsersPdfWlanEncryption enum type.
 type Meeting_UsersPdfWlanEncryption string
 
@@ -235,17 +226,25 @@ const (
 	MotionState_MergeAmendmentIntoFinalDoMerge    MotionState_MergeAmendmentIntoFinal = "do_merge"
 )
 
-// OnehundredPercentBases represents the OnehundredPercentBases enum type.
-type OnehundredPercentBases string
+// PollMethods represents the PollMethods enum type.
+type PollMethods string
 
 const (
-	OnehundredPercentBasesNoGeneral       OnehundredPercentBases = "no_general"
-	OnehundredPercentBasesYesNo           OnehundredPercentBases = "yes_no"
-	OnehundredPercentBasesValid           OnehundredPercentBases = "valid"
-	OnehundredPercentBasesCast            OnehundredPercentBases = "cast"
-	OnehundredPercentBasesEntitled        OnehundredPercentBases = "entitled"
-	OnehundredPercentBasesEntitledPresent OnehundredPercentBases = "entitled_present"
-	OnehundredPercentBasesDisabled        OnehundredPercentBases = "disabled"
+	PollMethodsApproval       PollMethods = "approval"
+	PollMethodsSelection      PollMethods = "selection"
+	PollMethodsRatingScore    PollMethods = "rating_score"
+	PollMethodsRatingApproval PollMethods = "rating_approval"
+	PollMethodsStvScottish    PollMethods = "stv_scottish"
+)
+
+// PollVisibility represents the PollVisibility enum type.
+type PollVisibility string
+
+const (
+	PollVisibilityManually PollVisibility = "manually"
+	PollVisibilityNamed    PollVisibility = "named"
+	PollVisibilityOpen     PollVisibility = "open"
+	PollVisibilitySecret   PollVisibility = "secret"
 )
 
 // Poll_State represents the Poll_State enum type.
@@ -255,16 +254,6 @@ const (
 	Poll_StateCreated  Poll_State = "created"
 	Poll_StateStarted  Poll_State = "started"
 	Poll_StateFinished Poll_State = "finished"
-)
-
-// Poll_Visibility represents the Poll_Visibility enum type.
-type Poll_Visibility string
-
-const (
-	Poll_VisibilityManually Poll_Visibility = "manually"
-	Poll_VisibilityNamed    Poll_Visibility = "named"
-	Poll_VisibilityOpen     Poll_Visibility = "open"
-	Poll_VisibilitySecret   Poll_Visibility = "secret"
 )
 
 // RatingApprovalOnehundredPercentBases represents the RatingApprovalOnehundredPercentBases enum type.
@@ -289,6 +278,15 @@ const (
 	RatingScoreOnehundredPercentBasesEntitled        RatingScoreOnehundredPercentBases = "entitled"
 	RatingScoreOnehundredPercentBasesEntitledPresent RatingScoreOnehundredPercentBases = "entitled_present"
 	RatingScoreOnehundredPercentBasesDisabled        RatingScoreOnehundredPercentBases = "disabled"
+)
+
+// RequiredMajority represents the RequiredMajority enum type.
+type RequiredMajority string
+
+const (
+	RequiredMajorityNoMajority       RequiredMajority = "no_majority"
+	RequiredMajorityTwoThirdMajority RequiredMajority = "two_third_majority"
+	RequiredMajorityAbsoluteMajority RequiredMajority = "absolute_majority"
 )
 
 // SelectionOnehundredPercentBases represents the SelectionOnehundredPercentBases enum type.
