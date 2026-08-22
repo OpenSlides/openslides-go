@@ -9,7 +9,6 @@ import (
 
 type builderWrapperI interface {
 	SetIds(ids []int)
-	SetFqids(fqids []string)
 	setChild(builder builderWrapperI) builderWrapperI
 	getParent() builderWrapperI
 	getIDField() string
@@ -20,14 +19,13 @@ type builderWrapperI interface {
 	lazyAll(ctx context.Context) []any
 }
 
-type builderPtr[T any, M any, R any] interface {
-	lazy(ds *Fetch, id any) R
+type builderPtr[T any, M any] interface {
+	lazy(ds *Fetch, id int) *M
 	*T
 }
 
-type builder[C any, T builderPtr[C, M, R], M any, R any] struct {
+type builder[C any, T builderPtr[C, M], M any] struct {
 	ids      []int
-	fqids    []string
 	value    T
 	parent   builderWrapperI
 	children map[string]builderWrapperI
@@ -35,19 +33,13 @@ type builder[C any, T builderPtr[C, M, R], M any, R any] struct {
 	relField string
 	many     bool
 	fetch    *Fetch
-
-	conv func(R) M
 }
 
-func (b *builder[C, T, M, R]) SetIds(ids []int) {
+func (b *builder[C, T, M]) SetIds(ids []int) {
 	b.ids = ids
 }
 
-func (b *builder[C, T, M, R]) SetFqids(fqids []string) {
-	b.fqids = fqids
-}
-
-func (b *builder[C, T, M, R]) setChild(builder builderWrapperI) builderWrapperI {
+func (b *builder[C, T, M]) setChild(builder builderWrapperI) builderWrapperI {
 	if b.children == nil {
 		b.children = map[string]builderWrapperI{}
 	}
@@ -59,36 +51,31 @@ func (b *builder[C, T, M, R]) setChild(builder builderWrapperI) builderWrapperI 
 	return b.children[builder.getRelField()]
 }
 
-func (b *builder[C, T, M, R]) getRelField() string {
+func (b *builder[C, T, M]) getRelField() string {
 	return b.relField
 }
 
-func (b *builder[C, T, M, R]) getIDField() string {
+func (b *builder[C, T, M]) getIDField() string {
 	return b.idField
 }
 
-func (b *builder[C, T, M, R]) getMany() bool {
+func (b *builder[C, T, M]) getMany() bool {
 	return b.many
 }
 
-func (b *builder[C, T, M, R]) getParent() builderWrapperI {
+func (b *builder[C, T, M]) getParent() builderWrapperI {
 	return b.parent
 }
 
-func (b *builder[C, T, M, R]) lazyAll(ctx context.Context) []any {
+func (b *builder[C, T, M]) lazyAll(ctx context.Context) []any {
 	items := []any{}
 	for _, id := range b.ids {
 		items = append(items, b.value.lazy(b.fetch, id))
 	}
-
-	for _, id := range b.fqids {
-		items = append(items, b.value.lazy(b.fetch, id))
-	}
-
 	return items
 }
 
-func (b *builder[C, T, M, R]) Preload(rel builderWrapperI) {
+func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 	children := []builderWrapperI{}
 	for rel != b && rel != nil && rel.getRelField() != "" {
 		children = append([]builderWrapperI{rel}, children...)
@@ -102,15 +89,12 @@ func (b *builder[C, T, M, R]) Preload(rel builderWrapperI) {
 	}
 }
 
-func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) ([]int, []string) {
+func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) []int {
 	ids := []int{}
-	fqids := []string{}
 	if many {
 		ids = idField.Interface().([]int)
 	} else if idField.Kind() == reflect.Int {
 		ids = append(ids, int(idField.Int()))
-	} else if idField.Kind() == reflect.String {
-		fqids = append(fqids, string(idField.String()))
 	} else if idField.Type().Name() == "Maybe[int]" {
 		relMaybeType := targetField.Type().Elem()
 		relValue := reflect.New(relMaybeType)
@@ -123,7 +107,7 @@ func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool)
 		}
 	}
 
-	return ids, fqids
+	return ids
 }
 
 func setRelationField(idField reflect.Value, targetField reflect.Value, item any, many bool) {
@@ -143,16 +127,15 @@ type childInfo struct {
 	targetField reflect.Value
 }
 
-func (b *builder[C, T, M, R]) prepareChildren(ctx context.Context, parents ...any) []childInfo {
+func (b *builder[C, T, M]) prepareChildren(ctx context.Context, parents ...any) []childInfo {
 	childInfos := make([]childInfo, 0, len(b.children))
 	for _, parent := range parents {
 		rParent := reflect.ValueOf(parent).Elem()
 		for _, child := range b.children {
 			idField := rParent.FieldByName(child.getIDField())
 			targetField := rParent.FieldByName(child.getRelField())
-			ids, fqids := getRelationIds(idField, targetField, child.getMany())
+			ids := getRelationIds(idField, targetField, child.getMany())
 			child.SetIds(ids)
-			child.SetFqids(fqids)
 			items := child.lazyAll(ctx)
 			childInfos = append(childInfos, childInfo{
 				child:       child,
@@ -213,7 +196,7 @@ func bulkLoadChildren(ctx context.Context, fetch *Fetch, requests []loadRequest)
 	return nil
 }
 
-func (b *builder[C, T, M, R]) loadChildren(ctx context.Context, parents ...any) error {
+func (b *builder[C, T, M]) loadChildren(ctx context.Context, parents ...any) error {
 	if b.children == nil {
 		return nil
 	}
@@ -224,7 +207,7 @@ func (b *builder[C, T, M, R]) loadChildren(ctx context.Context, parents ...any) 
 	}})
 }
 
-func (b *builder[C, T, M, R]) First(ctx context.Context) (M, error) {
+func (b *builder[C, T, M]) First(ctx context.Context) (M, error) {
 	c := b.value.lazy(b.fetch, b.ids[0])
 
 	if err := b.fetch.Execute(ctx); err != nil {
@@ -237,11 +220,11 @@ func (b *builder[C, T, M, R]) First(ctx context.Context) (M, error) {
 		return zero, err
 	}
 
-	return b.conv(c), nil
+	return *c, nil
 }
 
-func (b *builder[C, T, M, R]) Get(ctx context.Context) ([]M, error) {
-	itemPtrs := make([]R, len(b.ids))
+func (b *builder[C, T, M]) Get(ctx context.Context) ([]M, error) {
+	itemPtrs := make([]*M, len(b.ids))
 	for i, id := range b.ids {
 		itemPtrs[i] = b.value.lazy(b.fetch, id)
 	}
@@ -255,7 +238,7 @@ func (b *builder[C, T, M, R]) Get(ctx context.Context) ([]M, error) {
 		if err := b.loadChildren(ctx, el); err != nil {
 			return []M{}, err
 		}
-		items[i] = b.conv(el)
+		items[i] = *el
 	}
 
 	return items, nil

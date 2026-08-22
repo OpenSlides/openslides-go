@@ -2,21 +2,29 @@ package throttle
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
 // Throttler limits how often enqueued functions are executed.
 type Throttler struct {
-	in chan func()
+	nextFn func()
+	cond   *sync.Cond
 }
 
 // New returns a new Throttler
 func New(ctx context.Context, period time.Duration) *Throttler {
 	t := &Throttler{
-		in: make(chan func(), 1),
+		cond:   sync.NewCond(&sync.Mutex{}),
+		nextFn: nil,
 	}
 
 	go t.loop(ctx, period)
+	go (func() {
+		<-ctx.Done()
+		t.cond.Signal()
+	})()
+
 	return t
 }
 
@@ -24,49 +32,26 @@ func New(ctx context.Context, period time.Duration) *Throttler {
 // (waiting for the throttle window to expire), it is replaced by fn so that
 // only the most recently enqueued function runs.
 func (tt *Throttler) Run(fn func()) {
-	for {
-		select {
-		case tt.in <- fn:
-			return
-		default:
-		}
-
-		select {
-		case <-tt.in:
-		default:
-		}
-	}
+	tt.cond.L.Lock()
+	tt.nextFn = fn
+	tt.cond.L.Unlock()
+	tt.cond.Signal()
 }
 
 func (tt *Throttler) loop(ctx context.Context, period time.Duration) {
-	var timer *time.Timer
-	var timerC <-chan time.Time
-	var nextFn func()
-
 	for {
-		select {
-		case <-ctx.Done():
-			if timer != nil {
-				timer.Stop()
+		tt.cond.L.Lock()
+		for tt.nextFn == nil {
+			tt.cond.Wait()
+			if ctx.Err() != nil {
+				return
 			}
-			return
-
-		case fn := <-tt.in:
-			if timer == nil {
-				timer = time.NewTimer(0)
-			} else {
-				timer.Reset(period)
-			}
-
-			nextFn = fn
-			if timerC == nil {
-				timerC = timer.C
-			}
-
-		case <-timerC:
-			nextFn()
-			nextFn = nil
-			timerC = nil
 		}
+
+		tt.nextFn()
+		tt.nextFn = nil
+
+		tt.cond.L.Unlock()
+		time.Sleep(period)
 	}
 }
