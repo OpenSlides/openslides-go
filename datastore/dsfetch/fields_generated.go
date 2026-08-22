@@ -1554,13 +1554,40 @@ func (r *Fetch) Group_ReadCommentSectionIDs(groupID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_UsedInMeetingPollDefaultIDs(groupID int) *ValueIntSlice {
-	key, err := dskey.FromParts("group", groupID, "used_in_meeting_poll_default_ids")
+func (r *Fetch) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("group", groupID, "used_as_assignment_poll_default_id")
 	if err != nil {
-		return &ValueIntSlice{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key}
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("group", groupID, "used_as_motion_poll_default_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("group", groupID, "used_as_poll_default_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("group", groupID, "used_as_topic_poll_default_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_Weight(groupID int) *ValueInt {
@@ -2166,123 +2193,6 @@ func (r *Fetch) MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(meetingMediafile
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingPollDefault_AllowAbstain(meetingPollDefaultID int) *ValueBool {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "allow_abstain")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_AllowNota(meetingPollDefaultID int) *ValueBool {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "allow_nota")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_DisplayChart(meetingPollDefaultID int) *ValueString {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "display_chart")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_GroupIDs(meetingPollDefaultID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "group_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_ID(meetingPollDefaultID int) *ValueInt {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) MeetingPollDefault_MeetingID(meetingPollDefaultID int) *ValueInt {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "meeting_id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) MeetingPollDefault_OnehundredPercentBase(meetingPollDefaultID int) *ValueString {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "onehundred_percent_base")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_SortResultByVotes(meetingPollDefaultID int) *ValueBool {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "sort_result_by_votes")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_StrikeOut(meetingPollDefaultID int) *ValueBool {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "strike_out")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_UsedAsAssignmentPollConfigInMeetingID(meetingPollDefaultID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "used_as_assignment_poll_config_in_meeting_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_UsedAsMotionPollConfigInMeetingID(meetingPollDefaultID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "used_as_motion_poll_config_in_meeting_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_UsedAsTopicPollConfigInMeetingID(meetingPollDefaultID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "used_as_topic_poll_config_in_meeting_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingPollDefault_Visibility(meetingPollDefaultID int) *ValueEnum[dstypes.PollVisibility] {
-	key, err := dskey.FromParts("meeting_poll_default", meetingPollDefaultID, "visibility")
-	if err != nil {
-		return &ValueEnum[dstypes.PollVisibility]{err: err}
-	}
-
-	return &ValueEnum[dstypes.PollVisibility]{fetch: r, key: key}
-}
-
 func (r *Fetch) MeetingUser_AboutMe(meetingUserID int) *ValueString {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "about_me")
 	if err != nil {
@@ -2326,15 +2236,6 @@ func (r *Fetch) MeetingUser_Comment(meetingUserID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) MeetingUser_EntitledAtPollIDs(meetingUserID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting_user", meetingUserID, "entitled_at_poll_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
@@ -2429,6 +2330,15 @@ func (r *Fetch) MeetingUser_PersonalNoteIDs(meetingUserID int) *ValueIntSlice {
 
 func (r *Fetch) MeetingUser_PollOptionIDs(meetingUserID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "poll_option_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingUser_PollVotedIDs(meetingUserID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_user", meetingUserID, "poll_voted_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -2697,22 +2607,76 @@ func (r *Fetch) Meeting_AssignmentPollAddCandidatesToListOfSpeakers(meetingID in
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AssignmentPollConfigID(meetingID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_config_id")
+func (r *Fetch) Meeting_AssignmentPollBallotPaperNumber(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_ballot_paper_number")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueInt{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueEnum[dstypes.PollMethods] {
-	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_method")
+func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *ValueEnum[dstypes.BallotPaperSelection] {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_ballot_paper_selection")
 	if err != nil {
-		return &ValueEnum[dstypes.PollMethods]{err: err}
+		return &ValueEnum[dstypes.BallotPaperSelection]{err: err}
 	}
 
-	return &ValueEnum[dstypes.PollMethods]{fetch: r, key: key}
+	return &ValueEnum[dstypes.BallotPaperSelection]{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_group_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_method")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[dstypes.OnehundredPercentBases] {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_onehundred_percent_base")
+	if err != nil {
+		return &ValueEnum[dstypes.OnehundredPercentBases]{err: err}
+	}
+
+	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AssignmentPollDefaultType(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_default_type")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AssignmentPollEnableMaxVotesPerOption(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_enable_max_votes_per_option")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AssignmentPollSortPollResultByVotes(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "assignment_poll_sort_poll_result_by_votes")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AssignmentsExportPreamble(meetingID int) *ValueString {
@@ -2976,8 +2940,8 @@ func (r *Fetch) Meeting_DefaultProjectorMotionPollIDs(meetingID int) *ValueIntSl
 	return &ValueIntSlice{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting", meetingID, "default_projector_topic_ids")
+func (r *Fetch) Meeting_DefaultProjectorPollIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "default_projector_poll_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -2985,8 +2949,8 @@ func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Meeting_DefaultProjectorTopicPollIDs(meetingID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting", meetingID, "default_projector_topic_poll_ids")
+func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "default_projector_topic_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -3651,13 +3615,76 @@ func (r *Fetch) Meeting_MotionIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_MotionPollConfigID(meetingID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_config_id")
+func (r *Fetch) Meeting_MotionPollBallotPaperNumber(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_ballot_paper_number")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueInt{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueEnum[dstypes.BallotPaperSelection] {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_ballot_paper_selection")
+	if err != nil {
+		return &ValueEnum[dstypes.BallotPaperSelection]{err: err}
+	}
+
+	return &ValueEnum[dstypes.BallotPaperSelection]{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultAllowAbstain(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_allow_abstain")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_group_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[dstypes.ApprovalOnehundredPercentBases] {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_onehundred_percent_base")
+	if err != nil {
+		return &ValueEnum[dstypes.ApprovalOnehundredPercentBases]{err: err}
+	}
+
+	return &ValueEnum[dstypes.ApprovalOnehundredPercentBases]{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_type")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollProjectionMaxColumns(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_max_columns")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst] {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_name_order_first")
+	if err != nil {
+		return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{err: err}
+	}
+
+	return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
@@ -4083,6 +4110,24 @@ func (r *Fetch) Meeting_PointOfOrderCategoryIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_PollBallotPaperNumber(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_ballot_paper_number")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueEnum[dstypes.BallotPaperSelection] {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_ballot_paper_selection")
+	if err != nil {
+		return &ValueEnum[dstypes.BallotPaperSelection]{err: err}
+	}
+
+	return &ValueEnum[dstypes.BallotPaperSelection]{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("meeting", meetingID, "poll_countdown_id")
 	if err != nil {
@@ -4119,8 +4164,8 @@ func (r *Fetch) Meeting_PollDefaultAllowVoteSplit(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollDefaultIDs(meetingID int) *ValueIntSlice {
-	key, err := dskey.FromParts("meeting", meetingID, "poll_default_ids")
+func (r *Fetch) Meeting_PollDefaultGroupIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_default_group_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -4137,31 +4182,31 @@ func (r *Fetch) Meeting_PollDefaultLiveVotingEnabled(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollDefaultRequiredMajority(meetingID int) *ValueEnum[dstypes.RequiredMajority] {
-	key, err := dskey.FromParts("meeting", meetingID, "poll_default_required_majority")
+func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_default_method")
 	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
+		return &ValueString{err: err}
 	}
 
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollEnableMaxVotesPerOption(meetingID int) *ValueBool {
-	key, err := dskey.FromParts("meeting", meetingID, "poll_enable_max_votes_per_option")
+func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueEnum[dstypes.SelectionOnehundredPercentBases] {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_default_onehundred_percent_base")
 	if err != nil {
-		return &ValueBool{err: err}
+		return &ValueEnum[dstypes.SelectionOnehundredPercentBases]{err: err}
 	}
 
-	return &ValueBool{fetch: r, key: key}
+	return &ValueEnum[dstypes.SelectionOnehundredPercentBases]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollEnableMaxYesVotes(meetingID int) *ValueBool {
-	key, err := dskey.FromParts("meeting", meetingID, "poll_enable_max_yes_votes")
+func (r *Fetch) Meeting_PollDefaultType(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_default_type")
 	if err != nil {
-		return &ValueBool{err: err}
+		return &ValueString{err: err}
 	}
 
-	return &ValueBool{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_PollIDs(meetingID int) *ValueIntSlice {
@@ -4173,22 +4218,13 @@ func (r *Fetch) Meeting_PollIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollProjectionMaxColumns(meetingID int) *ValueInt {
-	key, err := dskey.FromParts("meeting", meetingID, "poll_projection_max_columns")
+func (r *Fetch) Meeting_PollSortPollResultByVotes(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "poll_sort_poll_result_by_votes")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueBool{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) Meeting_PollProjectionNameOrderFirst(meetingID int) *ValueEnum[dstypes.Meeting_PollProjectionNameOrderFirst] {
-	key, err := dskey.FromParts("meeting", meetingID, "poll_projection_name_order_first")
-	if err != nil {
-		return &ValueEnum[dstypes.Meeting_PollProjectionNameOrderFirst]{err: err}
-	}
-
-	return &ValueEnum[dstypes.Meeting_PollProjectionNameOrderFirst]{fetch: r, key: key, required: true}
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_PresentUserIDs(meetingID int) *ValueIntSlice {
@@ -4344,22 +4380,13 @@ func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_TopicPollConfigID(meetingID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("meeting", meetingID, "topic_poll_config_id")
+func (r *Fetch) Meeting_TopicPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "topic_poll_default_group_ids")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) Meeting_TopicPollDefaultMethod(meetingID int) *ValueEnum[dstypes.PollMethods] {
-	key, err := dskey.FromParts("meeting", meetingID, "topic_poll_default_method")
-	if err != nil {
-		return &ValueEnum[dstypes.PollMethods]{err: err}
-	}
-
-	return &ValueEnum[dstypes.PollMethods]{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_UserIDs(meetingID int) *ValueIntSlice {
@@ -6432,67 +6459,13 @@ func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueStri
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollBallotUser_ActingMeetingUserID(pollBallotUserID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "acting_meeting_user_id")
+func (r *Fetch) PollBallot_ActingMeetingUserID(pollBallotID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("poll_ballot", pollBallotID, "acting_meeting_user_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
 
 	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) PollBallotUser_ActingUserID(pollBallotUserID int) *ValueInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "acting_user_id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) PollBallotUser_ID(pollBallotUserID int) *ValueInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) PollBallotUser_PollBallotID(pollBallotUserID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "poll_ballot_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) PollBallotUser_PollID(pollBallotUserID int) *ValueInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "poll_id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) PollBallotUser_RepresentedMeetingUserID(pollBallotUserID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "represented_meeting_user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
-func (r *Fetch) PollBallotUser_RepresentedUserID(pollBallotUserID int) *ValueInt {
-	key, err := dskey.FromParts("poll_ballot_user", pollBallotUserID, "represented_user_id")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollBallot_ID(pollBallotID int) *ValueInt {
@@ -6504,15 +6477,6 @@ func (r *Fetch) PollBallot_ID(pollBallotID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollBallot_PollBallotUserID(pollBallotID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("poll_ballot", pollBallotID, "poll_ballot_user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
 func (r *Fetch) PollBallot_PollID(pollBallotID int) *ValueInt {
 	key, err := dskey.FromParts("poll_ballot", pollBallotID, "poll_id")
 	if err != nil {
@@ -6520,6 +6484,15 @@ func (r *Fetch) PollBallot_PollID(pollBallotID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) PollBallot_RepresentedMeetingUserID(pollBallotID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("poll_ballot", pollBallotID, "represented_meeting_user_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollBallot_Split(pollBallotID int) *ValueBool {
@@ -6585,15 +6558,6 @@ func (r *Fetch) PollConfigApproval_PollID(pollConfigApprovalID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollConfigApproval_RequiredMajority(pollConfigApprovalID int) *ValueEnum[dstypes.RequiredMajority] {
-	key, err := dskey.FromParts("poll_config_approval", pollConfigApprovalID, "required_majority")
-	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
-	}
-
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
-}
-
 func (r *Fetch) PollConfigRatingApproval_AllowAbstain(pollConfigRatingApprovalID int) *ValueBool {
 	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "allow_abstain")
 	if err != nil {
@@ -6655,15 +6619,6 @@ func (r *Fetch) PollConfigRatingApproval_PollID(pollConfigRatingApprovalID int) 
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) PollConfigRatingApproval_RequiredMajority(pollConfigRatingApprovalID int) *ValueEnum[dstypes.RequiredMajority] {
-	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "required_majority")
-	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
-	}
-
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
 }
 
 func (r *Fetch) PollConfigRatingScore_ID(pollConfigRatingScoreID int) *ValueInt {
@@ -6738,15 +6693,6 @@ func (r *Fetch) PollConfigRatingScore_PollID(pollConfigRatingScoreID int) *Value
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollConfigRatingScore_RequiredMajority(pollConfigRatingScoreID int) *ValueEnum[dstypes.RequiredMajority] {
-	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "required_majority")
-	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
-	}
-
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
-}
-
 func (r *Fetch) PollConfigSelection_AllowNota(pollConfigSelectionID int) *ValueBool {
 	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "allow_nota")
 	if err != nil {
@@ -6808,15 +6754,6 @@ func (r *Fetch) PollConfigSelection_PollID(pollConfigSelectionID int) *ValueInt 
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) PollConfigSelection_RequiredMajority(pollConfigSelectionID int) *ValueEnum[dstypes.RequiredMajority] {
-	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "required_majority")
-	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
-	}
-
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
 }
 
 func (r *Fetch) PollConfigSelection_StrikeOut(pollConfigSelectionID int) *ValueBool {
@@ -6891,15 +6828,6 @@ func (r *Fetch) PollOption_Text(pollOptionID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) PollOption_UserID(pollOptionID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("poll_option", pollOptionID, "user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
 func (r *Fetch) PollOption_Weight(pollOptionID int) *ValueInt {
 	key, err := dskey.FromParts("poll_option", pollOptionID, "weight")
 	if err != nil {
@@ -6945,15 +6873,6 @@ func (r *Fetch) Poll_BallotIDs(pollID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_BallotUserIDs(pollID int) *ValueIntSlice {
-	key, err := dskey.FromParts("poll", pollID, "ballot_user_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Poll_ConfigID(pollID int) *ValueString {
 	key, err := dskey.FromParts("poll", pollID, "config_id")
 	if err != nil {
@@ -6981,8 +6900,8 @@ func (r *Fetch) Poll_EntitledGroupIDs(pollID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_EntitledMeetingUserIDs(pollID int) *ValueIntSlice {
-	key, err := dskey.FromParts("poll", pollID, "entitled_meeting_user_ids")
+func (r *Fetch) Poll_HistoryEntryIDs(pollID int) *ValueIntSlice {
+	key, err := dskey.FromParts("poll", pollID, "history_entry_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -7080,13 +6999,22 @@ func (r *Fetch) Poll_Title(pollID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Poll_Visibility(pollID int) *ValueEnum[dstypes.PollVisibility] {
+func (r *Fetch) Poll_Visibility(pollID int) *ValueEnum[dstypes.Poll_Visibility] {
 	key, err := dskey.FromParts("poll", pollID, "visibility")
 	if err != nil {
-		return &ValueEnum[dstypes.PollVisibility]{err: err}
+		return &ValueEnum[dstypes.Poll_Visibility]{err: err}
 	}
 
-	return &ValueEnum[dstypes.PollVisibility]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Poll_Visibility]{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
+	key, err := dskey.FromParts("poll", pollID, "voted_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
@@ -7638,8 +7566,8 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(project
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_topic_in_meeting_id")
+func (r *Fetch) Projector_UsedAsDefaultProjectorForPollInMeetingID(projectorID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_poll_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -7647,8 +7575,8 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID 
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_topic_poll_in_meeting_id")
+func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_topic_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -8466,15 +8394,6 @@ func (r *Fetch) Topic_AttachmentMeetingMediafileIDs(topicID int) *ValueIntSlice 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Topic_HistoryEntryIDs(topicID int) *ValueIntSlice {
-	key, err := dskey.FromParts("topic", topicID, "history_entry_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Topic_ID(topicID int) *ValueInt {
 	key, err := dskey.FromParts("topic", topicID, "id")
 	if err != nil {
@@ -8545,15 +8464,6 @@ func (r *Fetch) Topic_Title(topicID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) User_ActingBallotIDs(userID int) *ValueIntSlice {
-	key, err := dskey.FromParts("user", userID, "acting_ballot_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) User_CanChangeOwnPassword(userID int) *ValueBool {
@@ -8790,15 +8700,6 @@ func (r *Fetch) User_Password(userID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) User_PollOptionIDs(userID int) *ValueIntSlice {
-	key, err := dskey.FromParts("user", userID, "poll_option_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) User_Pronoun(userID int) *ValueString {
 	key, err := dskey.FromParts("user", userID, "pronoun")
 	if err != nil {
@@ -8806,15 +8707,6 @@ func (r *Fetch) User_Pronoun(userID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) User_RepresentedBallotIDs(userID int) *ValueIntSlice {
-	key, err := dskey.FromParts("user", userID, "represented_ballot_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) User_SamlID(userID int) *ValueString {
