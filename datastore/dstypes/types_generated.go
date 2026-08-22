@@ -19,6 +19,18 @@ const (
 	AgendaItem_TypeHidden   AgendaItem_Type = "hidden"
 )
 
+// ApprovalOnehundredPercentBases represents the ApprovalOnehundredPercentBases enum type.
+type ApprovalOnehundredPercentBases string
+
+const (
+	ApprovalOnehundredPercentBasesYesNo           ApprovalOnehundredPercentBases = "yes_no"
+	ApprovalOnehundredPercentBasesValid           ApprovalOnehundredPercentBases = "valid"
+	ApprovalOnehundredPercentBasesCast            ApprovalOnehundredPercentBases = "cast"
+	ApprovalOnehundredPercentBasesEntitled        ApprovalOnehundredPercentBases = "entitled"
+	ApprovalOnehundredPercentBasesEntitledPresent ApprovalOnehundredPercentBases = "entitled_present"
+	ApprovalOnehundredPercentBasesDisabled        ApprovalOnehundredPercentBases = "disabled"
+)
+
 // Assignment_Phase represents the Assignment_Phase enum type.
 type Assignment_Phase string
 
@@ -26,15 +38,6 @@ const (
 	Assignment_PhaseSearch   Assignment_Phase = "search"
 	Assignment_PhaseVoting   Assignment_Phase = "voting"
 	Assignment_PhaseFinished Assignment_Phase = "finished"
-)
-
-// BallotPaperSelection represents the BallotPaperSelection enum type.
-type BallotPaperSelection string
-
-const (
-	BallotPaperSelectionNUMBEROFDELEGATES       BallotPaperSelection = "NUMBER_OF_DELEGATES"
-	BallotPaperSelectionNUMBEROFALLPARTICIPANTS BallotPaperSelection = "NUMBER_OF_ALL_PARTICIPANTS"
-	BallotPaperSelectionCUSTOMNUMBER            BallotPaperSelection = "CUSTOM_NUMBER"
 )
 
 // ImportPreview_Name represents the ImportPreview_Name enum type.
@@ -130,14 +133,6 @@ const (
 	Meeting_ExportPdfPagesizeA5 Meeting_ExportPdfPagesize = "A5"
 )
 
-// Meeting_MotionPollProjectionNameOrderFirst represents the Meeting_MotionPollProjectionNameOrderFirst enum type.
-type Meeting_MotionPollProjectionNameOrderFirst string
-
-const (
-	Meeting_MotionPollProjectionNameOrderFirstFirstName Meeting_MotionPollProjectionNameOrderFirst = "first_name"
-	Meeting_MotionPollProjectionNameOrderFirstLastName  Meeting_MotionPollProjectionNameOrderFirst = "last_name"
-)
-
 // Meeting_MotionsAmendmentsTextMode represents the Meeting_MotionsAmendmentsTextMode enum type.
 type Meeting_MotionsAmendmentsTextMode string
 
@@ -183,6 +178,14 @@ const (
 	Meeting_MotionsRecommendationTextModeAgreed   Meeting_MotionsRecommendationTextMode = "agreed"
 )
 
+// Meeting_PollProjectionNameOrderFirst represents the Meeting_PollProjectionNameOrderFirst enum type.
+type Meeting_PollProjectionNameOrderFirst string
+
+const (
+	Meeting_PollProjectionNameOrderFirstFirstName Meeting_PollProjectionNameOrderFirst = "first_name"
+	Meeting_PollProjectionNameOrderFirstLastName  Meeting_PollProjectionNameOrderFirst = "last_name"
+)
+
 // Meeting_UsersPdfWlanEncryption represents the Meeting_UsersPdfWlanEncryption enum type.
 type Meeting_UsersPdfWlanEncryption string
 
@@ -223,57 +226,79 @@ const (
 	MotionState_MergeAmendmentIntoFinalDoMerge    MotionState_MergeAmendmentIntoFinal = "do_merge"
 )
 
-// OnehundredPercentBases represents the OnehundredPercentBases enum type.
-type OnehundredPercentBases string
+// PollMethods represents the PollMethods enum type.
+type PollMethods string
 
 const (
-	OnehundredPercentBasesY               OnehundredPercentBases = "Y"
-	OnehundredPercentBasesYN              OnehundredPercentBases = "YN"
-	OnehundredPercentBasesYNA             OnehundredPercentBases = "YNA"
-	OnehundredPercentBasesN               OnehundredPercentBases = "N"
-	OnehundredPercentBasesValid           OnehundredPercentBases = "valid"
-	OnehundredPercentBasesCast            OnehundredPercentBases = "cast"
-	OnehundredPercentBasesEntitled        OnehundredPercentBases = "entitled"
-	OnehundredPercentBasesEntitledPresent OnehundredPercentBases = "entitled_present"
-	OnehundredPercentBasesDisabled        OnehundredPercentBases = "disabled"
+	PollMethodsApproval       PollMethods = "approval"
+	PollMethodsSelection      PollMethods = "selection"
+	PollMethodsRatingScore    PollMethods = "rating_score"
+	PollMethodsRatingApproval PollMethods = "rating_approval"
+	PollMethodsStvScottish    PollMethods = "stv_scottish"
 )
 
-// PollBackends represents the PollBackends enum type.
-type PollBackends string
+// PollVisibility represents the PollVisibility enum type.
+type PollVisibility string
 
 const (
-	PollBackendsLong PollBackends = "long"
-	PollBackendsFast PollBackends = "fast"
-)
-
-// Poll_Pollmethod represents the Poll_Pollmethod enum type.
-type Poll_Pollmethod string
-
-const (
-	Poll_PollmethodY   Poll_Pollmethod = "Y"
-	Poll_PollmethodYN  Poll_Pollmethod = "YN"
-	Poll_PollmethodYNA Poll_Pollmethod = "YNA"
-	Poll_PollmethodN   Poll_Pollmethod = "N"
+	PollVisibilityManually PollVisibility = "manually"
+	PollVisibilityNamed    PollVisibility = "named"
+	PollVisibilityOpen     PollVisibility = "open"
+	PollVisibilitySecret   PollVisibility = "secret"
 )
 
 // Poll_State represents the Poll_State enum type.
 type Poll_State string
 
 const (
-	Poll_StateCreated   Poll_State = "created"
-	Poll_StateStarted   Poll_State = "started"
-	Poll_StateFinished  Poll_State = "finished"
-	Poll_StatePublished Poll_State = "published"
+	Poll_StateCreated  Poll_State = "created"
+	Poll_StateStarted  Poll_State = "started"
+	Poll_StateFinished Poll_State = "finished"
 )
 
-// Poll_Type represents the Poll_Type enum type.
-type Poll_Type string
+// RatingApprovalOnehundredPercentBases represents the RatingApprovalOnehundredPercentBases enum type.
+type RatingApprovalOnehundredPercentBases string
 
 const (
-	Poll_TypeAnalog          Poll_Type = "analog"
-	Poll_TypeNamed           Poll_Type = "named"
-	Poll_TypePseudoanonymous Poll_Type = "pseudoanonymous"
-	Poll_TypeCryptographic   Poll_Type = "cryptographic"
+	RatingApprovalOnehundredPercentBasesYesNo           RatingApprovalOnehundredPercentBases = "yes_no"
+	RatingApprovalOnehundredPercentBasesValid           RatingApprovalOnehundredPercentBases = "valid"
+	RatingApprovalOnehundredPercentBasesCast            RatingApprovalOnehundredPercentBases = "cast"
+	RatingApprovalOnehundredPercentBasesEntitled        RatingApprovalOnehundredPercentBases = "entitled"
+	RatingApprovalOnehundredPercentBasesEntitledPresent RatingApprovalOnehundredPercentBases = "entitled_present"
+	RatingApprovalOnehundredPercentBasesDisabled        RatingApprovalOnehundredPercentBases = "disabled"
+)
+
+// RatingScoreOnehundredPercentBases represents the RatingScoreOnehundredPercentBases enum type.
+type RatingScoreOnehundredPercentBases string
+
+const (
+	RatingScoreOnehundredPercentBasesYesNo           RatingScoreOnehundredPercentBases = "yes_no"
+	RatingScoreOnehundredPercentBasesValid           RatingScoreOnehundredPercentBases = "valid"
+	RatingScoreOnehundredPercentBasesCast            RatingScoreOnehundredPercentBases = "cast"
+	RatingScoreOnehundredPercentBasesEntitled        RatingScoreOnehundredPercentBases = "entitled"
+	RatingScoreOnehundredPercentBasesEntitledPresent RatingScoreOnehundredPercentBases = "entitled_present"
+	RatingScoreOnehundredPercentBasesDisabled        RatingScoreOnehundredPercentBases = "disabled"
+)
+
+// RequiredMajority represents the RequiredMajority enum type.
+type RequiredMajority string
+
+const (
+	RequiredMajorityNoMajority       RequiredMajority = "no_majority"
+	RequiredMajorityTwoThirdMajority RequiredMajority = "two_third_majority"
+	RequiredMajorityAbsoluteMajority RequiredMajority = "absolute_majority"
+)
+
+// SelectionOnehundredPercentBases represents the SelectionOnehundredPercentBases enum type.
+type SelectionOnehundredPercentBases string
+
+const (
+	SelectionOnehundredPercentBasesNoGeneral       SelectionOnehundredPercentBases = "no_general"
+	SelectionOnehundredPercentBasesValid           SelectionOnehundredPercentBases = "valid"
+	SelectionOnehundredPercentBasesCast            SelectionOnehundredPercentBases = "cast"
+	SelectionOnehundredPercentBasesEntitled        SelectionOnehundredPercentBases = "entitled"
+	SelectionOnehundredPercentBasesEntitledPresent SelectionOnehundredPercentBases = "entitled_present"
+	SelectionOnehundredPercentBasesDisabled        SelectionOnehundredPercentBases = "disabled"
 )
 
 // Speaker_SpeechState represents the Speaker_SpeechState enum type.

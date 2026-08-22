@@ -890,10 +890,7 @@ type Group struct {
 	PollIDs                                  []int
 	ReadChatGroupIDs                         []int
 	ReadCommentSectionIDs                    []int
-	UsedAsAssignmentPollDefaultID            dsfetch.Maybe[int]
-	UsedAsMotionPollDefaultID                dsfetch.Maybe[int]
-	UsedAsPollDefaultID                      dsfetch.Maybe[int]
-	UsedAsTopicPollDefaultID                 dsfetch.Maybe[int]
+	UsedInMeetingPollDefaultIDs              []int
 	Weight                                   int
 	WriteChatGroupIDs                        []int
 	WriteCommentSectionIDs                   []int
@@ -907,10 +904,7 @@ type Group struct {
 	PollList                                 []Poll
 	ReadChatGroupList                        []ChatGroup
 	ReadCommentSectionList                   []MotionCommentSection
-	UsedAsAssignmentPollDefault              *dsfetch.Maybe[Meeting]
-	UsedAsMotionPollDefault                  *dsfetch.Maybe[Meeting]
-	UsedAsPollDefault                        *dsfetch.Maybe[Meeting]
-	UsedAsTopicPollDefault                   *dsfetch.Maybe[Meeting]
+	UsedInMeetingPollDefaultList             []MeetingPollDefault
 	WriteChatGroupList                       []ChatGroup
 	WriteCommentSectionList                  []MotionCommentSection
 }
@@ -935,10 +929,7 @@ func (b *groupBuilder) lazy(ds *Fetch, id int) *Group {
 	ds.Group_PollIDs(id).Lazy(&c.PollIDs)
 	ds.Group_ReadChatGroupIDs(id).Lazy(&c.ReadChatGroupIDs)
 	ds.Group_ReadCommentSectionIDs(id).Lazy(&c.ReadCommentSectionIDs)
-	ds.Group_UsedAsAssignmentPollDefaultID(id).Lazy(&c.UsedAsAssignmentPollDefaultID)
-	ds.Group_UsedAsMotionPollDefaultID(id).Lazy(&c.UsedAsMotionPollDefaultID)
-	ds.Group_UsedAsPollDefaultID(id).Lazy(&c.UsedAsPollDefaultID)
-	ds.Group_UsedAsTopicPollDefaultID(id).Lazy(&c.UsedAsTopicPollDefaultID)
+	ds.Group_UsedInMeetingPollDefaultIDs(id).Lazy(&c.UsedInMeetingPollDefaultIDs)
 	ds.Group_Weight(id).Lazy(&c.Weight)
 	ds.Group_WriteChatGroupIDs(id).Lazy(&c.WriteChatGroupIDs)
 	ds.Group_WriteCommentSectionIDs(id).Lazy(&c.WriteCommentSectionIDs)
@@ -1066,46 +1057,14 @@ func (b *groupBuilder) ReadCommentSectionList() *motionCommentSectionBuilder {
 	}
 }
 
-func (b *groupBuilder) UsedAsAssignmentPollDefault() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+func (b *groupBuilder) UsedInMeetingPollDefaultList() *meetingPollDefaultBuilder {
+	return &meetingPollDefaultBuilder{
+		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "UsedAsAssignmentPollDefaultID",
-			relField: "UsedAsAssignmentPollDefault",
-		},
-	}
-}
-
-func (b *groupBuilder) UsedAsMotionPollDefault() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UsedAsMotionPollDefaultID",
-			relField: "UsedAsMotionPollDefault",
-		},
-	}
-}
-
-func (b *groupBuilder) UsedAsPollDefault() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UsedAsPollDefaultID",
-			relField: "UsedAsPollDefault",
-		},
-	}
-}
-
-func (b *groupBuilder) UsedAsTopicPollDefault() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UsedAsTopicPollDefaultID",
-			relField: "UsedAsTopicPollDefault",
+			idField:  "UsedInMeetingPollDefaultIDs",
+			relField: "UsedInMeetingPollDefaultList",
+			many:     true,
 		},
 	}
 }
@@ -1145,14 +1104,15 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 
 // HistoryEntry has all fields from history_entry.
 type HistoryEntry struct {
-	Entries         []string
-	ID              int
-	MeetingID       dsfetch.Maybe[int]
-	ModelID         dsfetch.Maybe[string]
-	OriginalModelID string
-	PositionID      int
-	Meeting         *dsfetch.Maybe[Meeting]
-	Position        *HistoryPosition
+	Entries               []string
+	ID                    int
+	MeetingID             dsfetch.Maybe[int]
+	ModelID               dsfetch.Maybe[string]
+	OriginalModelID       string
+	PositionID            int
+	StructuredInformation json.RawMessage
+	Meeting               *dsfetch.Maybe[Meeting]
+	Position              *HistoryPosition
 }
 
 type historyEntryBuilder struct {
@@ -1167,6 +1127,7 @@ func (b *historyEntryBuilder) lazy(ds *Fetch, id int) *HistoryEntry {
 	ds.HistoryEntry_ModelID(id).Lazy(&c.ModelID)
 	ds.HistoryEntry_OriginalModelID(id).Lazy(&c.OriginalModelID)
 	ds.HistoryEntry_PositionID(id).Lazy(&c.PositionID)
+	ds.HistoryEntry_StructuredInformation(id).Lazy(&c.StructuredInformation)
 	return &c
 }
 
@@ -1530,15 +1491,8 @@ type Meeting struct {
 	AssignmentCandidateIDs                       []int
 	AssignmentIDs                                []int
 	AssignmentPollAddCandidatesToListOfSpeakers  bool
-	AssignmentPollBallotPaperNumber              int
-	AssignmentPollBallotPaperSelection           dstypes.BallotPaperSelection
-	AssignmentPollDefaultBackend                 dstypes.PollBackends
-	AssignmentPollDefaultGroupIDs                []int
-	AssignmentPollDefaultMethod                  string
-	AssignmentPollDefaultOnehundredPercentBase   dstypes.OnehundredPercentBases
-	AssignmentPollDefaultType                    string
-	AssignmentPollEnableMaxVotesPerOption        bool
-	AssignmentPollSortPollResultByVotes          bool
+	AssignmentPollConfigID                       dsfetch.Maybe[int]
+	AssignmentPollDefaultMethod                  dstypes.PollMethods
 	AssignmentsExportPreamble                    string
 	AssignmentsExportTitle                       string
 	ChatGroupIDs                                 []int
@@ -1568,8 +1522,8 @@ type Meeting struct {
 	DefaultProjectorMotionBlockIDs               []int
 	DefaultProjectorMotionIDs                    []int
 	DefaultProjectorMotionPollIDs                []int
-	DefaultProjectorPollIDs                      []int
 	DefaultProjectorTopicIDs                     []int
+	DefaultProjectorTopicPollIDs                 []int
 	Description                                  string
 	EnableAnonymous                              bool
 	EndTime                                      int
@@ -1643,15 +1597,7 @@ type Meeting struct {
 	MotionCommentSectionIDs                      []int
 	MotionEditorIDs                              []int
 	MotionIDs                                    []int
-	MotionPollBallotPaperNumber                  int
-	MotionPollBallotPaperSelection               dstypes.BallotPaperSelection
-	MotionPollDefaultBackend                     dstypes.PollBackends
-	MotionPollDefaultGroupIDs                    []int
-	MotionPollDefaultMethod                      string
-	MotionPollDefaultOnehundredPercentBase       dstypes.OnehundredPercentBases
-	MotionPollDefaultType                        string
-	MotionPollProjectionMaxColumns               int
-	MotionPollProjectionNameOrderFirst           dstypes.Meeting_MotionPollProjectionNameOrderFirst
+	MotionPollConfigID                           dsfetch.Maybe[int]
 	MotionStateIDs                               []int
 	MotionSubmitterIDs                           []int
 	MotionSupporterIDs                           []int
@@ -1696,24 +1642,21 @@ type Meeting struct {
 	MotionsShowSequentialNumber                  bool
 	MotionsSupportersMinAmount                   int
 	Name                                         string
-	OptionIDs                                    []int
 	OrganizationTagIDs                           []int
 	PersonalNoteIDs                              []int
 	PointOfOrderCategoryIDs                      []int
-	PollBallotPaperNumber                        int
-	PollBallotPaperSelection                     dstypes.BallotPaperSelection
-	PollCandidateIDs                             []int
-	PollCandidateListIDs                         []int
 	PollCountdownID                              dsfetch.Maybe[int]
 	PollCoupleCountdown                          bool
-	PollDefaultBackend                           dstypes.PollBackends
-	PollDefaultGroupIDs                          []int
+	PollDefaultAllowInvalid                      bool
+	PollDefaultAllowVoteSplit                    bool
+	PollDefaultIDs                               []int
 	PollDefaultLiveVotingEnabled                 bool
-	PollDefaultMethod                            string
-	PollDefaultOnehundredPercentBase             dstypes.OnehundredPercentBases
-	PollDefaultType                              string
+	PollDefaultRequiredMajority                  dstypes.RequiredMajority
+	PollEnableMaxVotesPerOption                  bool
+	PollEnableMaxYesVotes                        bool
 	PollIDs                                      []int
-	PollSortPollResultByVotes                    bool
+	PollProjectionMaxColumns                     int
+	PollProjectionNameOrderFirst                 dstypes.Meeting_PollProjectionNameOrderFirst
 	PresentUserIDs                               []int
 	ProjectionIDs                                []int
 	ProjectorCountdownDefaultTime                int
@@ -1731,7 +1674,8 @@ type Meeting struct {
 	TemplateForOrganizationID                    dsfetch.Maybe[int]
 	TimeZone                                     string
 	TopicIDs                                     []int
-	TopicPollDefaultGroupIDs                     []int
+	TopicPollConfigID                            dsfetch.Maybe[int]
+	TopicPollDefaultMethod                       dstypes.PollMethods
 	UserIDs                                      []int
 	UsersAllowSelfSetPresent                     bool
 	UsersEmailBody                               string
@@ -1750,7 +1694,7 @@ type Meeting struct {
 	UsersPdfWlanEncryption                       dstypes.Meeting_UsersPdfWlanEncryption
 	UsersPdfWlanPassword                         string
 	UsersPdfWlanSsid                             string
-	VoteIDs                                      []int
+	UsersVoteDelegationsMaxAmount                int
 	WelcomeText                                  string
 	WelcomeTitle                                 string
 	AdminGroup                                   *dsfetch.Maybe[Group]
@@ -1759,7 +1703,7 @@ type Meeting struct {
 	AnonymousGroup                               *dsfetch.Maybe[Group]
 	AssignmentCandidateList                      []AssignmentCandidate
 	AssignmentList                               []Assignment
-	AssignmentPollDefaultGroupList               []Group
+	AssignmentPollConfig                         *dsfetch.Maybe[MeetingPollDefault]
 	ChatGroupList                                []ChatGroup
 	ChatMessageList                              []ChatMessage
 	Committee                                    *Committee
@@ -1777,8 +1721,8 @@ type Meeting struct {
 	DefaultProjectorMotionBlockList              []Projector
 	DefaultProjectorMotionList                   []Projector
 	DefaultProjectorMotionPollList               []Projector
-	DefaultProjectorPollList                     []Projector
 	DefaultProjectorTopicList                    []Projector
+	DefaultProjectorTopicPollList                []Projector
 	FontBold                                     *dsfetch.Maybe[MeetingMediafile]
 	FontBoldItalic                               *dsfetch.Maybe[MeetingMediafile]
 	FontChyronSpeakerName                        *dsfetch.Maybe[MeetingMediafile]
@@ -1811,7 +1755,7 @@ type Meeting struct {
 	MotionCommentSectionList                     []MotionCommentSection
 	MotionEditorList                             []MotionEditor
 	MotionList                                   []Motion
-	MotionPollDefaultGroupList                   []Group
+	MotionPollConfig                             *dsfetch.Maybe[MeetingPollDefault]
 	MotionStateList                              []MotionState
 	MotionSubmitterList                          []MotionSubmitter
 	MotionSupporterList                          []MotionSupporter
@@ -1819,14 +1763,11 @@ type Meeting struct {
 	MotionWorkingGroupSpeakerList                []MotionWorkingGroupSpeaker
 	MotionsDefaultAmendmentWorkflow              *MotionWorkflow
 	MotionsDefaultWorkflow                       *MotionWorkflow
-	OptionList                                   []Option
 	OrganizationTagList                          []OrganizationTag
 	PersonalNoteList                             []PersonalNote
 	PointOfOrderCategoryList                     []PointOfOrderCategory
-	PollCandidateList                            []PollCandidate
-	PollCandidateListList                        []PollCandidateList
 	PollCountdown                                *dsfetch.Maybe[ProjectorCountdown]
-	PollDefaultGroupList                         []Group
+	PollDefaultList                              []MeetingPollDefault
 	PollList                                     []Poll
 	PresentUserList                              []User
 	ProjectionList                               []Projection
@@ -1841,9 +1782,8 @@ type Meeting struct {
 	TagList                                      []Tag
 	TemplateForOrganization                      *dsfetch.Maybe[Organization]
 	TopicList                                    []Topic
-	TopicPollDefaultGroupList                    []Group
+	TopicPollConfig                              *dsfetch.Maybe[MeetingPollDefault]
 	UserList                                     []User
-	VoteList                                     []Vote
 }
 
 type meetingBuilder struct {
@@ -1874,15 +1814,8 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_AssignmentCandidateIDs(id).Lazy(&c.AssignmentCandidateIDs)
 	ds.Meeting_AssignmentIDs(id).Lazy(&c.AssignmentIDs)
 	ds.Meeting_AssignmentPollAddCandidatesToListOfSpeakers(id).Lazy(&c.AssignmentPollAddCandidatesToListOfSpeakers)
-	ds.Meeting_AssignmentPollBallotPaperNumber(id).Lazy(&c.AssignmentPollBallotPaperNumber)
-	ds.Meeting_AssignmentPollBallotPaperSelection(id).Lazy(&c.AssignmentPollBallotPaperSelection)
-	ds.Meeting_AssignmentPollDefaultBackend(id).Lazy(&c.AssignmentPollDefaultBackend)
-	ds.Meeting_AssignmentPollDefaultGroupIDs(id).Lazy(&c.AssignmentPollDefaultGroupIDs)
+	ds.Meeting_AssignmentPollConfigID(id).Lazy(&c.AssignmentPollConfigID)
 	ds.Meeting_AssignmentPollDefaultMethod(id).Lazy(&c.AssignmentPollDefaultMethod)
-	ds.Meeting_AssignmentPollDefaultOnehundredPercentBase(id).Lazy(&c.AssignmentPollDefaultOnehundredPercentBase)
-	ds.Meeting_AssignmentPollDefaultType(id).Lazy(&c.AssignmentPollDefaultType)
-	ds.Meeting_AssignmentPollEnableMaxVotesPerOption(id).Lazy(&c.AssignmentPollEnableMaxVotesPerOption)
-	ds.Meeting_AssignmentPollSortPollResultByVotes(id).Lazy(&c.AssignmentPollSortPollResultByVotes)
 	ds.Meeting_AssignmentsExportPreamble(id).Lazy(&c.AssignmentsExportPreamble)
 	ds.Meeting_AssignmentsExportTitle(id).Lazy(&c.AssignmentsExportTitle)
 	ds.Meeting_ChatGroupIDs(id).Lazy(&c.ChatGroupIDs)
@@ -1912,8 +1845,8 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_DefaultProjectorMotionBlockIDs(id).Lazy(&c.DefaultProjectorMotionBlockIDs)
 	ds.Meeting_DefaultProjectorMotionIDs(id).Lazy(&c.DefaultProjectorMotionIDs)
 	ds.Meeting_DefaultProjectorMotionPollIDs(id).Lazy(&c.DefaultProjectorMotionPollIDs)
-	ds.Meeting_DefaultProjectorPollIDs(id).Lazy(&c.DefaultProjectorPollIDs)
 	ds.Meeting_DefaultProjectorTopicIDs(id).Lazy(&c.DefaultProjectorTopicIDs)
+	ds.Meeting_DefaultProjectorTopicPollIDs(id).Lazy(&c.DefaultProjectorTopicPollIDs)
 	ds.Meeting_Description(id).Lazy(&c.Description)
 	ds.Meeting_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
 	ds.Meeting_EndTime(id).Lazy(&c.EndTime)
@@ -1987,15 +1920,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionCommentSectionIDs(id).Lazy(&c.MotionCommentSectionIDs)
 	ds.Meeting_MotionEditorIDs(id).Lazy(&c.MotionEditorIDs)
 	ds.Meeting_MotionIDs(id).Lazy(&c.MotionIDs)
-	ds.Meeting_MotionPollBallotPaperNumber(id).Lazy(&c.MotionPollBallotPaperNumber)
-	ds.Meeting_MotionPollBallotPaperSelection(id).Lazy(&c.MotionPollBallotPaperSelection)
-	ds.Meeting_MotionPollDefaultBackend(id).Lazy(&c.MotionPollDefaultBackend)
-	ds.Meeting_MotionPollDefaultGroupIDs(id).Lazy(&c.MotionPollDefaultGroupIDs)
-	ds.Meeting_MotionPollDefaultMethod(id).Lazy(&c.MotionPollDefaultMethod)
-	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Lazy(&c.MotionPollDefaultOnehundredPercentBase)
-	ds.Meeting_MotionPollDefaultType(id).Lazy(&c.MotionPollDefaultType)
-	ds.Meeting_MotionPollProjectionMaxColumns(id).Lazy(&c.MotionPollProjectionMaxColumns)
-	ds.Meeting_MotionPollProjectionNameOrderFirst(id).Lazy(&c.MotionPollProjectionNameOrderFirst)
+	ds.Meeting_MotionPollConfigID(id).Lazy(&c.MotionPollConfigID)
 	ds.Meeting_MotionStateIDs(id).Lazy(&c.MotionStateIDs)
 	ds.Meeting_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
 	ds.Meeting_MotionSupporterIDs(id).Lazy(&c.MotionSupporterIDs)
@@ -2040,24 +1965,21 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionsShowSequentialNumber(id).Lazy(&c.MotionsShowSequentialNumber)
 	ds.Meeting_MotionsSupportersMinAmount(id).Lazy(&c.MotionsSupportersMinAmount)
 	ds.Meeting_Name(id).Lazy(&c.Name)
-	ds.Meeting_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.Meeting_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
 	ds.Meeting_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
 	ds.Meeting_PointOfOrderCategoryIDs(id).Lazy(&c.PointOfOrderCategoryIDs)
-	ds.Meeting_PollBallotPaperNumber(id).Lazy(&c.PollBallotPaperNumber)
-	ds.Meeting_PollBallotPaperSelection(id).Lazy(&c.PollBallotPaperSelection)
-	ds.Meeting_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
-	ds.Meeting_PollCandidateListIDs(id).Lazy(&c.PollCandidateListIDs)
 	ds.Meeting_PollCountdownID(id).Lazy(&c.PollCountdownID)
 	ds.Meeting_PollCoupleCountdown(id).Lazy(&c.PollCoupleCountdown)
-	ds.Meeting_PollDefaultBackend(id).Lazy(&c.PollDefaultBackend)
-	ds.Meeting_PollDefaultGroupIDs(id).Lazy(&c.PollDefaultGroupIDs)
+	ds.Meeting_PollDefaultAllowInvalid(id).Lazy(&c.PollDefaultAllowInvalid)
+	ds.Meeting_PollDefaultAllowVoteSplit(id).Lazy(&c.PollDefaultAllowVoteSplit)
+	ds.Meeting_PollDefaultIDs(id).Lazy(&c.PollDefaultIDs)
 	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
-	ds.Meeting_PollDefaultMethod(id).Lazy(&c.PollDefaultMethod)
-	ds.Meeting_PollDefaultOnehundredPercentBase(id).Lazy(&c.PollDefaultOnehundredPercentBase)
-	ds.Meeting_PollDefaultType(id).Lazy(&c.PollDefaultType)
+	ds.Meeting_PollDefaultRequiredMajority(id).Lazy(&c.PollDefaultRequiredMajority)
+	ds.Meeting_PollEnableMaxVotesPerOption(id).Lazy(&c.PollEnableMaxVotesPerOption)
+	ds.Meeting_PollEnableMaxYesVotes(id).Lazy(&c.PollEnableMaxYesVotes)
 	ds.Meeting_PollIDs(id).Lazy(&c.PollIDs)
-	ds.Meeting_PollSortPollResultByVotes(id).Lazy(&c.PollSortPollResultByVotes)
+	ds.Meeting_PollProjectionMaxColumns(id).Lazy(&c.PollProjectionMaxColumns)
+	ds.Meeting_PollProjectionNameOrderFirst(id).Lazy(&c.PollProjectionNameOrderFirst)
 	ds.Meeting_PresentUserIDs(id).Lazy(&c.PresentUserIDs)
 	ds.Meeting_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
 	ds.Meeting_ProjectorCountdownDefaultTime(id).Lazy(&c.ProjectorCountdownDefaultTime)
@@ -2075,7 +1997,8 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_TemplateForOrganizationID(id).Lazy(&c.TemplateForOrganizationID)
 	ds.Meeting_TimeZone(id).Lazy(&c.TimeZone)
 	ds.Meeting_TopicIDs(id).Lazy(&c.TopicIDs)
-	ds.Meeting_TopicPollDefaultGroupIDs(id).Lazy(&c.TopicPollDefaultGroupIDs)
+	ds.Meeting_TopicPollConfigID(id).Lazy(&c.TopicPollConfigID)
+	ds.Meeting_TopicPollDefaultMethod(id).Lazy(&c.TopicPollDefaultMethod)
 	ds.Meeting_UserIDs(id).Lazy(&c.UserIDs)
 	ds.Meeting_UsersAllowSelfSetPresent(id).Lazy(&c.UsersAllowSelfSetPresent)
 	ds.Meeting_UsersEmailBody(id).Lazy(&c.UsersEmailBody)
@@ -2094,7 +2017,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_UsersPdfWlanEncryption(id).Lazy(&c.UsersPdfWlanEncryption)
 	ds.Meeting_UsersPdfWlanPassword(id).Lazy(&c.UsersPdfWlanPassword)
 	ds.Meeting_UsersPdfWlanSsid(id).Lazy(&c.UsersPdfWlanSsid)
-	ds.Meeting_VoteIDs(id).Lazy(&c.VoteIDs)
+	ds.Meeting_UsersVoteDelegationsMaxAmount(id).Lazy(&c.UsersVoteDelegationsMaxAmount)
 	ds.Meeting_WelcomeText(id).Lazy(&c.WelcomeText)
 	ds.Meeting_WelcomeTitle(id).Lazy(&c.WelcomeTitle)
 	return &c
@@ -2175,14 +2098,13 @@ func (b *meetingBuilder) AssignmentList() *assignmentBuilder {
 	}
 }
 
-func (b *meetingBuilder) AssignmentPollDefaultGroupList() *groupBuilder {
-	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+func (b *meetingBuilder) AssignmentPollConfig() *meetingPollDefaultBuilder {
+	return &meetingPollDefaultBuilder{
+		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "AssignmentPollDefaultGroupIDs",
-			relField: "AssignmentPollDefaultGroupList",
-			many:     true,
+			idField:  "AssignmentPollConfigID",
+			relField: "AssignmentPollConfig",
 		},
 	}
 }
@@ -2388,18 +2310,6 @@ func (b *meetingBuilder) DefaultProjectorMotionPollList() *projectorBuilder {
 	}
 }
 
-func (b *meetingBuilder) DefaultProjectorPollList() *projectorBuilder {
-	return &projectorBuilder{
-		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "DefaultProjectorPollIDs",
-			relField: "DefaultProjectorPollList",
-			many:     true,
-		},
-	}
-}
-
 func (b *meetingBuilder) DefaultProjectorTopicList() *projectorBuilder {
 	return &projectorBuilder{
 		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
@@ -2407,6 +2317,18 @@ func (b *meetingBuilder) DefaultProjectorTopicList() *projectorBuilder {
 			parent:   b,
 			idField:  "DefaultProjectorTopicIDs",
 			relField: "DefaultProjectorTopicList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingBuilder) DefaultProjectorTopicPollList() *projectorBuilder {
+	return &projectorBuilder{
+		builder: builder[projectorBuilder, *projectorBuilder, Projector]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "DefaultProjectorTopicPollIDs",
+			relField: "DefaultProjectorTopicPollList",
 			many:     true,
 		},
 	}
@@ -2777,14 +2699,13 @@ func (b *meetingBuilder) MotionList() *motionBuilder {
 	}
 }
 
-func (b *meetingBuilder) MotionPollDefaultGroupList() *groupBuilder {
-	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+func (b *meetingBuilder) MotionPollConfig() *meetingPollDefaultBuilder {
+	return &meetingPollDefaultBuilder{
+		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "MotionPollDefaultGroupIDs",
-			relField: "MotionPollDefaultGroupList",
-			many:     true,
+			idField:  "MotionPollConfigID",
+			relField: "MotionPollConfig",
 		},
 	}
 }
@@ -2871,18 +2792,6 @@ func (b *meetingBuilder) MotionsDefaultWorkflow() *motionWorkflowBuilder {
 	}
 }
 
-func (b *meetingBuilder) OptionList() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "OptionIDs",
-			relField: "OptionList",
-			many:     true,
-		},
-	}
-}
-
 func (b *meetingBuilder) OrganizationTagList() *organizationTagBuilder {
 	return &organizationTagBuilder{
 		builder: builder[organizationTagBuilder, *organizationTagBuilder, OrganizationTag]{
@@ -2919,30 +2828,6 @@ func (b *meetingBuilder) PointOfOrderCategoryList() *pointOfOrderCategoryBuilder
 	}
 }
 
-func (b *meetingBuilder) PollCandidateList() *pollCandidateBuilder {
-	return &pollCandidateBuilder{
-		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "PollCandidateIDs",
-			relField: "PollCandidateList",
-			many:     true,
-		},
-	}
-}
-
-func (b *meetingBuilder) PollCandidateListList() *pollCandidateListBuilder {
-	return &pollCandidateListBuilder{
-		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "PollCandidateListIDs",
-			relField: "PollCandidateListList",
-			many:     true,
-		},
-	}
-}
-
 func (b *meetingBuilder) PollCountdown() *projectorCountdownBuilder {
 	return &projectorCountdownBuilder{
 		builder: builder[projectorCountdownBuilder, *projectorCountdownBuilder, ProjectorCountdown]{
@@ -2954,13 +2839,13 @@ func (b *meetingBuilder) PollCountdown() *projectorCountdownBuilder {
 	}
 }
 
-func (b *meetingBuilder) PollDefaultGroupList() *groupBuilder {
-	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+func (b *meetingBuilder) PollDefaultList() *meetingPollDefaultBuilder {
+	return &meetingPollDefaultBuilder{
+		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "PollDefaultGroupIDs",
-			relField: "PollDefaultGroupList",
+			idField:  "PollDefaultIDs",
+			relField: "PollDefaultList",
 			many:     true,
 		},
 	}
@@ -3132,14 +3017,13 @@ func (b *meetingBuilder) TopicList() *topicBuilder {
 	}
 }
 
-func (b *meetingBuilder) TopicPollDefaultGroupList() *groupBuilder {
-	return &groupBuilder{
-		builder: builder[groupBuilder, *groupBuilder, Group]{
+func (b *meetingBuilder) TopicPollConfig() *meetingPollDefaultBuilder {
+	return &meetingPollDefaultBuilder{
+		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "TopicPollDefaultGroupIDs",
-			relField: "TopicPollDefaultGroupList",
-			many:     true,
+			idField:  "TopicPollConfigID",
+			relField: "TopicPollConfig",
 		},
 	}
 }
@@ -3151,18 +3035,6 @@ func (b *meetingBuilder) UserList() *userBuilder {
 			parent:   b,
 			idField:  "UserIDs",
 			relField: "UserList",
-			many:     true,
-		},
-	}
-}
-
-func (b *meetingBuilder) VoteList() *voteBuilder {
-	return &voteBuilder{
-		builder: builder[voteBuilder, *voteBuilder, Vote]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "VoteIDs",
-			relField: "VoteList",
 			many:     true,
 		},
 	}
@@ -3521,13 +3393,130 @@ func (r *Fetch) MeetingMediafile(ids ...int) *meetingMediafileBuilder {
 	}
 }
 
+// MeetingPollDefault has all fields from meeting_poll_default.
+type MeetingPollDefault struct {
+	AllowAbstain                          bool
+	AllowNota                             bool
+	DisplayChart                          string
+	GroupIDs                              []int
+	ID                                    int
+	MeetingID                             int
+	OnehundredPercentBase                 string
+	SortResultByVotes                     bool
+	StrikeOut                             bool
+	UsedAsAssignmentPollConfigInMeetingID dsfetch.Maybe[int]
+	UsedAsMotionPollConfigInMeetingID     dsfetch.Maybe[int]
+	UsedAsTopicPollConfigInMeetingID      dsfetch.Maybe[int]
+	Visibility                            dstypes.PollVisibility
+	GroupList                             []Group
+	Meeting                               *Meeting
+	UsedAsAssignmentPollConfigInMeeting   *dsfetch.Maybe[Meeting]
+	UsedAsMotionPollConfigInMeeting       *dsfetch.Maybe[Meeting]
+	UsedAsTopicPollConfigInMeeting        *dsfetch.Maybe[Meeting]
+}
+
+type meetingPollDefaultBuilder struct {
+	builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]
+}
+
+func (b *meetingPollDefaultBuilder) lazy(ds *Fetch, id int) *MeetingPollDefault {
+	c := MeetingPollDefault{}
+	ds.MeetingPollDefault_AllowAbstain(id).Lazy(&c.AllowAbstain)
+	ds.MeetingPollDefault_AllowNota(id).Lazy(&c.AllowNota)
+	ds.MeetingPollDefault_DisplayChart(id).Lazy(&c.DisplayChart)
+	ds.MeetingPollDefault_GroupIDs(id).Lazy(&c.GroupIDs)
+	ds.MeetingPollDefault_ID(id).Lazy(&c.ID)
+	ds.MeetingPollDefault_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MeetingPollDefault_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.MeetingPollDefault_SortResultByVotes(id).Lazy(&c.SortResultByVotes)
+	ds.MeetingPollDefault_StrikeOut(id).Lazy(&c.StrikeOut)
+	ds.MeetingPollDefault_UsedAsAssignmentPollConfigInMeetingID(id).Lazy(&c.UsedAsAssignmentPollConfigInMeetingID)
+	ds.MeetingPollDefault_UsedAsMotionPollConfigInMeetingID(id).Lazy(&c.UsedAsMotionPollConfigInMeetingID)
+	ds.MeetingPollDefault_UsedAsTopicPollConfigInMeetingID(id).Lazy(&c.UsedAsTopicPollConfigInMeetingID)
+	ds.MeetingPollDefault_Visibility(id).Lazy(&c.Visibility)
+	return &c
+}
+
+func (b *meetingPollDefaultBuilder) Preload(rel builderWrapperI) *meetingPollDefaultBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *meetingPollDefaultBuilder) GroupList() *groupBuilder {
+	return &groupBuilder{
+		builder: builder[groupBuilder, *groupBuilder, Group]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "GroupIDs",
+			relField: "GroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingPollDefaultBuilder) Meeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingID",
+			relField: "Meeting",
+		},
+	}
+}
+
+func (b *meetingPollDefaultBuilder) UsedAsAssignmentPollConfigInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UsedAsAssignmentPollConfigInMeetingID",
+			relField: "UsedAsAssignmentPollConfigInMeeting",
+		},
+	}
+}
+
+func (b *meetingPollDefaultBuilder) UsedAsMotionPollConfigInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UsedAsMotionPollConfigInMeetingID",
+			relField: "UsedAsMotionPollConfigInMeeting",
+		},
+	}
+}
+
+func (b *meetingPollDefaultBuilder) UsedAsTopicPollConfigInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UsedAsTopicPollConfigInMeetingID",
+			relField: "UsedAsTopicPollConfigInMeeting",
+		},
+	}
+}
+
+func (r *Fetch) MeetingPollDefault(ids ...int) *meetingPollDefaultBuilder {
+	return &meetingPollDefaultBuilder{
+		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
 // MeetingUser has all fields from meeting_user.
 type MeetingUser struct {
 	AboutMe                       string
+	ActingBallotIDs               []int
 	AssignmentCandidateIDs        []int
 	ChatMessageIDs                []int
 	Comment                       string
+	EntitledAtPollIDs             []int
 	GroupIDs                      []int
+	HistoryEntryIDs               []int
 	ID                            int
 	LockedOut                     bool
 	MeetingID                     int
@@ -3537,25 +3526,32 @@ type MeetingUser struct {
 	MotionWorkingGroupSpeakerIDs  []int
 	Number                        string
 	PersonalNoteIDs               []int
+	PollOptionIDs                 []int
+	RepresentedBallotIDs          []int
 	SpeakerIDs                    []int
 	StructureLevelIDs             []int
 	UserID                        int
-	VoteDelegatedToID             dsfetch.Maybe[int]
+	VoteDelegatedToIDs            []int
 	VoteDelegationsFromIDs        []int
 	VoteWeight                    decimal.Decimal
+	ActingBallotList              []PollBallotUser
 	AssignmentCandidateList       []AssignmentCandidate
 	ChatMessageList               []ChatMessage
+	EntitledAtPollList            []Poll
 	GroupList                     []Group
+	HistoryEntryList              []HistoryEntry
 	Meeting                       *Meeting
 	MotionEditorList              []MotionEditor
 	MotionSubmitterList           []MotionSubmitter
 	MotionSupporterList           []MotionSupporter
 	MotionWorkingGroupSpeakerList []MotionWorkingGroupSpeaker
 	PersonalNoteList              []PersonalNote
+	PollOptionList                []PollOption
+	RepresentedBallotList         []PollBallotUser
 	SpeakerList                   []Speaker
 	StructureLevelList            []StructureLevel
 	User                          *User
-	VoteDelegatedTo               *dsfetch.Maybe[MeetingUser]
+	VoteDelegatedToList           []MeetingUser
 	VoteDelegationsFromList       []MeetingUser
 }
 
@@ -3566,10 +3562,13 @@ type meetingUserBuilder struct {
 func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
 	c := MeetingUser{}
 	ds.MeetingUser_AboutMe(id).Lazy(&c.AboutMe)
+	ds.MeetingUser_ActingBallotIDs(id).Lazy(&c.ActingBallotIDs)
 	ds.MeetingUser_AssignmentCandidateIDs(id).Lazy(&c.AssignmentCandidateIDs)
 	ds.MeetingUser_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
 	ds.MeetingUser_Comment(id).Lazy(&c.Comment)
+	ds.MeetingUser_EntitledAtPollIDs(id).Lazy(&c.EntitledAtPollIDs)
 	ds.MeetingUser_GroupIDs(id).Lazy(&c.GroupIDs)
+	ds.MeetingUser_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.MeetingUser_ID(id).Lazy(&c.ID)
 	ds.MeetingUser_LockedOut(id).Lazy(&c.LockedOut)
 	ds.MeetingUser_MeetingID(id).Lazy(&c.MeetingID)
@@ -3579,10 +3578,12 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
 	ds.MeetingUser_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
 	ds.MeetingUser_Number(id).Lazy(&c.Number)
 	ds.MeetingUser_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
+	ds.MeetingUser_PollOptionIDs(id).Lazy(&c.PollOptionIDs)
+	ds.MeetingUser_RepresentedBallotIDs(id).Lazy(&c.RepresentedBallotIDs)
 	ds.MeetingUser_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.MeetingUser_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
 	ds.MeetingUser_UserID(id).Lazy(&c.UserID)
-	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
+	ds.MeetingUser_VoteDelegatedToIDs(id).Lazy(&c.VoteDelegatedToIDs)
 	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
 	ds.MeetingUser_VoteWeight(id).Lazy(&c.VoteWeight)
 	return &c
@@ -3591,6 +3592,18 @@ func (b *meetingUserBuilder) lazy(ds *Fetch, id int) *MeetingUser {
 func (b *meetingUserBuilder) Preload(rel builderWrapperI) *meetingUserBuilder {
 	b.builder.Preload(rel)
 	return b
+}
+
+func (b *meetingUserBuilder) ActingBallotList() *pollBallotUserBuilder {
+	return &pollBallotUserBuilder{
+		builder: builder[pollBallotUserBuilder, *pollBallotUserBuilder, PollBallotUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ActingBallotIDs",
+			relField: "ActingBallotList",
+			many:     true,
+		},
+	}
 }
 
 func (b *meetingUserBuilder) AssignmentCandidateList() *assignmentCandidateBuilder {
@@ -3617,6 +3630,18 @@ func (b *meetingUserBuilder) ChatMessageList() *chatMessageBuilder {
 	}
 }
 
+func (b *meetingUserBuilder) EntitledAtPollList() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "EntitledAtPollIDs",
+			relField: "EntitledAtPollList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingUserBuilder) GroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group]{
@@ -3624,6 +3649,18 @@ func (b *meetingUserBuilder) GroupList() *groupBuilder {
 			parent:   b,
 			idField:  "GroupIDs",
 			relField: "GroupList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingUserBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
 			many:     true,
 		},
 	}
@@ -3700,6 +3737,30 @@ func (b *meetingUserBuilder) PersonalNoteList() *personalNoteBuilder {
 	}
 }
 
+func (b *meetingUserBuilder) PollOptionList() *pollOptionBuilder {
+	return &pollOptionBuilder{
+		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollOptionIDs",
+			relField: "PollOptionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *meetingUserBuilder) RepresentedBallotList() *pollBallotUserBuilder {
+	return &pollBallotUserBuilder{
+		builder: builder[pollBallotUserBuilder, *pollBallotUserBuilder, PollBallotUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "RepresentedBallotIDs",
+			relField: "RepresentedBallotList",
+			many:     true,
+		},
+	}
+}
+
 func (b *meetingUserBuilder) SpeakerList() *speakerBuilder {
 	return &speakerBuilder{
 		builder: builder[speakerBuilder, *speakerBuilder, Speaker]{
@@ -3735,13 +3796,14 @@ func (b *meetingUserBuilder) User() *userBuilder {
 	}
 }
 
-func (b *meetingUserBuilder) VoteDelegatedTo() *meetingUserBuilder {
+func (b *meetingUserBuilder) VoteDelegatedToList() *meetingUserBuilder {
 	return &meetingUserBuilder{
 		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "VoteDelegatedToID",
-			relField: "VoteDelegatedTo",
+			idField:  "VoteDelegatedToIDs",
+			relField: "VoteDelegatedToList",
+			many:     true,
 		},
 	}
 }
@@ -3797,7 +3859,6 @@ type Motion struct {
 	ModifiedFinalVersion                          string
 	Number                                        string
 	NumberValue                                   int
-	OptionIDs                                     []int
 	OriginID                                      dsfetch.Maybe[int]
 	OriginMeetingID                               dsfetch.Maybe[int]
 	PersonalNoteIDs                               []int
@@ -3841,7 +3902,6 @@ type Motion struct {
 	LeadMotion                                    *dsfetch.Maybe[Motion]
 	ListOfSpeakers                                *ListOfSpeakers
 	Meeting                                       *Meeting
-	OptionList                                    []Option
 	Origin                                        *dsfetch.Maybe[Motion]
 	OriginMeeting                                 *dsfetch.Maybe[Meeting]
 	PersonalNoteList                              []PersonalNote
@@ -3893,7 +3953,6 @@ func (b *motionBuilder) lazy(ds *Fetch, id int) *Motion {
 	ds.Motion_ModifiedFinalVersion(id).Lazy(&c.ModifiedFinalVersion)
 	ds.Motion_Number(id).Lazy(&c.Number)
 	ds.Motion_NumberValue(id).Lazy(&c.NumberValue)
-	ds.Motion_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.Motion_OriginID(id).Lazy(&c.OriginID)
 	ds.Motion_OriginMeetingID(id).Lazy(&c.OriginMeetingID)
 	ds.Motion_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
@@ -4111,18 +4170,6 @@ func (b *motionBuilder) Meeting() *meetingBuilder {
 			parent:   b,
 			idField:  "MeetingID",
 			relField: "Meeting",
-		},
-	}
-}
-
-func (b *motionBuilder) OptionList() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "OptionIDs",
-			relField: "OptionList",
-			many:     true,
 		},
 	}
 }
@@ -5345,104 +5392,6 @@ func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeaker
 	}
 }
 
-// Option has all fields from option.
-type Option struct {
-	Abstain                    decimal.Decimal
-	ContentObjectID            dsfetch.Maybe[string]
-	ID                         int
-	MeetingID                  int
-	No                         decimal.Decimal
-	PollID                     dsfetch.Maybe[int]
-	Text                       string
-	UsedAsGlobalOptionInPollID dsfetch.Maybe[int]
-	VoteIDs                    []int
-	Weight                     int
-	Yes                        decimal.Decimal
-	Meeting                    *Meeting
-	Poll                       *dsfetch.Maybe[Poll]
-	UsedAsGlobalOptionInPoll   *dsfetch.Maybe[Poll]
-	VoteList                   []Vote
-}
-
-type optionBuilder struct {
-	builder[optionBuilder, *optionBuilder, Option]
-}
-
-func (b *optionBuilder) lazy(ds *Fetch, id int) *Option {
-	c := Option{}
-	ds.Option_Abstain(id).Lazy(&c.Abstain)
-	ds.Option_ContentObjectID(id).Lazy(&c.ContentObjectID)
-	ds.Option_ID(id).Lazy(&c.ID)
-	ds.Option_MeetingID(id).Lazy(&c.MeetingID)
-	ds.Option_No(id).Lazy(&c.No)
-	ds.Option_PollID(id).Lazy(&c.PollID)
-	ds.Option_Text(id).Lazy(&c.Text)
-	ds.Option_UsedAsGlobalOptionInPollID(id).Lazy(&c.UsedAsGlobalOptionInPollID)
-	ds.Option_VoteIDs(id).Lazy(&c.VoteIDs)
-	ds.Option_Weight(id).Lazy(&c.Weight)
-	ds.Option_Yes(id).Lazy(&c.Yes)
-	return &c
-}
-
-func (b *optionBuilder) Preload(rel builderWrapperI) *optionBuilder {
-	b.builder.Preload(rel)
-	return b
-}
-
-func (b *optionBuilder) Meeting() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "MeetingID",
-			relField: "Meeting",
-		},
-	}
-}
-
-func (b *optionBuilder) Poll() *pollBuilder {
-	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "PollID",
-			relField: "Poll",
-		},
-	}
-}
-
-func (b *optionBuilder) UsedAsGlobalOptionInPoll() *pollBuilder {
-	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UsedAsGlobalOptionInPollID",
-			relField: "UsedAsGlobalOptionInPoll",
-		},
-	}
-}
-
-func (b *optionBuilder) VoteList() *voteBuilder {
-	return &voteBuilder{
-		builder: builder[voteBuilder, *voteBuilder, Vote]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "VoteIDs",
-			relField: "VoteList",
-			many:     true,
-		},
-	}
-}
-
-func (r *Fetch) Option(ids ...int) *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
-			ids:   ids,
-			fetch: r,
-		},
-	}
-}
-
 // Organization has all fields from organization.
 type Organization struct {
 	ActiveMeetingIDs                        []int
@@ -5868,41 +5817,35 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 
 // Poll has all fields from poll.
 type Poll struct {
-	Backend               dstypes.PollBackends
-	ContentObjectID       string
-	Description           string
-	EntitledGroupIDs      []int
-	EntitledUsersAtStop   json.RawMessage
-	GlobalAbstain         bool
-	GlobalNo              bool
-	GlobalOptionID        dsfetch.Maybe[int]
-	GlobalYes             bool
-	ID                    int
-	IsPseudoanonymized    bool
-	LiveVotes             json.RawMessage
-	LiveVotingEnabled     bool
-	MaxVotesAmount        int
-	MaxVotesPerOption     int
-	MeetingID             int
-	MinVotesAmount        int
-	OnehundredPercentBase dstypes.OnehundredPercentBases
-	OptionIDs             []int
-	Pollmethod            dstypes.Poll_Pollmethod
-	ProjectionIDs         []int
-	SequentialNumber      int
-	State                 dstypes.Poll_State
-	Title                 string
-	Type                  dstypes.Poll_Type
-	VotedIDs              []int
-	Votescast             decimal.Decimal
-	Votesinvalid          decimal.Decimal
-	Votesvalid            decimal.Decimal
-	EntitledGroupList     []Group
-	GlobalOption          *dsfetch.Maybe[Option]
-	Meeting               *Meeting
-	OptionList            []Option
-	ProjectionList        []Projection
-	VotedList             []User
+	AllowInvalid            bool
+	AllowVoteSplit          bool
+	Anonymized              bool
+	BallotIDs               []int
+	BallotUserIDs           []int
+	ConfigID                string
+	ContentObjectID         string
+	EntitledGroupIDs        []int
+	EntitledMeetingUserIDs  []int
+	HistoryEntryIDs         []int
+	ID                      int
+	LiveVotingEnabled       bool
+	MeetingID               int
+	OptionIDs               []int
+	ProjectionIDs           []int
+	Published               bool
+	Result                  string
+	SequentialNumber        int
+	State                   dstypes.Poll_State
+	Title                   string
+	Visibility              dstypes.PollVisibility
+	BallotList              []PollBallot
+	BallotUserList          []PollBallotUser
+	EntitledGroupList       []Group
+	EntitledMeetingUserList []MeetingUser
+	HistoryEntryList        []HistoryEntry
+	Meeting                 *Meeting
+	OptionList              []PollOption
+	ProjectionList          []Projection
 }
 
 type pollBuilder struct {
@@ -5911,41 +5854,57 @@ type pollBuilder struct {
 
 func (b *pollBuilder) lazy(ds *Fetch, id int) *Poll {
 	c := Poll{}
-	ds.Poll_Backend(id).Lazy(&c.Backend)
+	ds.Poll_AllowInvalid(id).Lazy(&c.AllowInvalid)
+	ds.Poll_AllowVoteSplit(id).Lazy(&c.AllowVoteSplit)
+	ds.Poll_Anonymized(id).Lazy(&c.Anonymized)
+	ds.Poll_BallotIDs(id).Lazy(&c.BallotIDs)
+	ds.Poll_BallotUserIDs(id).Lazy(&c.BallotUserIDs)
+	ds.Poll_ConfigID(id).Lazy(&c.ConfigID)
 	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
-	ds.Poll_Description(id).Lazy(&c.Description)
 	ds.Poll_EntitledGroupIDs(id).Lazy(&c.EntitledGroupIDs)
-	ds.Poll_EntitledUsersAtStop(id).Lazy(&c.EntitledUsersAtStop)
-	ds.Poll_GlobalAbstain(id).Lazy(&c.GlobalAbstain)
-	ds.Poll_GlobalNo(id).Lazy(&c.GlobalNo)
-	ds.Poll_GlobalOptionID(id).Lazy(&c.GlobalOptionID)
-	ds.Poll_GlobalYes(id).Lazy(&c.GlobalYes)
+	ds.Poll_EntitledMeetingUserIDs(id).Lazy(&c.EntitledMeetingUserIDs)
+	ds.Poll_HistoryEntryIDs(id).Lazy(&c.HistoryEntryIDs)
 	ds.Poll_ID(id).Lazy(&c.ID)
-	ds.Poll_IsPseudoanonymized(id).Lazy(&c.IsPseudoanonymized)
-	ds.Poll_LiveVotes(id).Lazy(&c.LiveVotes)
 	ds.Poll_LiveVotingEnabled(id).Lazy(&c.LiveVotingEnabled)
-	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
-	ds.Poll_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
 	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)
-	ds.Poll_MinVotesAmount(id).Lazy(&c.MinVotesAmount)
-	ds.Poll_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
 	ds.Poll_OptionIDs(id).Lazy(&c.OptionIDs)
-	ds.Poll_Pollmethod(id).Lazy(&c.Pollmethod)
 	ds.Poll_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Poll_Published(id).Lazy(&c.Published)
+	ds.Poll_Result(id).Lazy(&c.Result)
 	ds.Poll_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.Poll_State(id).Lazy(&c.State)
 	ds.Poll_Title(id).Lazy(&c.Title)
-	ds.Poll_Type(id).Lazy(&c.Type)
-	ds.Poll_VotedIDs(id).Lazy(&c.VotedIDs)
-	ds.Poll_Votescast(id).Lazy(&c.Votescast)
-	ds.Poll_Votesinvalid(id).Lazy(&c.Votesinvalid)
-	ds.Poll_Votesvalid(id).Lazy(&c.Votesvalid)
+	ds.Poll_Visibility(id).Lazy(&c.Visibility)
 	return &c
 }
 
 func (b *pollBuilder) Preload(rel builderWrapperI) *pollBuilder {
 	b.builder.Preload(rel)
 	return b
+}
+
+func (b *pollBuilder) BallotList() *pollBallotBuilder {
+	return &pollBallotBuilder{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "BallotIDs",
+			relField: "BallotList",
+			many:     true,
+		},
+	}
+}
+
+func (b *pollBuilder) BallotUserList() *pollBallotUserBuilder {
+	return &pollBallotUserBuilder{
+		builder: builder[pollBallotUserBuilder, *pollBallotUserBuilder, PollBallotUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "BallotUserIDs",
+			relField: "BallotUserList",
+			many:     true,
+		},
+	}
 }
 
 func (b *pollBuilder) EntitledGroupList() *groupBuilder {
@@ -5960,13 +5919,26 @@ func (b *pollBuilder) EntitledGroupList() *groupBuilder {
 	}
 }
 
-func (b *pollBuilder) GlobalOption() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
+func (b *pollBuilder) EntitledMeetingUserList() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "GlobalOptionID",
-			relField: "GlobalOption",
+			idField:  "EntitledMeetingUserIDs",
+			relField: "EntitledMeetingUserList",
+			many:     true,
+		},
+	}
+}
+
+func (b *pollBuilder) HistoryEntryList() *historyEntryBuilder {
+	return &historyEntryBuilder{
+		builder: builder[historyEntryBuilder, *historyEntryBuilder, HistoryEntry]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "HistoryEntryIDs",
+			relField: "HistoryEntryList",
+			many:     true,
 		},
 	}
 }
@@ -5982,9 +5954,9 @@ func (b *pollBuilder) Meeting() *meetingBuilder {
 	}
 }
 
-func (b *pollBuilder) OptionList() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
+func (b *pollBuilder) OptionList() *pollOptionBuilder {
+	return &pollOptionBuilder{
+		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "OptionIDs",
@@ -6006,18 +5978,6 @@ func (b *pollBuilder) ProjectionList() *projectionBuilder {
 	}
 }
 
-func (b *pollBuilder) VotedList() *userBuilder {
-	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "VotedIDs",
-			relField: "VotedList",
-			many:     true,
-		},
-	}
-}
-
 func (r *Fetch) Poll(ids ...int) *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll]{
@@ -6027,145 +5987,472 @@ func (r *Fetch) Poll(ids ...int) *pollBuilder {
 	}
 }
 
-// PollCandidate has all fields from poll_candidate.
-type PollCandidate struct {
-	ID                  int
-	MeetingID           int
-	PollCandidateListID int
-	UserID              dsfetch.Maybe[int]
-	Weight              int
-	Meeting             *Meeting
-	PollCandidateList   *PollCandidateList
-	User                *dsfetch.Maybe[User]
+// PollBallot has all fields from poll_ballot.
+type PollBallot struct {
+	ID               int
+	PollBallotUserID dsfetch.Maybe[int]
+	PollID           int
+	Split            bool
+	Value            string
+	Weight           decimal.Decimal
+	PollBallotUser   *dsfetch.Maybe[PollBallotUser]
+	Poll             *Poll
 }
 
-type pollCandidateBuilder struct {
-	builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]
+type pollBallotBuilder struct {
+	builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]
 }
 
-func (b *pollCandidateBuilder) lazy(ds *Fetch, id int) *PollCandidate {
-	c := PollCandidate{}
-	ds.PollCandidate_ID(id).Lazy(&c.ID)
-	ds.PollCandidate_MeetingID(id).Lazy(&c.MeetingID)
-	ds.PollCandidate_PollCandidateListID(id).Lazy(&c.PollCandidateListID)
-	ds.PollCandidate_UserID(id).Lazy(&c.UserID)
-	ds.PollCandidate_Weight(id).Lazy(&c.Weight)
+func (b *pollBallotBuilder) lazy(ds *Fetch, id int) *PollBallot {
+	c := PollBallot{}
+	ds.PollBallot_ID(id).Lazy(&c.ID)
+	ds.PollBallot_PollBallotUserID(id).Lazy(&c.PollBallotUserID)
+	ds.PollBallot_PollID(id).Lazy(&c.PollID)
+	ds.PollBallot_Split(id).Lazy(&c.Split)
+	ds.PollBallot_Value(id).Lazy(&c.Value)
+	ds.PollBallot_Weight(id).Lazy(&c.Weight)
 	return &c
 }
 
-func (b *pollCandidateBuilder) Preload(rel builderWrapperI) *pollCandidateBuilder {
+func (b *pollBallotBuilder) Preload(rel builderWrapperI) *pollBallotBuilder {
 	b.builder.Preload(rel)
 	return b
 }
 
-func (b *pollCandidateBuilder) Meeting() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+func (b *pollBallotBuilder) PollBallotUser() *pollBallotUserBuilder {
+	return &pollBallotUserBuilder{
+		builder: builder[pollBallotUserBuilder, *pollBallotUserBuilder, PollBallotUser]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "MeetingID",
-			relField: "Meeting",
+			idField:  "PollBallotUserID",
+			relField: "PollBallotUser",
 		},
 	}
 }
 
-func (b *pollCandidateBuilder) PollCandidateList() *pollCandidateListBuilder {
-	return &pollCandidateListBuilder{
-		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
+func (b *pollBallotBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "PollCandidateListID",
-			relField: "PollCandidateList",
+			idField:  "PollID",
+			relField: "Poll",
 		},
 	}
 }
 
-func (b *pollCandidateBuilder) User() *userBuilder {
-	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UserID",
-			relField: "User",
-		},
-	}
-}
-
-func (r *Fetch) PollCandidate(ids ...int) *pollCandidateBuilder {
-	return &pollCandidateBuilder{
-		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
+func (r *Fetch) PollBallot(ids ...int) *pollBallotBuilder {
+	return &pollBallotBuilder{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
 			ids:   ids,
 			fetch: r,
 		},
 	}
 }
 
-// PollCandidateList has all fields from poll_candidate_list.
-type PollCandidateList struct {
-	ID                int
-	MeetingID         int
-	OptionID          int
-	PollCandidateIDs  []int
-	Meeting           *Meeting
-	Option            *Option
-	PollCandidateList []PollCandidate
+// PollBallotUser has all fields from poll_ballot_user.
+type PollBallotUser struct {
+	ActingMeetingUserID      int
+	ID                       int
+	PollBallotID             dsfetch.Maybe[int]
+	PollID                   int
+	RepresentedMeetingUserID int
+	ActingMeetingUser        *MeetingUser
+	PollBallot               *dsfetch.Maybe[PollBallot]
+	Poll                     *Poll
+	RepresentedMeetingUser   *MeetingUser
 }
 
-type pollCandidateListBuilder struct {
-	builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]
+type pollBallotUserBuilder struct {
+	builder[pollBallotUserBuilder, *pollBallotUserBuilder, PollBallotUser]
 }
 
-func (b *pollCandidateListBuilder) lazy(ds *Fetch, id int) *PollCandidateList {
-	c := PollCandidateList{}
-	ds.PollCandidateList_ID(id).Lazy(&c.ID)
-	ds.PollCandidateList_MeetingID(id).Lazy(&c.MeetingID)
-	ds.PollCandidateList_OptionID(id).Lazy(&c.OptionID)
-	ds.PollCandidateList_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
+func (b *pollBallotUserBuilder) lazy(ds *Fetch, id int) *PollBallotUser {
+	c := PollBallotUser{}
+	ds.PollBallotUser_ActingMeetingUserID(id).Lazy(&c.ActingMeetingUserID)
+	ds.PollBallotUser_ID(id).Lazy(&c.ID)
+	ds.PollBallotUser_PollBallotID(id).Lazy(&c.PollBallotID)
+	ds.PollBallotUser_PollID(id).Lazy(&c.PollID)
+	ds.PollBallotUser_RepresentedMeetingUserID(id).Lazy(&c.RepresentedMeetingUserID)
 	return &c
 }
 
-func (b *pollCandidateListBuilder) Preload(rel builderWrapperI) *pollCandidateListBuilder {
+func (b *pollBallotUserBuilder) Preload(rel builderWrapperI) *pollBallotUserBuilder {
 	b.builder.Preload(rel)
 	return b
 }
 
-func (b *pollCandidateListBuilder) Meeting() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+func (b *pollBallotUserBuilder) ActingMeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "MeetingID",
-			relField: "Meeting",
+			idField:  "ActingMeetingUserID",
+			relField: "ActingMeetingUser",
 		},
 	}
 }
 
-func (b *pollCandidateListBuilder) Option() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
+func (b *pollBallotUserBuilder) PollBallot() *pollBallotBuilder {
+	return &pollBallotBuilder{
+		builder: builder[pollBallotBuilder, *pollBallotBuilder, PollBallot]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "OptionID",
-			relField: "Option",
+			idField:  "PollBallotID",
+			relField: "PollBallot",
 		},
 	}
 }
 
-func (b *pollCandidateListBuilder) PollCandidateList() *pollCandidateBuilder {
-	return &pollCandidateBuilder{
-		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
+func (b *pollBallotUserBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "PollCandidateIDs",
-			relField: "PollCandidateList",
-			many:     true,
+			idField:  "PollID",
+			relField: "Poll",
 		},
 	}
 }
 
-func (r *Fetch) PollCandidateList(ids ...int) *pollCandidateListBuilder {
-	return &pollCandidateListBuilder{
-		builder: builder[pollCandidateListBuilder, *pollCandidateListBuilder, PollCandidateList]{
+func (b *pollBallotUserBuilder) RepresentedMeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "RepresentedMeetingUserID",
+			relField: "RepresentedMeetingUser",
+		},
+	}
+}
+
+func (r *Fetch) PollBallotUser(ids ...int) *pollBallotUserBuilder {
+	return &pollBallotUserBuilder{
+		builder: builder[pollBallotUserBuilder, *pollBallotUserBuilder, PollBallotUser]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollConfigApproval has all fields from poll_config_approval.
+type PollConfigApproval struct {
+	AllowAbstain          bool
+	ID                    int
+	OnehundredPercentBase dstypes.ApprovalOnehundredPercentBases
+	PollID                int
+	RequiredMajority      dstypes.RequiredMajority
+	Poll                  *Poll
+}
+
+type pollConfigApprovalBuilder struct {
+	builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval]
+}
+
+func (b *pollConfigApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigApproval {
+	c := PollConfigApproval{}
+	ds.PollConfigApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
+	ds.PollConfigApproval_ID(id).Lazy(&c.ID)
+	ds.PollConfigApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.PollConfigApproval_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigApproval_RequiredMajority(id).Lazy(&c.RequiredMajority)
+	return &c
+}
+
+func (b *pollConfigApprovalBuilder) Preload(rel builderWrapperI) *pollConfigApprovalBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigApprovalBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigApproval(ids ...int) *pollConfigApprovalBuilder {
+	return &pollConfigApprovalBuilder{
+		builder: builder[pollConfigApprovalBuilder, *pollConfigApprovalBuilder, PollConfigApproval]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollConfigRatingApproval has all fields from poll_config_rating_approval.
+type PollConfigRatingApproval struct {
+	AllowAbstain          bool
+	ID                    int
+	MaxOptionsAmount      int
+	MaxYesAmount          int
+	MinOptionsAmount      int
+	OnehundredPercentBase dstypes.RatingApprovalOnehundredPercentBases
+	PollID                int
+	RequiredMajority      dstypes.RequiredMajority
+	Poll                  *Poll
+}
+
+type pollConfigRatingApprovalBuilder struct {
+	builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval]
+}
+
+func (b *pollConfigRatingApprovalBuilder) lazy(ds *Fetch, id int) *PollConfigRatingApproval {
+	c := PollConfigRatingApproval{}
+	ds.PollConfigRatingApproval_AllowAbstain(id).Lazy(&c.AllowAbstain)
+	ds.PollConfigRatingApproval_ID(id).Lazy(&c.ID)
+	ds.PollConfigRatingApproval_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
+	ds.PollConfigRatingApproval_MaxYesAmount(id).Lazy(&c.MaxYesAmount)
+	ds.PollConfigRatingApproval_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
+	ds.PollConfigRatingApproval_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.PollConfigRatingApproval_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigRatingApproval_RequiredMajority(id).Lazy(&c.RequiredMajority)
+	return &c
+}
+
+func (b *pollConfigRatingApprovalBuilder) Preload(rel builderWrapperI) *pollConfigRatingApprovalBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigRatingApprovalBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigRatingApproval(ids ...int) *pollConfigRatingApprovalBuilder {
+	return &pollConfigRatingApprovalBuilder{
+		builder: builder[pollConfigRatingApprovalBuilder, *pollConfigRatingApprovalBuilder, PollConfigRatingApproval]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollConfigRatingScore has all fields from poll_config_rating_score.
+type PollConfigRatingScore struct {
+	ID                    int
+	MaxOptionsAmount      int
+	MaxVoteSum            int
+	MaxVotesPerOption     int
+	MinOptionsAmount      int
+	MinVoteSum            int
+	OnehundredPercentBase dstypes.RatingScoreOnehundredPercentBases
+	PollID                int
+	RequiredMajority      dstypes.RequiredMajority
+	Poll                  *Poll
+}
+
+type pollConfigRatingScoreBuilder struct {
+	builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore]
+}
+
+func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, id int) *PollConfigRatingScore {
+	c := PollConfigRatingScore{}
+	ds.PollConfigRatingScore_ID(id).Lazy(&c.ID)
+	ds.PollConfigRatingScore_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
+	ds.PollConfigRatingScore_MaxVoteSum(id).Lazy(&c.MaxVoteSum)
+	ds.PollConfigRatingScore_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
+	ds.PollConfigRatingScore_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
+	ds.PollConfigRatingScore_MinVoteSum(id).Lazy(&c.MinVoteSum)
+	ds.PollConfigRatingScore_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.PollConfigRatingScore_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigRatingScore_RequiredMajority(id).Lazy(&c.RequiredMajority)
+	return &c
+}
+
+func (b *pollConfigRatingScoreBuilder) Preload(rel builderWrapperI) *pollConfigRatingScoreBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigRatingScoreBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigRatingScore(ids ...int) *pollConfigRatingScoreBuilder {
+	return &pollConfigRatingScoreBuilder{
+		builder: builder[pollConfigRatingScoreBuilder, *pollConfigRatingScoreBuilder, PollConfigRatingScore]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollConfigSelection has all fields from poll_config_selection.
+type PollConfigSelection struct {
+	AllowNota             bool
+	DisplayChart          string
+	ID                    int
+	MaxOptionsAmount      int
+	MinOptionsAmount      int
+	OnehundredPercentBase dstypes.SelectionOnehundredPercentBases
+	PollID                int
+	RequiredMajority      dstypes.RequiredMajority
+	StrikeOut             bool
+	Poll                  *Poll
+}
+
+type pollConfigSelectionBuilder struct {
+	builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]
+}
+
+func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, id int) *PollConfigSelection {
+	c := PollConfigSelection{}
+	ds.PollConfigSelection_AllowNota(id).Lazy(&c.AllowNota)
+	ds.PollConfigSelection_DisplayChart(id).Lazy(&c.DisplayChart)
+	ds.PollConfigSelection_ID(id).Lazy(&c.ID)
+	ds.PollConfigSelection_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
+	ds.PollConfigSelection_MinOptionsAmount(id).Lazy(&c.MinOptionsAmount)
+	ds.PollConfigSelection_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.PollConfigSelection_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigSelection_RequiredMajority(id).Lazy(&c.RequiredMajority)
+	ds.PollConfigSelection_StrikeOut(id).Lazy(&c.StrikeOut)
+	return &c
+}
+
+func (b *pollConfigSelectionBuilder) Preload(rel builderWrapperI) *pollConfigSelectionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigSelectionBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigSelection(ids ...int) *pollConfigSelectionBuilder {
+	return &pollConfigSelectionBuilder{
+		builder: builder[pollConfigSelectionBuilder, *pollConfigSelectionBuilder, PollConfigSelection]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollConfigStvScottish has all fields from poll_config_stv_scottish.
+type PollConfigStvScottish struct {
+	ID     int
+	PollID int
+	Posts  int
+	Poll   *Poll
+}
+
+type pollConfigStvScottishBuilder struct {
+	builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]
+}
+
+func (b *pollConfigStvScottishBuilder) lazy(ds *Fetch, id int) *PollConfigStvScottish {
+	c := PollConfigStvScottish{}
+	ds.PollConfigStvScottish_ID(id).Lazy(&c.ID)
+	ds.PollConfigStvScottish_PollID(id).Lazy(&c.PollID)
+	ds.PollConfigStvScottish_Posts(id).Lazy(&c.Posts)
+	return &c
+}
+
+func (b *pollConfigStvScottishBuilder) Preload(rel builderWrapperI) *pollConfigStvScottishBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollConfigStvScottishBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollConfigStvScottish(ids ...int) *pollConfigStvScottishBuilder {
+	return &pollConfigStvScottishBuilder{
+		builder: builder[pollConfigStvScottishBuilder, *pollConfigStvScottishBuilder, PollConfigStvScottish]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// PollOption has all fields from poll_option.
+type PollOption struct {
+	ID            int
+	MeetingUserID dsfetch.Maybe[int]
+	PollID        int
+	Text          string
+	Weight        int
+	MeetingUser   *dsfetch.Maybe[MeetingUser]
+	Poll          *Poll
+}
+
+type pollOptionBuilder struct {
+	builder[pollOptionBuilder, *pollOptionBuilder, PollOption]
+}
+
+func (b *pollOptionBuilder) lazy(ds *Fetch, id int) *PollOption {
+	c := PollOption{}
+	ds.PollOption_ID(id).Lazy(&c.ID)
+	ds.PollOption_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.PollOption_PollID(id).Lazy(&c.PollID)
+	ds.PollOption_Text(id).Lazy(&c.Text)
+	ds.PollOption_Weight(id).Lazy(&c.Weight)
+	return &c
+}
+
+func (b *pollOptionBuilder) Preload(rel builderWrapperI) *pollOptionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *pollOptionBuilder) MeetingUser() *meetingUserBuilder {
+	return &meetingUserBuilder{
+		builder: builder[meetingUserBuilder, *meetingUserBuilder, MeetingUser]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MeetingUserID",
+			relField: "MeetingUser",
+		},
+	}
+}
+
+func (b *pollOptionBuilder) Poll() *pollBuilder {
+	return &pollBuilder{
+		builder: builder[pollBuilder, *pollBuilder, Poll]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollID",
+			relField: "Poll",
+		},
+	}
+}
+
+func (r *Fetch) PollOption(ids ...int) *pollOptionBuilder {
+	return &pollOptionBuilder{
+		builder: builder[pollOptionBuilder, *pollOptionBuilder, PollOption]{
 			ids:   ids,
 			fetch: r,
 		},
@@ -6174,7 +6461,6 @@ func (r *Fetch) PollCandidateList(ids ...int) *pollCandidateListBuilder {
 
 // Projection has all fields from projection.
 type Projection struct {
-	Content            json.RawMessage
 	ContentObjectID    string
 	CurrentProjectorID dsfetch.Maybe[int]
 	HistoryProjectorID dsfetch.Maybe[int]
@@ -6197,7 +6483,6 @@ type projectionBuilder struct {
 
 func (b *projectionBuilder) lazy(ds *Fetch, id int) *Projection {
 	c := Projection{}
-	ds.Projection_Content(id).Lazy(&c.Content)
 	ds.Projection_ContentObjectID(id).Lazy(&c.ContentObjectID)
 	ds.Projection_CurrentProjectorID(id).Lazy(&c.CurrentProjectorID)
 	ds.Projection_HistoryProjectorID(id).Lazy(&c.HistoryProjectorID)
@@ -6308,8 +6593,8 @@ type Projector struct {
 	UsedAsDefaultProjectorForMotionBlockInMeetingID    dsfetch.Maybe[int]
 	UsedAsDefaultProjectorForMotionInMeetingID         dsfetch.Maybe[int]
 	UsedAsDefaultProjectorForMotionPollInMeetingID     dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForPollInMeetingID           dsfetch.Maybe[int]
 	UsedAsDefaultProjectorForTopicInMeetingID          dsfetch.Maybe[int]
+	UsedAsDefaultProjectorForTopicPollInMeetingID      dsfetch.Maybe[int]
 	UsedAsReferenceProjectorMeetingID                  dsfetch.Maybe[int]
 	Width                                              int
 	CurrentProjectionList                              []Projection
@@ -6328,8 +6613,8 @@ type Projector struct {
 	UsedAsDefaultProjectorForMotionBlockInMeeting      *dsfetch.Maybe[Meeting]
 	UsedAsDefaultProjectorForMotionInMeeting           *dsfetch.Maybe[Meeting]
 	UsedAsDefaultProjectorForMotionPollInMeeting       *dsfetch.Maybe[Meeting]
-	UsedAsDefaultProjectorForPollInMeeting             *dsfetch.Maybe[Meeting]
 	UsedAsDefaultProjectorForTopicInMeeting            *dsfetch.Maybe[Meeting]
+	UsedAsDefaultProjectorForTopicPollInMeeting        *dsfetch.Maybe[Meeting]
 	UsedAsReferenceProjectorMeeting                    *dsfetch.Maybe[Meeting]
 }
 
@@ -6376,8 +6661,8 @@ func (b *projectorBuilder) lazy(ds *Fetch, id int) *Projector {
 	ds.Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMotionBlockInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForMotionInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMotionInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMotionPollInMeetingID)
-	ds.Projector_UsedAsDefaultProjectorForPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForPollInMeetingID)
 	ds.Projector_UsedAsDefaultProjectorForTopicInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForTopicInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForTopicPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForTopicPollInMeetingID)
 	ds.Projector_UsedAsReferenceProjectorMeetingID(id).Lazy(&c.UsedAsReferenceProjectorMeetingID)
 	ds.Projector_Width(id).Lazy(&c.Width)
 	return &c
@@ -6567,17 +6852,6 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForMotionPollInMeeting() *meeti
 	}
 }
 
-func (b *projectorBuilder) UsedAsDefaultProjectorForPollInMeeting() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UsedAsDefaultProjectorForPollInMeetingID",
-			relField: "UsedAsDefaultProjectorForPollInMeeting",
-		},
-	}
-}
-
 func (b *projectorBuilder) UsedAsDefaultProjectorForTopicInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
@@ -6585,6 +6859,17 @@ func (b *projectorBuilder) UsedAsDefaultProjectorForTopicInMeeting() *meetingBui
 			parent:   b,
 			idField:  "UsedAsDefaultProjectorForTopicInMeetingID",
 			relField: "UsedAsDefaultProjectorForTopicInMeeting",
+		},
+	}
+}
+
+func (b *projectorBuilder) UsedAsDefaultProjectorForTopicPollInMeeting() *meetingBuilder {
+	return &meetingBuilder{
+		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "UsedAsDefaultProjectorForTopicPollInMeetingID",
+			relField: "UsedAsDefaultProjectorForTopicPollInMeeting",
 		},
 	}
 }
@@ -7384,7 +7669,6 @@ type User struct {
 	CommitteeManagementIDs      []int
 	DefaultPassword             string
 	DefaultVoteWeight           decimal.Decimal
-	DelegatedVoteIDs            []int
 	Email                       string
 	External                    bool
 	FirstName                   string
@@ -7403,20 +7687,15 @@ type User struct {
 	MeetingIDs                  []int
 	MeetingUserIDs              []int
 	MemberNumber                string
-	OptionIDs                   []int
 	OrganizationID              int
 	OrganizationManagementLevel dstypes.User_OrganizationManagementLevel
 	Password                    string
-	PollCandidateIDs            []int
-	PollVotedIDs                []int
 	Pronoun                     string
 	SamlID                      string
 	Title                       string
 	Username                    string
-	VoteIDs                     []int
 	CommitteeList               []Committee
 	CommitteeManagementList     []Committee
-	DelegatedVoteList           []Vote
 	Gender                      *dsfetch.Maybe[Gender]
 	HistoryEntryList            []HistoryEntry
 	HistoryPositionList         []HistoryPosition
@@ -7424,11 +7703,7 @@ type User struct {
 	IsPresentInMeetingList      []Meeting
 	MeetingList                 []Meeting
 	MeetingUserList             []MeetingUser
-	OptionList                  []Option
 	Organization                *Organization
-	PollCandidateList           []PollCandidate
-	PollVotedList               []Poll
-	VoteList                    []Vote
 }
 
 type userBuilder struct {
@@ -7442,7 +7717,6 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_CommitteeManagementIDs(id).Lazy(&c.CommitteeManagementIDs)
 	ds.User_DefaultPassword(id).Lazy(&c.DefaultPassword)
 	ds.User_DefaultVoteWeight(id).Lazy(&c.DefaultVoteWeight)
-	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
 	ds.User_Email(id).Lazy(&c.Email)
 	ds.User_External(id).Lazy(&c.External)
 	ds.User_FirstName(id).Lazy(&c.FirstName)
@@ -7461,17 +7735,13 @@ func (b *userBuilder) lazy(ds *Fetch, id int) *User {
 	ds.User_MeetingIDs(id).Lazy(&c.MeetingIDs)
 	ds.User_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
 	ds.User_MemberNumber(id).Lazy(&c.MemberNumber)
-	ds.User_OptionIDs(id).Lazy(&c.OptionIDs)
 	ds.User_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.User_OrganizationManagementLevel(id).Lazy(&c.OrganizationManagementLevel)
 	ds.User_Password(id).Lazy(&c.Password)
-	ds.User_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
-	ds.User_PollVotedIDs(id).Lazy(&c.PollVotedIDs)
 	ds.User_Pronoun(id).Lazy(&c.Pronoun)
 	ds.User_SamlID(id).Lazy(&c.SamlID)
 	ds.User_Title(id).Lazy(&c.Title)
 	ds.User_Username(id).Lazy(&c.Username)
-	ds.User_VoteIDs(id).Lazy(&c.VoteIDs)
 	return &c
 }
 
@@ -7499,18 +7769,6 @@ func (b *userBuilder) CommitteeManagementList() *committeeBuilder {
 			parent:   b,
 			idField:  "CommitteeManagementIDs",
 			relField: "CommitteeManagementList",
-			many:     true,
-		},
-	}
-}
-
-func (b *userBuilder) DelegatedVoteList() *voteBuilder {
-	return &voteBuilder{
-		builder: builder[voteBuilder, *voteBuilder, Vote]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "DelegatedVoteIDs",
-			relField: "DelegatedVoteList",
 			many:     true,
 		},
 	}
@@ -7598,18 +7856,6 @@ func (b *userBuilder) MeetingUserList() *meetingUserBuilder {
 	}
 }
 
-func (b *userBuilder) OptionList() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "OptionIDs",
-			relField: "OptionList",
-			many:     true,
-		},
-	}
-}
-
 func (b *userBuilder) Organization() *organizationBuilder {
 	return &organizationBuilder{
 		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
@@ -7621,136 +7867,9 @@ func (b *userBuilder) Organization() *organizationBuilder {
 	}
 }
 
-func (b *userBuilder) PollCandidateList() *pollCandidateBuilder {
-	return &pollCandidateBuilder{
-		builder: builder[pollCandidateBuilder, *pollCandidateBuilder, PollCandidate]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "PollCandidateIDs",
-			relField: "PollCandidateList",
-			many:     true,
-		},
-	}
-}
-
-func (b *userBuilder) PollVotedList() *pollBuilder {
-	return &pollBuilder{
-		builder: builder[pollBuilder, *pollBuilder, Poll]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "PollVotedIDs",
-			relField: "PollVotedList",
-			many:     true,
-		},
-	}
-}
-
-func (b *userBuilder) VoteList() *voteBuilder {
-	return &voteBuilder{
-		builder: builder[voteBuilder, *voteBuilder, Vote]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "VoteIDs",
-			relField: "VoteList",
-			many:     true,
-		},
-	}
-}
-
 func (r *Fetch) User(ids ...int) *userBuilder {
 	return &userBuilder{
 		builder: builder[userBuilder, *userBuilder, User]{
-			ids:   ids,
-			fetch: r,
-		},
-	}
-}
-
-// Vote has all fields from vote.
-type Vote struct {
-	DelegatedUserID dsfetch.Maybe[int]
-	ID              int
-	MeetingID       int
-	OptionID        int
-	UserID          dsfetch.Maybe[int]
-	UserToken       string
-	Value           string
-	Weight          decimal.Decimal
-	DelegatedUser   *dsfetch.Maybe[User]
-	Meeting         *Meeting
-	Option          *Option
-	User            *dsfetch.Maybe[User]
-}
-
-type voteBuilder struct {
-	builder[voteBuilder, *voteBuilder, Vote]
-}
-
-func (b *voteBuilder) lazy(ds *Fetch, id int) *Vote {
-	c := Vote{}
-	ds.Vote_DelegatedUserID(id).Lazy(&c.DelegatedUserID)
-	ds.Vote_ID(id).Lazy(&c.ID)
-	ds.Vote_MeetingID(id).Lazy(&c.MeetingID)
-	ds.Vote_OptionID(id).Lazy(&c.OptionID)
-	ds.Vote_UserID(id).Lazy(&c.UserID)
-	ds.Vote_UserToken(id).Lazy(&c.UserToken)
-	ds.Vote_Value(id).Lazy(&c.Value)
-	ds.Vote_Weight(id).Lazy(&c.Weight)
-	return &c
-}
-
-func (b *voteBuilder) Preload(rel builderWrapperI) *voteBuilder {
-	b.builder.Preload(rel)
-	return b
-}
-
-func (b *voteBuilder) DelegatedUser() *userBuilder {
-	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "DelegatedUserID",
-			relField: "DelegatedUser",
-		},
-	}
-}
-
-func (b *voteBuilder) Meeting() *meetingBuilder {
-	return &meetingBuilder{
-		builder: builder[meetingBuilder, *meetingBuilder, Meeting]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "MeetingID",
-			relField: "Meeting",
-		},
-	}
-}
-
-func (b *voteBuilder) Option() *optionBuilder {
-	return &optionBuilder{
-		builder: builder[optionBuilder, *optionBuilder, Option]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "OptionID",
-			relField: "Option",
-		},
-	}
-}
-
-func (b *voteBuilder) User() *userBuilder {
-	return &userBuilder{
-		builder: builder[userBuilder, *userBuilder, User]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "UserID",
-			relField: "User",
-		},
-	}
-}
-
-func (r *Fetch) Vote(ids ...int) *voteBuilder {
-	return &voteBuilder{
-		builder: builder[voteBuilder, *voteBuilder, Vote]{
 			ids:   ids,
 			fetch: r,
 		},

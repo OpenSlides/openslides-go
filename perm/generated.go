@@ -3,13 +3,16 @@ package perm
 
 const (
 	AgendaItemCanManage                   TPermission = "agenda_item.can_manage"
+	AgendaItemCanManagePolls              TPermission = "agenda_item.can_manage_polls"
 	AgendaItemCanSee                      TPermission = "agenda_item.can_see"
 	AgendaItemCanSeeInternal              TPermission = "agenda_item.can_see_internal"
+	AgendaItemCanSeePolls                 TPermission = "agenda_item.can_see_polls"
 	AssignmentCanManage                   TPermission = "assignment.can_manage"
 	AssignmentCanManagePolls              TPermission = "assignment.can_manage_polls"
 	AssignmentCanNominateOther            TPermission = "assignment.can_nominate_other"
 	AssignmentCanNominateSelf             TPermission = "assignment.can_nominate_self"
 	AssignmentCanSee                      TPermission = "assignment.can_see"
+	AssignmentCanSeePolls                 TPermission = "assignment.can_see_polls"
 	ChatCanManage                         TPermission = "chat.can_manage"
 	ListOfSpeakersCanBeSpeaker            TPermission = "list_of_speakers.can_be_speaker"
 	ListOfSpeakersCanManage               TPermission = "list_of_speakers.can_manage"
@@ -33,8 +36,8 @@ const (
 	MotionCanSee                          TPermission = "motion.can_see"
 	MotionCanSeeInternal                  TPermission = "motion.can_see_internal"
 	MotionCanSeeOrigin                    TPermission = "motion.can_see_origin"
+	MotionCanSeePolls                     TPermission = "motion.can_see_polls"
 	MotionCanSupport                      TPermission = "motion.can_support"
-	PollCanManage                         TPermission = "poll.can_manage"
 	PollCanSeeProgress                    TPermission = "poll.can_see_progress"
 	ProjectorCanManage                    TPermission = "projector.can_manage"
 	ProjectorCanSee                       TPermission = "projector.can_see"
@@ -49,13 +52,16 @@ const (
 
 var derivatePerms = map[TPermission][]TPermission{
 	"agenda_item.can_manage":                      {"agenda_item.can_see", "agenda_item.can_see_internal"},
+	"agenda_item.can_manage_polls":                {"agenda_item.can_see", "agenda_item.can_see_internal", "agenda_item.can_see_polls"},
 	"agenda_item.can_see":                         {},
 	"agenda_item.can_see_internal":                {"agenda_item.can_see"},
+	"agenda_item.can_see_polls":                   {"agenda_item.can_see", "agenda_item.can_see_internal"},
 	"assignment.can_manage":                       {"assignment.can_nominate_other", "assignment.can_see"},
-	"assignment.can_manage_polls":                 {"assignment.can_see"},
+	"assignment.can_manage_polls":                 {"assignment.can_see", "assignment.can_see_polls"},
 	"assignment.can_nominate_other":               {"assignment.can_see"},
 	"assignment.can_nominate_self":                {"assignment.can_see"},
 	"assignment.can_see":                          {},
+	"assignment.can_see_polls":                    {"assignment.can_see"},
 	"chat.can_manage":                             {},
 	"list_of_speakers.can_be_speaker":             {},
 	"list_of_speakers.can_manage":                 {"list_of_speakers.can_see"},
@@ -75,12 +81,12 @@ var derivatePerms = map[TPermission][]TPermission{
 	"motion.can_forward":                          {"motion.can_see"},
 	"motion.can_manage":                           {"motion.can_create", "motion.can_create_amendments", "motion.can_forward", "motion.can_manage_metadata", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see", "motion.can_see_internal"},
 	"motion.can_manage_metadata":                  {"motion.can_see"},
-	"motion.can_manage_polls":                     {"motion.can_see"},
+	"motion.can_manage_polls":                     {"motion.can_see", "motion.can_see_polls"},
 	"motion.can_see":                              {},
 	"motion.can_see_internal":                     {"motion.can_see"},
 	"motion.can_see_origin":                       {"motion.can_see"},
+	"motion.can_see_polls":                        {"motion.can_see"},
 	"motion.can_support":                          {"motion.can_see"},
-	"poll.can_manage":                             {"poll.can_see_progress"},
 	"poll.can_see_progress":                       {},
 	"projector.can_manage":                        {"projector.can_see"},
 	"projector.can_see":                           {},
