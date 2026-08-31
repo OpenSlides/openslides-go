@@ -25,7 +25,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 	return r
 }
 
-// YAMLData creates key values from a yaml object.
+// YAMLDataErr creates key values from a yaml object.
 func YAMLDataErr(input string) (map[dskey.Key][]byte, error) {
 	input = strings.ReplaceAll(input, "\t", "  ")
 
