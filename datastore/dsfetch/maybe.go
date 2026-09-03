@@ -37,6 +37,13 @@ func (m *Maybe[T]) SetNull() {
 	m.hasValue = false
 }
 
+func (m *Maybe[T]) OrZero() T {
+	if m.hasValue {
+		return m.value
+	}
+	return *new(T)
+}
+
 func (m *Maybe[T]) UnmarshalJSON(bs []byte) error {
 	if string(bs) == "null" {
 		m.SetNull()
