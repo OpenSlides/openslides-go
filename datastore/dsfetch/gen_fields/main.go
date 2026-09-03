@@ -83,15 +83,14 @@ func genHeader(buf *bytes.Buffer) error {
 
 var typesToGo = map[string]string{
 	"ValueInt":         "int",
-	"ValueMaybeInt":    "Maybe[int]",
 	"ValueString":      "string",
-	"ValueMaybeString": "Maybe[string]",
 	"ValueDecimal":     "decimal.Decimal",
 	"ValueBool":        "bool",
 	"ValueFloat":       "float64",
 	"ValueJSON":        "json.RawMessage",
 	"ValueIntSlice":    "[]int",
 	"ValueStringSlice": "[]string",
+	"ValueMaybe":       "Maybe[T]",
 }
 
 func genValueTypes(buf *bytes.Buffer) error {
@@ -153,11 +152,14 @@ func toFields(raw map[string]collection.Collection) ([]field, error) {
 		for fieldName, collectionField := range collection.Fields {
 			f := field{}
 			f.GoName = dsgen.GoName(collectionName) + "_" + dsgen.GoName(fieldName)
-			f.ValueType = dsgen.ValueType(collectionName, fieldName, collectionField)
+			valueType, goType := dsgen.ValueType(collectionName, fieldName, collectionField)
+			f.ValueType = valueType
+			if !collectionField.Required {
+				f.ValueType = fmt.Sprintf("ValueMaybe[%s]", goType)
+			}
 			f.Collection = dsgen.FirstLower(dsgen.GoName(collectionName))
 			f.CollectionName = collectionName
 			f.FieldName = fieldName
-			f.Required = collectionField.Required
 
 			if collectionField.Type == "relation" || collectionField.Type == "generic-relation" {
 				f.SingleRelation = true
@@ -180,6 +182,5 @@ type field struct {
 	Collection     string
 	CollectionName string
 	FieldName      string
-	Required       bool
 	SingleRelation bool
 }

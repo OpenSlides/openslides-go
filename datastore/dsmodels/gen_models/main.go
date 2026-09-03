@@ -84,16 +84,16 @@ func genHeader(buf *bytes.Buffer) error {
 }
 
 var typesToGo = map[string]string{
-	"ValueInt":         "int",
-	"ValueMaybeInt":    "dsfetch.Maybe[int]",
-	"ValueString":      "string",
-	"ValueMaybeString": "dsfetch.Maybe[string]",
-	"ValueDecimal":     "decimal.Decimal",
-	"ValueBool":        "bool",
-	"ValueFloat":       "float64",
-	"ValueJSON":        "json.RawMessage",
-	"ValueIntSlice":    "[]int",
-	"ValueStringSlice": "[]string",
+	"ValueInt":           "int",
+	"ValueMaybe[int]":    "dsfetch.Maybe[int]",
+	"ValueString":        "string",
+	"ValueMaybe[string]": "dsfetch.Maybe[string]",
+	"ValueDecimal":       "decimal.Decimal",
+	"ValueBool":          "bool",
+	"ValueFloat":         "float64",
+	"ValueJSON":          "json.RawMessage",
+	"ValueIntSlice":      "[]int",
+	"ValueStringSlice":   "[]string",
 }
 
 func genValueTypes(buf *bytes.Buffer) error {
@@ -184,20 +184,20 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 			CollectionName: collectionName,
 		}
 		for fieldName, collectionField := range collection.Fields {
-			typeName := dsgen.ValueType(collectionName, fieldName, collectionField)
+			typeName, goType := dsgen.ValueType(collectionName, fieldName, collectionField)
 			if unwrapped, ok := strings.CutPrefix(typeName, "ValueEnum["); ok {
 				typeName = strings.TrimSuffix(unwrapped, "]")
 			}
-			fieldTypeName, ok := typesToGo[typeName]
-			if !ok {
-				fieldTypeName = typeName
+
+			if !collectionField.Required {
+				goType = fmt.Sprintf("dsfetch.Maybe[%s]", goType)
 			}
 
 			col.Fields = append(
 				col.Fields,
 				CollectionField{
 					Name:      dsgen.GoName(fieldName),
-					Type:      fieldTypeName,
+					Type:      goType,
 					FetchName: dsgen.GoName(collectionName) + "_" + dsgen.GoName(fieldName),
 				},
 			)

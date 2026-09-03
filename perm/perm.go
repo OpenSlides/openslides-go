@@ -38,7 +38,7 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		}
 	}
 
-	if !lockedMeeting {
+	if !lockedMeeting.OrZero() {
 		isOrgaAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 		if err != nil {
 			return nil, fmt.Errorf("getting organization management level: %w", err)
@@ -63,7 +63,7 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 	}
 
 	var meetingUserID int
-	for _, muid := range meetingUserIDs {
+	for _, muid := range meetingUserIDs.OrZero() {
 		mid, err := ds.MeetingUser_MeetingID(muid).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting userid of meeting user: %w", err)
@@ -84,7 +84,7 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		return nil, fmt.Errorf("getting locked out value: %w", err)
 	}
 
-	if lockedOut {
+	if lockedOut.OrZero() {
 		return nil, nil
 	}
 
@@ -140,7 +140,7 @@ func newPublicAccess(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Pe
 	if err != nil {
 		return nil, fmt.Errorf("checking meeting public access enabled: %w", err)
 	}
-	if !(enableMeetingPublicAccess && enabledOrgaPublicAccess) {
+	if !(enableMeetingPublicAccess.OrZero() && enabledOrgaPublicAccess.OrZero()) {
 		return nil, nil
 	}
 
@@ -187,7 +187,7 @@ func permissionsFromGroups(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...i
 			return nil, fmt.Errorf("getting permission for group %d: %w", gid, err)
 		}
 
-		for _, perm := range perms {
+		for _, perm := range perms.OrZero() {
 			permissions[TPermission(perm)] = true
 			for _, p := range derivatePerms[TPermission(perm)] {
 				permissions[p] = true
@@ -250,7 +250,7 @@ func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, user
 		return false, fmt.Errorf("getting oml of user %d: %w", userID, err)
 	}
 
-	switch dstypes.User_OrganizationManagementLevel(oml) {
+	switch dstypes.User_OrganizationManagementLevel(oml.OrZero()) {
 	case dstypes.User_OrganizationManagementLevelSuperadmin:
 		return true, nil
 
@@ -284,12 +284,17 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 		return nil, nil
 	}
 
-	committeeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
+	maybeCommitteeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
 	}
 
-	committeeChildIDs := make([][]int, len(committeeIDs))
+	committeeIDs, ok := maybeCommitteeIDs.Value()
+	if !ok {
+		return nil, nil
+	}
+
+	committeeChildIDs := make([]dsfetch.Maybe[[]int], len(committeeIDs))
 	for i, id := range committeeIDs {
 		ds.Committee_AllChildIDs(id).Lazy(&committeeChildIDs[i])
 	}
@@ -299,7 +304,7 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 	}
 
 	for _, childIDs := range committeeChildIDs {
-		committeeIDs = append(committeeIDs, childIDs...)
+		committeeIDs = append(committeeIDs, childIDs.OrZero()...)
 	}
 
 	return committeeIDs, nil

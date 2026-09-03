@@ -1,17 +1,13 @@
 // {{.TypeName}} is a value from the datastore.
-type {{.TypeName}} struct {
+type {{.TypeName}}{{- if .MaybeType}}[T any]{{- end}} struct {
 	err      error
-
 	key      dskey.Key
-	required bool
-
 	lazies []*{{.GoType}}
-
 	fetch *Fetch
 }
 
 // Value returns the value.
-func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
+func (v *{{.TypeName}}{{- if .MaybeType}}[T]{{- end}}) Value(ctx context.Context) ({{.GoType}}, error) {
 	var zero {{.GoType}}
 	if err:=v.err; err != nil {
 		return zero, v.err
@@ -33,19 +29,20 @@ func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
+func (v *{{.TypeName}}{{- if .MaybeType}}[T]{{- end}}) Lazy(value *{{.GoType}}) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
 
 // convert converts the json value to the type.
-func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
+func (v *{{.TypeName}}{{- if .MaybeType}}[T]{{- end}}) convert(p []byte) ({{.GoType}}, error) {
 	var zero {{.GoType}}
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+	    {{- if .MaybeType }}
+			return zero, nil
+		{{- else }}
+		    return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+		{{- end}}
 	}
 
 	{{- if eq .TypeName "ValueIntSlice"}}
@@ -78,7 +75,7 @@ func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 }
 
 // setLazy sets the lazy values defiend with Lazy.
-func (v *{{.TypeName}}) setLazy(p []byte) error {
+func (v *{{.TypeName}}{{- if .MaybeType}}[T]{{- end}}) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
