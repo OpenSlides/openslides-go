@@ -14,14 +14,10 @@ import (
 
 // ValueBool is a value from the datastore.
 type ValueBool struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*bool
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -56,10 +52,7 @@ func (v *ValueBool) Lazy(value *bool) {
 func (v *ValueBool) convert(p []byte) (bool, error) {
 	var zero bool
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	var value bool
 	if err := json.Unmarshal(p, &value); err != nil {
@@ -84,14 +77,10 @@ func (v *ValueBool) setLazy(p []byte) error {
 
 // ValueDecimal is a value from the datastore.
 type ValueDecimal struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*decimal.Decimal
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -126,10 +115,7 @@ func (v *ValueDecimal) Lazy(value *decimal.Decimal) {
 func (v *ValueDecimal) convert(p []byte) (decimal.Decimal, error) {
 	var zero decimal.Decimal
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	var strValue string
 	if err := json.Unmarshal(p, &strValue); err != nil {
@@ -159,14 +145,10 @@ func (v *ValueDecimal) setLazy(p []byte) error {
 
 // ValueFloat is a value from the datastore.
 type ValueFloat struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*float64
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -201,10 +183,7 @@ func (v *ValueFloat) Lazy(value *float64) {
 func (v *ValueFloat) convert(p []byte) (float64, error) {
 	var zero float64
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	var value float64
 	if err := json.Unmarshal(p, &value); err != nil {
@@ -229,14 +208,10 @@ func (v *ValueFloat) setLazy(p []byte) error {
 
 // ValueInt is a value from the datastore.
 type ValueInt struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*int
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -271,10 +246,7 @@ func (v *ValueInt) Lazy(value *int) {
 func (v *ValueInt) convert(p []byte) (int, error) {
 	var zero int
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	value, err := fastjson.DecodeInt(p)
 	if err != nil {
@@ -299,14 +271,10 @@ func (v *ValueInt) setLazy(p []byte) error {
 
 // ValueIntSlice is a value from the datastore.
 type ValueIntSlice struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*[]int
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -341,10 +309,7 @@ func (v *ValueIntSlice) Lazy(value *[]int) {
 func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
 	var zero []int
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	value, err := fastjson.DecodeIntList(p)
 	if err != nil {
@@ -369,14 +334,10 @@ func (v *ValueIntSlice) setLazy(p []byte) error {
 
 // ValueJSON is a value from the datastore.
 type ValueJSON struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*json.RawMessage
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -411,10 +372,7 @@ func (v *ValueJSON) Lazy(value *json.RawMessage) {
 func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
 	var zero json.RawMessage
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	var value json.RawMessage
 	if err := json.Unmarshal(p, &value); err != nil {
@@ -439,14 +397,10 @@ func (v *ValueJSON) setLazy(p []byte) error {
 
 // ValueMaybe is a value from the datastore.
 type ValueMaybe[T any] struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*Maybe[T]
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -481,9 +435,6 @@ func (v *ValueMaybe[T]) Lazy(value *Maybe[T]) {
 func (v *ValueMaybe[T]) convert(p []byte) (Maybe[T], error) {
 	var zero Maybe[T]
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
 		return zero, nil
 	}
 	var value Maybe[T]
@@ -509,14 +460,10 @@ func (v *ValueMaybe[T]) setLazy(p []byte) error {
 
 // ValueString is a value from the datastore.
 type ValueString struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*string
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -551,10 +498,7 @@ func (v *ValueString) Lazy(value *string) {
 func (v *ValueString) convert(p []byte) (string, error) {
 	var zero string
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	var value string
 	if err := json.Unmarshal(p, &value); err != nil {
@@ -579,14 +523,10 @@ func (v *ValueString) setLazy(p []byte) error {
 
 // ValueStringSlice is a value from the datastore.
 type ValueStringSlice struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
+	err    error
+	key    dskey.Key
 	lazies []*[]string
-
-	fetch *Fetch
+	fetch  *Fetch
 }
 
 // Value returns the value.
@@ -621,10 +561,7 @@ func (v *ValueStringSlice) Lazy(value *[]string) {
 func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
 	var zero []string
 	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
+		return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 	}
 	var value []string
 	if err := json.Unmarshal(p, &value); err != nil {
@@ -653,7 +590,7 @@ func (r *Fetch) ActionWorker_Created(actionWorkerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ActionWorker_ID(actionWorkerID int) *ValueInt {
@@ -662,7 +599,7 @@ func (r *Fetch) ActionWorker_ID(actionWorkerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ActionWorker_Name(actionWorkerID int) *ValueString {
@@ -671,7 +608,7 @@ func (r *Fetch) ActionWorker_Name(actionWorkerID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ActionWorker_Result(actionWorkerID int) *ValueMaybe[json.RawMessage] {
@@ -689,7 +626,7 @@ func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueEnum[dstypes.Action
 		return &ValueEnum[dstypes.ActionWorker_State]{err: err}
 	}
 
-	return &ValueEnum[dstypes.ActionWorker_State]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.ActionWorker_State]{fetch: r, key: key}
 }
 
 func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
@@ -698,7 +635,7 @@ func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ActionWorker_UserID(actionWorkerID int) *ValueInt {
@@ -707,7 +644,7 @@ func (r *Fetch) ActionWorker_UserID(actionWorkerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) AgendaItem_ChildIDs(agendaItemID int) *ValueMaybe[[]int] {
@@ -743,7 +680,7 @@ func (r *Fetch) AgendaItem_ContentObjectID(agendaItemID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) AgendaItem_Duration(agendaItemID int) *ValueMaybe[int] {
@@ -761,7 +698,7 @@ func (r *Fetch) AgendaItem_ID(agendaItemID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) AgendaItem_IsHidden(agendaItemID int) *ValueMaybe[bool] {
@@ -806,7 +743,7 @@ func (r *Fetch) AgendaItem_MeetingID(agendaItemID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) AgendaItem_ParentID(agendaItemID int) *ValueMaybe[int] {
@@ -860,7 +797,7 @@ func (r *Fetch) AssignmentCandidate_AssignmentID(assignmentCandidateID int) *Val
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) AssignmentCandidate_ID(assignmentCandidateID int) *ValueInt {
@@ -869,7 +806,7 @@ func (r *Fetch) AssignmentCandidate_ID(assignmentCandidateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueInt {
@@ -878,7 +815,7 @@ func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueI
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) AssignmentCandidate_MeetingUserID(assignmentCandidateID int) *ValueMaybe[int] {
@@ -959,7 +896,7 @@ func (r *Fetch) Assignment_ID(assignmentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Assignment_ListOfSpeakersID(assignmentID int) *ValueInt {
@@ -968,7 +905,7 @@ func (r *Fetch) Assignment_ListOfSpeakersID(assignmentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Assignment_MeetingID(assignmentID int) *ValueInt {
@@ -977,7 +914,7 @@ func (r *Fetch) Assignment_MeetingID(assignmentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Assignment_NumberPollCandidates(assignmentID int) *ValueMaybe[bool] {
@@ -1031,7 +968,7 @@ func (r *Fetch) Assignment_SequentialNumber(assignmentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Assignment_TagIDs(assignmentID int) *ValueMaybe[[]int] {
@@ -1049,7 +986,7 @@ func (r *Fetch) Assignment_Title(assignmentID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatGroup_ChatMessageIDs(chatGroupID int) *ValueMaybe[[]int] {
@@ -1067,7 +1004,7 @@ func (r *Fetch) ChatGroup_ID(chatGroupID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatGroup_MeetingID(chatGroupID int) *ValueInt {
@@ -1076,7 +1013,7 @@ func (r *Fetch) ChatGroup_MeetingID(chatGroupID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatGroup_Name(chatGroupID int) *ValueString {
@@ -1085,7 +1022,7 @@ func (r *Fetch) ChatGroup_Name(chatGroupID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatGroup_ReadGroupIDs(chatGroupID int) *ValueMaybe[[]int] {
@@ -1121,7 +1058,7 @@ func (r *Fetch) ChatMessage_ChatGroupID(chatMessageID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatMessage_Content(chatMessageID int) *ValueString {
@@ -1130,7 +1067,7 @@ func (r *Fetch) ChatMessage_Content(chatMessageID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatMessage_Created(chatMessageID int) *ValueInt {
@@ -1139,7 +1076,7 @@ func (r *Fetch) ChatMessage_Created(chatMessageID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatMessage_ID(chatMessageID int) *ValueInt {
@@ -1148,7 +1085,7 @@ func (r *Fetch) ChatMessage_ID(chatMessageID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
@@ -1157,7 +1094,7 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybe[int] {
@@ -1238,7 +1175,7 @@ func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_ManagerIDs(committeeID int) *ValueMaybe[[]int] {
@@ -1265,7 +1202,7 @@ func (r *Fetch) Committee_Name(committeeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_NativeUserIDs(committeeID int) *ValueMaybe[[]int] {
@@ -1283,7 +1220,7 @@ func (r *Fetch) Committee_OrganizationID(committeeID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_OrganizationTagIDs(committeeID int) *ValueMaybe[[]int] {
@@ -1328,7 +1265,7 @@ func (r *Fetch) Gender_ID(genderID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Gender_Name(genderID int) *ValueString {
@@ -1337,7 +1274,7 @@ func (r *Fetch) Gender_Name(genderID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Gender_OrganizationID(genderID int) *ValueInt {
@@ -1346,7 +1283,7 @@ func (r *Fetch) Gender_OrganizationID(genderID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Gender_UserIDs(genderID int) *ValueMaybe[[]int] {
@@ -1400,7 +1337,7 @@ func (r *Fetch) Group_ID(groupID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
@@ -1409,7 +1346,7 @@ func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_MeetingMediafileAccessGroupIDs(groupID int) *ValueMaybe[[]int] {
@@ -1445,7 +1382,7 @@ func (r *Fetch) Group_Name(groupID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_Permissions(groupID int) *ValueMaybe[[]string] {
@@ -1562,7 +1499,7 @@ func (r *Fetch) HistoryEntry_ID(historyEntryID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) HistoryEntry_MeetingID(historyEntryID int) *ValueMaybe[int] {
@@ -1598,7 +1535,7 @@ func (r *Fetch) HistoryEntry_PositionID(historyEntryID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) HistoryPosition_EntryIDs(historyPositionID int) *ValueMaybe[[]int] {
@@ -1616,7 +1553,7 @@ func (r *Fetch) HistoryPosition_ID(historyPositionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) HistoryPosition_OriginalUserID(historyPositionID int) *ValueMaybe[int] {
@@ -1652,7 +1589,7 @@ func (r *Fetch) ImportPreview_Created(importPreviewID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ImportPreview_ID(importPreviewID int) *ValueInt {
@@ -1661,7 +1598,7 @@ func (r *Fetch) ImportPreview_ID(importPreviewID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ImportPreview_Name(importPreviewID int) *ValueEnum[dstypes.ImportPreview_Name] {
@@ -1670,7 +1607,7 @@ func (r *Fetch) ImportPreview_Name(importPreviewID int) *ValueEnum[dstypes.Impor
 		return &ValueEnum[dstypes.ImportPreview_Name]{err: err}
 	}
 
-	return &ValueEnum[dstypes.ImportPreview_Name]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.ImportPreview_Name]{fetch: r, key: key}
 }
 
 func (r *Fetch) ImportPreview_Result(importPreviewID int) *ValueMaybe[json.RawMessage] {
@@ -1688,7 +1625,7 @@ func (r *Fetch) ImportPreview_State(importPreviewID int) *ValueEnum[dstypes.Impo
 		return &ValueEnum[dstypes.ImportPreview_State]{err: err}
 	}
 
-	return &ValueEnum[dstypes.ImportPreview_State]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.ImportPreview_State]{fetch: r, key: key}
 }
 
 func (r *Fetch) ListOfSpeakers_Closed(listOfSpeakersID int) *ValueMaybe[bool] {
@@ -1706,7 +1643,7 @@ func (r *Fetch) ListOfSpeakers_ContentObjectID(listOfSpeakersID int) *ValueStrin
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ListOfSpeakers_ID(listOfSpeakersID int) *ValueInt {
@@ -1715,7 +1652,7 @@ func (r *Fetch) ListOfSpeakers_ID(listOfSpeakersID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ListOfSpeakers_MeetingID(listOfSpeakersID int) *ValueInt {
@@ -1724,7 +1661,7 @@ func (r *Fetch) ListOfSpeakers_MeetingID(listOfSpeakersID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ListOfSpeakers_ModeratorNotes(listOfSpeakersID int) *ValueMaybe[string] {
@@ -1751,7 +1688,7 @@ func (r *Fetch) ListOfSpeakers_SequentialNumber(listOfSpeakersID int) *ValueInt 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ListOfSpeakers_SpeakerIDs(listOfSpeakersID int) *ValueMaybe[[]int] {
@@ -1814,7 +1751,7 @@ func (r *Fetch) Mediafile_ID(mediafileID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_IsDirectory(mediafileID int) *ValueMaybe[bool] {
@@ -1850,7 +1787,7 @@ func (r *Fetch) Mediafile_OwnerID(mediafileID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_ParentID(mediafileID int) *ValueMaybe[int] {
@@ -1886,7 +1823,7 @@ func (r *Fetch) Mediafile_Title(mediafileID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_Token(mediafileID int) *ValueMaybe[string] {
@@ -1922,7 +1859,7 @@ func (r *Fetch) MeetingMediafile_ID(meetingMediafileID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingMediafile_InheritedAccessGroupIDs(meetingMediafileID int) *ValueMaybe[[]int] {
@@ -1940,7 +1877,7 @@ func (r *Fetch) MeetingMediafile_IsPublic(meetingMediafileID int) *ValueBool {
 		return &ValueBool{err: err}
 	}
 
-	return &ValueBool{fetch: r, key: key, required: true}
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingMediafile_ListOfSpeakersID(meetingMediafileID int) *ValueMaybe[int] {
@@ -1958,7 +1895,7 @@ func (r *Fetch) MeetingMediafile_MediafileID(meetingMediafileID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingMediafile_MeetingID(meetingMediafileID int) *ValueInt {
@@ -1967,7 +1904,7 @@ func (r *Fetch) MeetingMediafile_MeetingID(meetingMediafileID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingMediafile_ProjectionIDs(meetingMediafileID int) *ValueMaybe[[]int] {
@@ -2165,7 +2102,7 @@ func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
@@ -2174,7 +2111,7 @@ func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_LockedOut(meetingUserID int) *ValueMaybe[bool] {
@@ -2192,7 +2129,7 @@ func (r *Fetch) MeetingUser_MeetingID(meetingUserID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_MotionEditorIDs(meetingUserID int) *ValueMaybe[[]int] {
@@ -2273,7 +2210,7 @@ func (r *Fetch) MeetingUser_UserID(meetingUserID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybe[int] {
@@ -2624,7 +2561,7 @@ func (r *Fetch) Meeting_CommitteeID(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ConferenceAutoConnect(meetingID int) *ValueMaybe[bool] {
@@ -2723,7 +2660,7 @@ func (r *Fetch) Meeting_DefaultGroupID(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybe[int] {
@@ -2741,7 +2678,7 @@ func (r *Fetch) Meeting_DefaultProjectorAgendaItemListIDs(meetingID int) *ValueI
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAmendmentIDs(meetingID int) *ValueIntSlice {
@@ -2750,7 +2687,7 @@ func (r *Fetch) Meeting_DefaultProjectorAmendmentIDs(meetingID int) *ValueIntSli
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAssignmentIDs(meetingID int) *ValueIntSlice {
@@ -2759,7 +2696,7 @@ func (r *Fetch) Meeting_DefaultProjectorAssignmentIDs(meetingID int) *ValueIntSl
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAssignmentPollIDs(meetingID int) *ValueIntSlice {
@@ -2768,7 +2705,7 @@ func (r *Fetch) Meeting_DefaultProjectorAssignmentPollIDs(meetingID int) *ValueI
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorCountdownIDs(meetingID int) *ValueIntSlice {
@@ -2777,7 +2714,7 @@ func (r *Fetch) Meeting_DefaultProjectorCountdownIDs(meetingID int) *ValueIntSli
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorCurrentLosIDs(meetingID int) *ValueIntSlice {
@@ -2786,7 +2723,7 @@ func (r *Fetch) Meeting_DefaultProjectorCurrentLosIDs(meetingID int) *ValueIntSl
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersIDs(meetingID int) *ValueIntSlice {
@@ -2795,7 +2732,7 @@ func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersIDs(meetingID int) *ValueI
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMediafileIDs(meetingID int) *ValueIntSlice {
@@ -2804,7 +2741,7 @@ func (r *Fetch) Meeting_DefaultProjectorMediafileIDs(meetingID int) *ValueIntSli
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMessageIDs(meetingID int) *ValueIntSlice {
@@ -2813,7 +2750,7 @@ func (r *Fetch) Meeting_DefaultProjectorMessageIDs(meetingID int) *ValueIntSlice
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMotionBlockIDs(meetingID int) *ValueIntSlice {
@@ -2822,7 +2759,7 @@ func (r *Fetch) Meeting_DefaultProjectorMotionBlockIDs(meetingID int) *ValueIntS
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMotionIDs(meetingID int) *ValueIntSlice {
@@ -2831,7 +2768,7 @@ func (r *Fetch) Meeting_DefaultProjectorMotionIDs(meetingID int) *ValueIntSlice 
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMotionPollIDs(meetingID int) *ValueIntSlice {
@@ -2840,7 +2777,7 @@ func (r *Fetch) Meeting_DefaultProjectorMotionPollIDs(meetingID int) *ValueIntSl
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorPollIDs(meetingID int) *ValueIntSlice {
@@ -2849,7 +2786,7 @@ func (r *Fetch) Meeting_DefaultProjectorPollIDs(meetingID int) *ValueIntSlice {
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
@@ -2858,7 +2795,7 @@ func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
 		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key, required: true}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_Description(meetingID int) *ValueMaybe[string] {
@@ -3083,7 +3020,7 @@ func (r *Fetch) Meeting_ID(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ImportedAt(meetingID int) *ValueMaybe[int] {
@@ -3587,7 +3524,7 @@ func (r *Fetch) Meeting_MotionPollProjectionMaxColumns(meetingID int) *ValueInt 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst] {
@@ -3596,7 +3533,7 @@ func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *Value
 		return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{err: err}
 	}
 
-	return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Meeting_MotionPollProjectionNameOrderFirst]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueMaybe[[]int] {
@@ -3722,7 +3659,7 @@ func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueI
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsDefaultLineNumbering(meetingID int) *ValueMaybe[dstypes.Meeting_MotionsDefaultLineNumbering] {
@@ -3749,7 +3686,7 @@ func (r *Fetch) Meeting_MotionsDefaultWorkflowID(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsEnableEditor(meetingID int) *ValueMaybe[bool] {
@@ -3992,7 +3929,7 @@ func (r *Fetch) Meeting_Name(meetingID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_OptionIDs(meetingID int) *ValueMaybe[[]int] {
@@ -4181,7 +4118,7 @@ func (r *Fetch) Meeting_ProjectorCountdownDefaultTime(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ProjectorCountdownIDs(meetingID int) *ValueMaybe[[]int] {
@@ -4199,7 +4136,7 @@ func (r *Fetch) Meeting_ProjectorCountdownWarningTime(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ProjectorIDs(meetingID int) *ValueMaybe[[]int] {
@@ -4226,7 +4163,7 @@ func (r *Fetch) Meeting_ReferenceProjectorID(meetingID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_RelevantHistoryEntryIDs(meetingID int) *ValueMaybe[[]int] {
@@ -4523,7 +4460,7 @@ func (r *Fetch) MotionBlock_ID(motionBlockID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionBlock_Internal(motionBlockID int) *ValueMaybe[bool] {
@@ -4541,7 +4478,7 @@ func (r *Fetch) MotionBlock_ListOfSpeakersID(motionBlockID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionBlock_MeetingID(motionBlockID int) *ValueInt {
@@ -4550,7 +4487,7 @@ func (r *Fetch) MotionBlock_MeetingID(motionBlockID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionBlock_MotionIDs(motionBlockID int) *ValueMaybe[[]int] {
@@ -4577,7 +4514,7 @@ func (r *Fetch) MotionBlock_SequentialNumber(motionBlockID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionBlock_Title(motionBlockID int) *ValueString {
@@ -4586,7 +4523,7 @@ func (r *Fetch) MotionBlock_Title(motionBlockID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCategory_ChildIDs(motionCategoryID int) *ValueMaybe[[]int] {
@@ -4604,7 +4541,7 @@ func (r *Fetch) MotionCategory_ID(motionCategoryID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCategory_Level(motionCategoryID int) *ValueMaybe[int] {
@@ -4622,7 +4559,7 @@ func (r *Fetch) MotionCategory_MeetingID(motionCategoryID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCategory_MotionIDs(motionCategoryID int) *ValueMaybe[[]int] {
@@ -4640,7 +4577,7 @@ func (r *Fetch) MotionCategory_Name(motionCategoryID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCategory_ParentID(motionCategoryID int) *ValueMaybe[int] {
@@ -4667,7 +4604,7 @@ func (r *Fetch) MotionCategory_SequentialNumber(motionCategoryID int) *ValueInt 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCategory_Weight(motionCategoryID int) *ValueMaybe[int] {
@@ -4694,7 +4631,7 @@ func (r *Fetch) MotionChangeRecommendation_ID(motionChangeRecommendationID int) 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionChangeRecommendation_Internal(motionChangeRecommendationID int) *ValueMaybe[bool] {
@@ -4712,7 +4649,7 @@ func (r *Fetch) MotionChangeRecommendation_LineFrom(motionChangeRecommendationID
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionChangeRecommendation_LineTo(motionChangeRecommendationID int) *ValueInt {
@@ -4721,7 +4658,7 @@ func (r *Fetch) MotionChangeRecommendation_LineTo(motionChangeRecommendationID i
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionChangeRecommendation_MeetingID(motionChangeRecommendationID int) *ValueInt {
@@ -4730,7 +4667,7 @@ func (r *Fetch) MotionChangeRecommendation_MeetingID(motionChangeRecommendationI
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionChangeRecommendation_MotionID(motionChangeRecommendationID int) *ValueInt {
@@ -4739,7 +4676,7 @@ func (r *Fetch) MotionChangeRecommendation_MotionID(motionChangeRecommendationID
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionChangeRecommendation_OtherDescription(motionChangeRecommendationID int) *ValueMaybe[string] {
@@ -4793,7 +4730,7 @@ func (r *Fetch) MotionCommentSection_ID(motionCommentSectionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCommentSection_MeetingID(motionCommentSectionID int) *ValueInt {
@@ -4802,7 +4739,7 @@ func (r *Fetch) MotionCommentSection_MeetingID(motionCommentSectionID int) *Valu
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCommentSection_Name(motionCommentSectionID int) *ValueString {
@@ -4811,7 +4748,7 @@ func (r *Fetch) MotionCommentSection_Name(motionCommentSectionID int) *ValueStri
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCommentSection_ReadGroupIDs(motionCommentSectionID int) *ValueMaybe[[]int] {
@@ -4829,7 +4766,7 @@ func (r *Fetch) MotionCommentSection_SequentialNumber(motionCommentSectionID int
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCommentSection_SubmitterCanWrite(motionCommentSectionID int) *ValueMaybe[bool] {
@@ -4865,7 +4802,7 @@ func (r *Fetch) MotionComment_Comment(motionCommentID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionComment_ID(motionCommentID int) *ValueInt {
@@ -4874,7 +4811,7 @@ func (r *Fetch) MotionComment_ID(motionCommentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionComment_MeetingID(motionCommentID int) *ValueInt {
@@ -4883,7 +4820,7 @@ func (r *Fetch) MotionComment_MeetingID(motionCommentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionComment_MotionID(motionCommentID int) *ValueInt {
@@ -4892,7 +4829,7 @@ func (r *Fetch) MotionComment_MotionID(motionCommentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionComment_SectionID(motionCommentID int) *ValueInt {
@@ -4901,7 +4838,7 @@ func (r *Fetch) MotionComment_SectionID(motionCommentID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionEditor_ID(motionEditorID int) *ValueInt {
@@ -4910,7 +4847,7 @@ func (r *Fetch) MotionEditor_ID(motionEditorID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionEditor_MeetingID(motionEditorID int) *ValueInt {
@@ -4919,7 +4856,7 @@ func (r *Fetch) MotionEditor_MeetingID(motionEditorID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionEditor_MeetingUserID(motionEditorID int) *ValueMaybe[int] {
@@ -4937,7 +4874,7 @@ func (r *Fetch) MotionEditor_MotionID(motionEditorID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionEditor_Weight(motionEditorID int) *ValueMaybe[int] {
@@ -5000,7 +4937,7 @@ func (r *Fetch) MotionState_CssClass(motionStateID int) *ValueEnum[dstypes.Motio
 		return &ValueEnum[dstypes.MotionState_CssClass]{err: err}
 	}
 
-	return &ValueEnum[dstypes.MotionState_CssClass]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.MotionState_CssClass]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMaybe[int] {
@@ -5018,7 +4955,7 @@ func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_IsInternal(motionStateID int) *ValueMaybe[bool] {
@@ -5036,7 +4973,7 @@ func (r *Fetch) MotionState_MeetingID(motionStateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_MergeAmendmentIntoFinal(motionStateID int) *ValueMaybe[dstypes.MotionState_MergeAmendmentIntoFinal] {
@@ -5072,7 +5009,7 @@ func (r *Fetch) MotionState_Name(motionStateID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_NextStateIDs(motionStateID int) *ValueMaybe[[]int] {
@@ -5180,7 +5117,7 @@ func (r *Fetch) MotionState_Weight(motionStateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_WorkflowID(motionStateID int) *ValueInt {
@@ -5189,7 +5126,7 @@ func (r *Fetch) MotionState_WorkflowID(motionStateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSubmitter_ID(motionSubmitterID int) *ValueInt {
@@ -5198,7 +5135,7 @@ func (r *Fetch) MotionSubmitter_ID(motionSubmitterID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
@@ -5207,7 +5144,7 @@ func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueMaybe[int] {
@@ -5225,7 +5162,7 @@ func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSubmitter_Weight(motionSubmitterID int) *ValueMaybe[int] {
@@ -5243,7 +5180,7 @@ func (r *Fetch) MotionSupporter_ID(motionSupporterID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSupporter_MeetingID(motionSupporterID int) *ValueInt {
@@ -5252,7 +5189,7 @@ func (r *Fetch) MotionSupporter_MeetingID(motionSupporterID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSupporter_MeetingUserID(motionSupporterID int) *ValueMaybe[int] {
@@ -5270,7 +5207,7 @@ func (r *Fetch) MotionSupporter_MotionID(motionSupporterID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybe[int] {
@@ -5297,7 +5234,7 @@ func (r *Fetch) MotionWorkflow_FirstStateID(motionWorkflowID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_ID(motionWorkflowID int) *ValueInt {
@@ -5306,7 +5243,7 @@ func (r *Fetch) MotionWorkflow_ID(motionWorkflowID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_MeetingID(motionWorkflowID int) *ValueInt {
@@ -5315,7 +5252,7 @@ func (r *Fetch) MotionWorkflow_MeetingID(motionWorkflowID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_Name(motionWorkflowID int) *ValueString {
@@ -5324,7 +5261,7 @@ func (r *Fetch) MotionWorkflow_Name(motionWorkflowID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_SequentialNumber(motionWorkflowID int) *ValueInt {
@@ -5333,7 +5270,7 @@ func (r *Fetch) MotionWorkflow_SequentialNumber(motionWorkflowID int) *ValueInt 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_StateIDs(motionWorkflowID int) *ValueMaybe[[]int] {
@@ -5351,7 +5288,7 @@ func (r *Fetch) MotionWorkingGroupSpeaker_ID(motionWorkingGroupSpeakerID int) *V
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkingGroupSpeaker_MeetingID(motionWorkingGroupSpeakerID int) *ValueInt {
@@ -5360,7 +5297,7 @@ func (r *Fetch) MotionWorkingGroupSpeaker_MeetingID(motionWorkingGroupSpeakerID 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkingGroupSpeaker_MeetingUserID(motionWorkingGroupSpeakerID int) *ValueMaybe[int] {
@@ -5378,7 +5315,7 @@ func (r *Fetch) MotionWorkingGroupSpeaker_MotionID(motionWorkingGroupSpeakerID i
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkingGroupSpeaker_Weight(motionWorkingGroupSpeakerID int) *ValueMaybe[int] {
@@ -5558,7 +5495,7 @@ func (r *Fetch) Motion_ID(motionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_IDenticalMotionIDs(motionID int) *ValueMaybe[[]int] {
@@ -5594,7 +5531,7 @@ func (r *Fetch) Motion_ListOfSpeakersID(motionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_MarkedForwarded(motionID int) *ValueMaybe[bool] {
@@ -5612,7 +5549,7 @@ func (r *Fetch) Motion_MeetingID(motionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_ModifiedFinalVersion(motionID int) *ValueMaybe[string] {
@@ -5756,7 +5693,7 @@ func (r *Fetch) Motion_SequentialNumber(motionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_SortChildIDs(motionID int) *ValueMaybe[[]int] {
@@ -5819,7 +5756,7 @@ func (r *Fetch) Motion_StateID(motionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_SubmitterIDs(motionID int) *ValueMaybe[[]int] {
@@ -5873,7 +5810,7 @@ func (r *Fetch) Motion_Title(motionID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueMaybe[int] {
@@ -5918,7 +5855,7 @@ func (r *Fetch) Option_ID(optionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Option_MeetingID(optionID int) *ValueInt {
@@ -5927,7 +5864,7 @@ func (r *Fetch) Option_MeetingID(optionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Option_No(optionID int) *ValueMaybe[decimal.Decimal] {
@@ -5999,7 +5936,7 @@ func (r *Fetch) OrganizationTag_Color(organizationTagID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) OrganizationTag_ID(organizationTagID int) *ValueInt {
@@ -6008,7 +5945,7 @@ func (r *Fetch) OrganizationTag_ID(organizationTagID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) OrganizationTag_Name(organizationTagID int) *ValueString {
@@ -6017,7 +5954,7 @@ func (r *Fetch) OrganizationTag_Name(organizationTagID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) OrganizationTag_OrganizationID(organizationTagID int) *ValueInt {
@@ -6026,7 +5963,7 @@ func (r *Fetch) OrganizationTag_OrganizationID(organizationTagID int) *ValueInt 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) OrganizationTag_TaggedIDs(organizationTagID int) *ValueMaybe[[]string] {
@@ -6134,7 +6071,7 @@ func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_LegalNotice(organizationID int) *ValueMaybe[string] {
@@ -6323,7 +6260,7 @@ func (r *Fetch) Organization_ThemeID(organizationID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_ThemeIDs(organizationID int) *ValueMaybe[[]int] {
@@ -6404,7 +6341,7 @@ func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) PersonalNote_ID(personalNoteID int) *ValueInt {
@@ -6413,7 +6350,7 @@ func (r *Fetch) PersonalNote_ID(personalNoteID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PersonalNote_MeetingID(personalNoteID int) *ValueInt {
@@ -6422,7 +6359,7 @@ func (r *Fetch) PersonalNote_MeetingID(personalNoteID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PersonalNote_MeetingUserID(personalNoteID int) *ValueInt {
@@ -6431,7 +6368,7 @@ func (r *Fetch) PersonalNote_MeetingUserID(personalNoteID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PersonalNote_Note(personalNoteID int) *ValueMaybe[string] {
@@ -6458,7 +6395,7 @@ func (r *Fetch) PointOfOrderCategory_ID(pointOfOrderCategoryID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *ValueInt {
@@ -6467,7 +6404,7 @@ func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *Valu
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt {
@@ -6476,7 +6413,7 @@ func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt 
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PointOfOrderCategory_SpeakerIDs(pointOfOrderCategoryID int) *ValueMaybe[[]int] {
@@ -6494,7 +6431,7 @@ func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueStri
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
@@ -6503,7 +6440,7 @@ func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidateList_MeetingID(pollCandidateListID int) *ValueInt {
@@ -6512,7 +6449,7 @@ func (r *Fetch) PollCandidateList_MeetingID(pollCandidateListID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidateList_OptionID(pollCandidateListID int) *ValueInt {
@@ -6521,7 +6458,7 @@ func (r *Fetch) PollCandidateList_OptionID(pollCandidateListID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidateList_PollCandidateIDs(pollCandidateListID int) *ValueMaybe[[]int] {
@@ -6539,7 +6476,7 @@ func (r *Fetch) PollCandidate_ID(pollCandidateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidate_MeetingID(pollCandidateID int) *ValueInt {
@@ -6548,7 +6485,7 @@ func (r *Fetch) PollCandidate_MeetingID(pollCandidateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt {
@@ -6557,7 +6494,7 @@ func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueMaybe[int] {
@@ -6575,7 +6512,7 @@ func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_Backend(pollID int) *ValueEnum[dstypes.PollBackends] {
@@ -6584,7 +6521,7 @@ func (r *Fetch) Poll_Backend(pollID int) *ValueEnum[dstypes.PollBackends] {
 		return &ValueEnum[dstypes.PollBackends]{err: err}
 	}
 
-	return &ValueEnum[dstypes.PollBackends]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.PollBackends]{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
@@ -6593,7 +6530,7 @@ func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_Description(pollID int) *ValueMaybe[string] {
@@ -6665,7 +6602,7 @@ func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_IsPseudoanonymized(pollID int) *ValueMaybe[bool] {
@@ -6719,7 +6656,7 @@ func (r *Fetch) Poll_MeetingID(pollID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_MinVotesAmount(pollID int) *ValueMaybe[int] {
@@ -6737,7 +6674,7 @@ func (r *Fetch) Poll_OnehundredPercentBase(pollID int) *ValueEnum[dstypes.Onehun
 		return &ValueEnum[dstypes.OnehundredPercentBases]{err: err}
 	}
 
-	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.OnehundredPercentBases]{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_OptionIDs(pollID int) *ValueMaybe[[]int] {
@@ -6755,7 +6692,7 @@ func (r *Fetch) Poll_Pollmethod(pollID int) *ValueEnum[dstypes.Poll_Pollmethod] 
 		return &ValueEnum[dstypes.Poll_Pollmethod]{err: err}
 	}
 
-	return &ValueEnum[dstypes.Poll_Pollmethod]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Poll_Pollmethod]{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_ProjectionIDs(pollID int) *ValueMaybe[[]int] {
@@ -6773,7 +6710,7 @@ func (r *Fetch) Poll_SequentialNumber(pollID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_State(pollID int) *ValueMaybe[dstypes.Poll_State] {
@@ -6791,7 +6728,7 @@ func (r *Fetch) Poll_Title(pollID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_Type(pollID int) *ValueEnum[dstypes.Poll_Type] {
@@ -6800,7 +6737,7 @@ func (r *Fetch) Poll_Type(pollID int) *ValueEnum[dstypes.Poll_Type] {
 		return &ValueEnum[dstypes.Poll_Type]{err: err}
 	}
 
-	return &ValueEnum[dstypes.Poll_Type]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.Poll_Type]{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_VotedIDs(pollID int) *ValueMaybe[[]int] {
@@ -6854,7 +6791,7 @@ func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Projection_CurrentProjectorID(projectionID int) *ValueMaybe[int] {
@@ -6881,7 +6818,7 @@ func (r *Fetch) Projection_ID(projectionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Projection_MeetingID(projectionID int) *ValueInt {
@@ -6890,7 +6827,7 @@ func (r *Fetch) Projection_MeetingID(projectionID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Projection_Options(projectionID int) *ValueMaybe[json.RawMessage] {
@@ -6971,7 +6908,7 @@ func (r *Fetch) ProjectorCountdown_ID(projectorCountdownID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorCountdown_MeetingID(projectorCountdownID int) *ValueInt {
@@ -6980,7 +6917,7 @@ func (r *Fetch) ProjectorCountdown_MeetingID(projectorCountdownID int) *ValueInt
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorCountdown_ProjectionIDs(projectorCountdownID int) *ValueMaybe[[]int] {
@@ -7007,7 +6944,7 @@ func (r *Fetch) ProjectorCountdown_Title(projectorCountdownID int) *ValueString 
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(projectorCountdownID int) *ValueMaybe[int] {
@@ -7034,7 +6971,7 @@ func (r *Fetch) ProjectorMessage_ID(projectorMessageID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorMessage_MeetingID(projectorMessageID int) *ValueInt {
@@ -7043,7 +6980,7 @@ func (r *Fetch) ProjectorMessage_MeetingID(projectorMessageID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorMessage_Message(projectorMessageID int) *ValueString {
@@ -7052,7 +6989,7 @@ func (r *Fetch) ProjectorMessage_Message(projectorMessageID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorMessage_ProjectionIDs(projectorMessageID int) *ValueMaybe[[]int] {
@@ -7187,7 +7124,7 @@ func (r *Fetch) Projector_ID(projectorID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Projector_IsInternal(projectorID int) *ValueMaybe[bool] {
@@ -7205,7 +7142,7 @@ func (r *Fetch) Projector_MeetingID(projectorID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Projector_Name(projectorID int) *ValueString {
@@ -7214,7 +7151,7 @@ func (r *Fetch) Projector_Name(projectorID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Projector_PreviewProjectionIDs(projectorID int) *ValueMaybe[[]int] {
@@ -7250,7 +7187,7 @@ func (r *Fetch) Projector_SequentialNumber(projectorID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Projector_ShowClock(projectorID int) *ValueMaybe[bool] {
@@ -7466,7 +7403,7 @@ func (r *Fetch) Speaker_ID(speakerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_ListOfSpeakersID(speakerID int) *ValueInt {
@@ -7475,7 +7412,7 @@ func (r *Fetch) Speaker_ListOfSpeakersID(speakerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
@@ -7484,7 +7421,7 @@ func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueMaybe[int] {
@@ -7601,7 +7538,7 @@ func (r *Fetch) StructureLevelListOfSpeakers_ID(structureLevelListOfSpeakersID i
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_InitialTime(structureLevelListOfSpeakersID int) *ValueInt {
@@ -7610,7 +7547,7 @@ func (r *Fetch) StructureLevelListOfSpeakers_InitialTime(structureLevelListOfSpe
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_ListOfSpeakersID(structureLevelListOfSpeakersID int) *ValueInt {
@@ -7619,7 +7556,7 @@ func (r *Fetch) StructureLevelListOfSpeakers_ListOfSpeakersID(structureLevelList
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_MeetingID(structureLevelListOfSpeakersID int) *ValueInt {
@@ -7628,7 +7565,7 @@ func (r *Fetch) StructureLevelListOfSpeakers_MeetingID(structureLevelListOfSpeak
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_RemainingTime(structureLevelListOfSpeakersID int) *ValueFloat {
@@ -7637,7 +7574,7 @@ func (r *Fetch) StructureLevelListOfSpeakers_RemainingTime(structureLevelListOfS
 		return &ValueFloat{err: err}
 	}
 
-	return &ValueFloat{fetch: r, key: key, required: true}
+	return &ValueFloat{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_SpeakerIDs(structureLevelListOfSpeakersID int) *ValueMaybe[[]int] {
@@ -7655,7 +7592,7 @@ func (r *Fetch) StructureLevelListOfSpeakers_StructureLevelID(structureLevelList
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevel_Color(structureLevelID int) *ValueMaybe[string] {
@@ -7682,7 +7619,7 @@ func (r *Fetch) StructureLevel_ID(structureLevelID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevel_MeetingID(structureLevelID int) *ValueInt {
@@ -7691,7 +7628,7 @@ func (r *Fetch) StructureLevel_MeetingID(structureLevelID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevel_MeetingUserIDs(structureLevelID int) *ValueMaybe[[]int] {
@@ -7709,7 +7646,7 @@ func (r *Fetch) StructureLevel_Name(structureLevelID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevel_StructureLevelListOfSpeakersIDs(structureLevelID int) *ValueMaybe[[]int] {
@@ -7727,7 +7664,7 @@ func (r *Fetch) Tag_ID(tagID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Tag_MeetingID(tagID int) *ValueInt {
@@ -7736,7 +7673,7 @@ func (r *Fetch) Tag_MeetingID(tagID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Tag_Name(tagID int) *ValueString {
@@ -7745,7 +7682,7 @@ func (r *Fetch) Tag_Name(tagID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Tag_TaggedIDs(tagID int) *ValueMaybe[[]string] {
@@ -7817,7 +7754,7 @@ func (r *Fetch) Theme_Accent500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Accent600(themeID int) *ValueMaybe[string] {
@@ -7907,7 +7844,7 @@ func (r *Fetch) Theme_ID(themeID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Name(themeID int) *ValueString {
@@ -7916,7 +7853,7 @@ func (r *Fetch) Theme_Name(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_No(themeID int) *ValueMaybe[string] {
@@ -7934,7 +7871,7 @@ func (r *Fetch) Theme_OrganizationID(themeID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Primary100(themeID int) *ValueMaybe[string] {
@@ -7988,7 +7925,7 @@ func (r *Fetch) Theme_Primary500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Primary600(themeID int) *ValueMaybe[string] {
@@ -8123,7 +8060,7 @@ func (r *Fetch) Theme_Warn500(themeID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Warn600(themeID int) *ValueMaybe[string] {
@@ -8213,7 +8150,7 @@ func (r *Fetch) Topic_AgendaItemID(topicID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Topic_AttachmentMeetingMediafileIDs(topicID int) *ValueMaybe[[]int] {
@@ -8231,7 +8168,7 @@ func (r *Fetch) Topic_ID(topicID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Topic_ListOfSpeakersID(topicID int) *ValueInt {
@@ -8240,7 +8177,7 @@ func (r *Fetch) Topic_ListOfSpeakersID(topicID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Topic_MeetingID(topicID int) *ValueInt {
@@ -8249,7 +8186,7 @@ func (r *Fetch) Topic_MeetingID(topicID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Topic_PollIDs(topicID int) *ValueMaybe[[]int] {
@@ -8276,7 +8213,7 @@ func (r *Fetch) Topic_SequentialNumber(topicID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Topic_Text(topicID int) *ValueMaybe[string] {
@@ -8294,7 +8231,7 @@ func (r *Fetch) Topic_Title(topicID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) User_CanChangeOwnPassword(userID int) *ValueMaybe[bool] {
@@ -8420,7 +8357,7 @@ func (r *Fetch) User_ID(userID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) User_IsActive(userID int) *ValueMaybe[bool] {
@@ -8528,7 +8465,7 @@ func (r *Fetch) User_OrganizationID(userID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) User_OrganizationManagementLevel(userID int) *ValueMaybe[dstypes.User_OrganizationManagementLevel] {
@@ -8600,7 +8537,7 @@ func (r *Fetch) User_Username(userID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) User_VoteIDs(userID int) *ValueMaybe[[]int] {
@@ -8627,7 +8564,7 @@ func (r *Fetch) Vote_ID(voteID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_MeetingID(voteID int) *ValueInt {
@@ -8636,7 +8573,7 @@ func (r *Fetch) Vote_MeetingID(voteID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_OptionID(voteID int) *ValueInt {
@@ -8645,7 +8582,7 @@ func (r *Fetch) Vote_OptionID(voteID int) *ValueInt {
 		return &ValueInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_UserID(voteID int) *ValueMaybe[int] {
@@ -8663,7 +8600,7 @@ func (r *Fetch) Vote_UserToken(voteID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_Value(voteID int) *ValueString {
@@ -8672,7 +8609,7 @@ func (r *Fetch) Vote_Value(voteID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key, required: true}
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_Weight(voteID int) *ValueDecimal {
@@ -8681,5 +8618,5 @@ func (r *Fetch) Vote_Weight(voteID int) *ValueDecimal {
 		return &ValueDecimal{err: err}
 	}
 
-	return &ValueDecimal{fetch: r, key: key, required: true}
+	return &ValueDecimal{fetch: r, key: key}
 }

@@ -160,7 +160,6 @@ func toFields(raw map[string]collection.Collection) ([]field, error) {
 			f.Collection = dsgen.FirstLower(dsgen.GoName(collectionName))
 			f.CollectionName = collectionName
 			f.FieldName = fieldName
-			f.Required = collectionField.Required
 
 			if collectionField.Type == "relation" || collectionField.Type == "generic-relation" {
 				f.SingleRelation = true
@@ -183,6 +182,5 @@ type field struct {
 	Collection     string
 	CollectionName string
 	FieldName      string
-	Required       bool
 	SingleRelation bool
 }
