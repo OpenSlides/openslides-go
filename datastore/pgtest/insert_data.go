@@ -168,8 +168,15 @@ func genNMInfo(key dskey.Key, value []byte) (nmInfo, error) {
 		reverse = true
 	}
 
-	c1, f1 := splitCollectionName(cfs[0])
-	c2, _ := splitCollectionName(cfs[1])
+	c1, f1, err := splitCollectionName(cfs[0])
+	if err != nil {
+		return nmInfo{}, fmt.Errorf("split collection name %s: %w", cfs[0], err)
+	}
+	c2, _, err := splitCollectionName(cfs[1])
+	if err != nil {
+		return nmInfo{}, fmt.Errorf("split collection name %s: %w", cfs[1], err)
+	}
+
 	nmTableName := fmt.Sprintf("nm_%s_%s_%s_t", c1, f1, c2)
 
 	otherIDs, err := fastjson.DecodeIntList(value)
@@ -191,12 +198,12 @@ func genNMInfo(key dskey.Key, value []byte) (nmInfo, error) {
 	}, nil
 }
 
-func splitCollectionName(cf string) (string, string) {
+func splitCollectionName(cf string) (string, string, error) {
 	parts := strings.Split(cf, "/")
 	if len(parts) != 2 {
-		panic(fmt.Sprintf("invalid collection name %s", cf))
+		return "", "", fmt.Errorf("invalid collection name %s", cf)
 	}
-	return parts[0], parts[1]
+	return parts[0], parts[1], nil
 }
 
 func inserNMData(ctx context.Context, tx pgx.Tx, nm nmInfo) error {

@@ -1,0 +1,8 @@
+// {{ .Name }} represents the {{ .Name }} enum type.
+type {{ .Name }} string
+
+const (
+{{- range $val := .Values }}
+	{{ $.Name }}{{ $val.GoName }} {{ $.Name }} = "{{ $val.RawValue }}"
+{{- end }}
+)
