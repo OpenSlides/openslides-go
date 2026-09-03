@@ -184,20 +184,20 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 			CollectionName: collectionName,
 		}
 		for fieldName, collectionField := range collection.Fields {
-			typeName, _ := dsgen.ValueType(collectionName, fieldName, collectionField)
+			typeName, goType := dsgen.ValueType(collectionName, fieldName, collectionField)
 			if unwrapped, ok := strings.CutPrefix(typeName, "ValueEnum["); ok {
 				typeName = strings.TrimSuffix(unwrapped, "]")
 			}
-			fieldTypeName, ok := typesToGo[typeName]
-			if !ok {
-				fieldTypeName = typeName
+
+			if !collectionField.Required {
+				goType = fmt.Sprintf("dsfetch.Maybe[%s]", goType)
 			}
 
 			col.Fields = append(
 				col.Fields,
 				CollectionField{
 					Name:      dsgen.GoName(fieldName),
-					Type:      fieldTypeName,
+					Type:      goType,
 					FetchName: dsgen.GoName(collectionName) + "_" + dsgen.GoName(fieldName),
 				},
 			)
