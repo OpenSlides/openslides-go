@@ -84,16 +84,16 @@ func genHeader(buf *bytes.Buffer) error {
 }
 
 var typesToGo = map[string]string{
-	"ValueInt":         "int",
-	"ValueMaybeInt":    "dsfetch.Maybe[int]",
-	"ValueString":      "string",
-	"ValueMaybeString": "dsfetch.Maybe[string]",
-	"ValueDecimal":     "decimal.Decimal",
-	"ValueBool":        "bool",
-	"ValueFloat":       "float64",
-	"ValueJSON":        "json.RawMessage",
-	"ValueIntSlice":    "[]int",
-	"ValueStringSlice": "[]string",
+	"ValueInt":           "int",
+	"ValueMaybe[int]":    "dsfetch.Maybe[int]",
+	"ValueString":        "string",
+	"ValueMaybe[string]": "dsfetch.Maybe[string]",
+	"ValueDecimal":       "decimal.Decimal",
+	"ValueBool":          "bool",
+	"ValueFloat":         "float64",
+	"ValueJSON":          "json.RawMessage",
+	"ValueIntSlice":      "[]int",
+	"ValueStringSlice":   "[]string",
 }
 
 func genValueTypes(buf *bytes.Buffer) error {

@@ -73,11 +73,11 @@ func ValueType(collection, fieldName string, field *collection.Field) string {
 	collectionType := field.Type
 
 	if !required && collectionType == "relation" {
-		return "ValueMaybeInt"
+		return "ValueMaybe[int]"
 	}
 
 	if !required && collectionType == "generic-relation" {
-		return "ValueMaybeString"
+		return "ValueMaybe[string]"
 	}
 
 	if field.Enum.GlobalName != "" || len(field.Enum.Values) != 0 {

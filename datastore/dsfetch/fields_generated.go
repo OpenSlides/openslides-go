@@ -437,21 +437,21 @@ func (v *ValueJSON) setLazy(p []byte) error {
 	return nil
 }
 
-// ValueMaybeInt is a value from the datastore.
-type ValueMaybeInt struct {
+// ValueMaybe is a value from the datastore.
+type ValueMaybe[T any] struct {
 	err error
 
 	key      dskey.Key
 	required bool
 
-	lazies []*Maybe[int]
+	lazies []*Maybe[T]
 
 	fetch *Fetch
 }
 
 // Value returns the value.
-func (v *ValueMaybeInt) Value(ctx context.Context) (Maybe[int], error) {
-	var zero Maybe[int]
+func (v *ValueMaybe[T]) Value(ctx context.Context) (Maybe[T], error) {
+	var zero Maybe[T]
 	if err := v.err; err != nil {
 		return zero, v.err
 	}
@@ -472,21 +472,21 @@ func (v *ValueMaybeInt) Value(ctx context.Context) (Maybe[int], error) {
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueMaybeInt) Lazy(value *Maybe[int]) {
+func (v *ValueMaybe[T]) Lazy(value *Maybe[T]) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
 
 // convert converts the json value to the type.
-func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
-	var zero Maybe[int]
+func (v *ValueMaybe[T]) convert(p []byte) (Maybe[T], error) {
+	var zero Maybe[T]
 	if p == nil {
 		if v.required {
 			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
 		return zero, nil
 	}
-	var value Maybe[int]
+	var value Maybe[T]
 	if err := json.Unmarshal(p, &value); err != nil {
 		return zero, fmt.Errorf("decoding value %q: %w", p, err)
 	}
@@ -494,77 +494,7 @@ func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
 }
 
 // setLazy sets the lazy values defiend with Lazy.
-func (v *ValueMaybeInt) setLazy(p []byte) error {
-	value, err := v.convert(p)
-	if err != nil {
-		return fmt.Errorf("converting value: %w", err)
-	}
-
-	for i := 0; i < len(v.lazies); i++ {
-		*v.lazies[i] = value
-	}
-
-	return nil
-}
-
-// ValueMaybeString is a value from the datastore.
-type ValueMaybeString struct {
-	err error
-
-	key      dskey.Key
-	required bool
-
-	lazies []*Maybe[string]
-
-	fetch *Fetch
-}
-
-// Value returns the value.
-func (v *ValueMaybeString) Value(ctx context.Context) (Maybe[string], error) {
-	var zero Maybe[string]
-	if err := v.err; err != nil {
-		return zero, v.err
-	}
-
-	rawValue, err := v.fetch.getOneKey(ctx, v.key)
-	if err != nil {
-		return zero, err
-	}
-
-	value, err := v.convert(rawValue)
-	if err != nil {
-		return zero, fmt.Errorf("converting raw value: %w", err)
-	}
-
-	return value, nil
-}
-
-// Lazy sets a value as soon as it es executed.
-//
-// Make sure to call request.Execute() before using the value.
-func (v *ValueMaybeString) Lazy(value *Maybe[string]) {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-	v.lazies = append(v.lazies, value)
-}
-
-// convert converts the json value to the type.
-func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
-	var zero Maybe[string]
-	if p == nil {
-		if v.required {
-			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-		}
-		return zero, nil
-	}
-	var value Maybe[string]
-	if err := json.Unmarshal(p, &value); err != nil {
-		return zero, fmt.Errorf("decoding value %q: %w", p, err)
-	}
-	return value, nil
-}
-
-// setLazy sets the lazy values defiend with Lazy.
-func (v *ValueMaybeString) setLazy(p []byte) error {
+func (v *ValueMaybe[T]) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -879,13 +809,13 @@ func (r *Fetch) AgendaItem_MeetingID(agendaItemID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) AgendaItem_ParentID(agendaItemID int) *ValueMaybeInt {
+func (r *Fetch) AgendaItem_ParentID(agendaItemID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("agenda_item", agendaItemID, "parent_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) AgendaItem_ProjectionIDs(agendaItemID int) *ValueIntSlice {
@@ -951,13 +881,13 @@ func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueI
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) AssignmentCandidate_MeetingUserID(assignmentCandidateID int) *ValueMaybeInt {
+func (r *Fetch) AssignmentCandidate_MeetingUserID(assignmentCandidateID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("assignment_candidate", assignmentCandidateID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) AssignmentCandidate_Weight(assignmentCandidateID int) *ValueInt {
@@ -969,13 +899,13 @@ func (r *Fetch) AssignmentCandidate_Weight(assignmentCandidateID int) *ValueInt 
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Assignment_AgendaItemID(assignmentID int) *ValueMaybeInt {
+func (r *Fetch) Assignment_AgendaItemID(assignmentID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("assignment", assignmentID, "agenda_item_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Assignment_AttachmentMeetingMediafileIDs(assignmentID int) *ValueIntSlice {
@@ -1230,13 +1160,13 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybeInt {
+func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("chat_message", chatMessageID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_AllChildIDs(committeeID int) *ValueIntSlice {
@@ -1266,13 +1196,13 @@ func (r *Fetch) Committee_ChildIDs(committeeID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
+func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("committee", committeeID, "default_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_Description(committeeID int) *ValueString {
@@ -1365,13 +1295,13 @@ func (r *Fetch) Committee_OrganizationTagIDs(committeeID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Committee_ParentID(committeeID int) *ValueMaybeInt {
+func (r *Fetch) Committee_ParentID(committeeID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("committee", committeeID, "parent_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *ValueIntSlice {
@@ -1428,31 +1358,31 @@ func (r *Fetch) Gender_UserIDs(genderID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "admin_group_for_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_AnonymousGroupForMeetingID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_AnonymousGroupForMeetingID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "anonymous_group_for_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "default_group_for_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
@@ -1554,40 +1484,40 @@ func (r *Fetch) Group_ReadCommentSectionIDs(groupID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "used_as_assignment_poll_default_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "used_as_motion_poll_default_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "used_as_poll_default_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybeInt {
+func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("group", groupID, "used_as_topic_poll_default_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_Weight(groupID int) *ValueInt {
@@ -1635,22 +1565,22 @@ func (r *Fetch) HistoryEntry_ID(historyEntryID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) HistoryEntry_MeetingID(historyEntryID int) *ValueMaybeInt {
+func (r *Fetch) HistoryEntry_MeetingID(historyEntryID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("history_entry", historyEntryID, "meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueMaybeString {
+func (r *Fetch) HistoryEntry_ModelID(historyEntryID int) *ValueMaybe[string] {
 	key, err := dskey.FromParts("history_entry", historyEntryID, "model_id")
 	if err != nil {
-		return &ValueMaybeString{err: err}
+		return &ValueMaybe[string]{err: err}
 	}
 
-	return &ValueMaybeString{fetch: r, key: key}
+	return &ValueMaybe[string]{fetch: r, key: key}
 }
 
 func (r *Fetch) HistoryEntry_OriginalModelID(historyEntryID int) *ValueString {
@@ -1707,13 +1637,13 @@ func (r *Fetch) HistoryPosition_Timestamp(historyPositionID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) HistoryPosition_UserID(historyPositionID int) *ValueMaybeInt {
+func (r *Fetch) HistoryPosition_UserID(historyPositionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("history_position", historyPositionID, "user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) ImportPreview_Created(importPreviewID int) *ValueInt {
@@ -1923,13 +1853,13 @@ func (r *Fetch) Mediafile_OwnerID(mediafileID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Mediafile_ParentID(mediafileID int) *ValueMaybeInt {
+func (r *Fetch) Mediafile_ParentID(mediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("mediafile", mediafileID, "parent_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_PdfInformation(mediafileID int) *ValueJSON {
@@ -1941,13 +1871,13 @@ func (r *Fetch) Mediafile_PdfInformation(mediafileID int) *ValueJSON {
 	return &ValueJSON{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_PublishedToMeetingsInOrganizationID(mediafileID int) *ValueMaybeInt {
+func (r *Fetch) Mediafile_PublishedToMeetingsInOrganizationID(mediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("mediafile", mediafileID, "published_to_meetings_in_organization_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_Title(mediafileID int) *ValueString {
@@ -2013,13 +1943,13 @@ func (r *Fetch) MeetingMediafile_IsPublic(meetingMediafileID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MeetingMediafile_ListOfSpeakersID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_ListOfSpeakersID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "list_of_speakers_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingMediafile_MediafileID(meetingMediafileID int) *ValueInt {
@@ -2049,148 +1979,148 @@ func (r *Fetch) MeetingMediafile_ProjectionIDs(meetingMediafileID int) *ValueInt
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontBoldInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontBoldInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_bold_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontBoldItalicInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontBoldItalicInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_bold_italic_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontChyronSpeakerNameInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontChyronSpeakerNameInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_chyron_speaker_name_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontItalicInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontItalicInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_italic_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontMonospaceInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontMonospaceInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_monospace_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontProjectorH1InMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontProjectorH1InMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_projector_h1_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontProjectorH2InMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontProjectorH2InMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_projector_h2_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsFontRegularInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsFontRegularInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_regular_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoPdfBallotPaperInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfBallotPaperInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_ballot_paper_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoPdfFooterLInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfFooterLInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_footer_l_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoPdfFooterRInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfFooterRInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_footer_r_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoPdfHeaderLInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfHeaderLInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_header_l_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoPdfHeaderRInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfHeaderRInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_header_r_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_projector_header_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_projector_main_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+func (r *Fetch) MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(meetingMediafileID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_web_header_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_AboutMe(meetingUserID int) *ValueString {
@@ -2346,13 +2276,13 @@ func (r *Fetch) MeetingUser_UserID(meetingUserID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybeInt {
+func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "vote_delegated_to_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingUser_VoteDelegationsFromIDs(meetingUserID int) *ValueIntSlice {
@@ -2373,13 +2303,13 @@ func (r *Fetch) MeetingUser_VoteWeight(meetingUserID int) *ValueDecimal {
 	return &ValueDecimal{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AdminGroupID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_AdminGroupID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "admin_group_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AgendaEnableNumbering(meetingID int) *ValueBool {
@@ -2472,13 +2402,13 @@ func (r *Fetch) Meeting_AllProjectionIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_AnonymousGroupID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_AnonymousGroupID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "anonymous_group_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ApplauseEnable(meetingID int) *ValueBool {
@@ -2796,13 +2726,13 @@ func (r *Fetch) Meeting_DefaultGroupID(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "default_meeting_for_committee_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAgendaItemListIDs(meetingID int) *ValueIntSlice {
@@ -3057,76 +2987,76 @@ func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontBoldID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontBoldID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_bold_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontBoldItalicID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontBoldItalicID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_bold_italic_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontChyronSpeakerNameID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontChyronSpeakerNameID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_chyron_speaker_name_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontItalicID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontItalicID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_italic_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontMonospaceID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontMonospaceID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_monospace_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontProjectorH1ID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontProjectorH1ID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_projector_h1_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontProjectorH2ID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontProjectorH2ID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_projector_h2_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_FontRegularID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_FontRegularID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "font_regular_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ForwardedMotionIDs(meetingID int) *ValueIntSlice {
@@ -3165,22 +3095,22 @@ func (r *Fetch) Meeting_ImportedAt(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_IsActiveInOrganizationID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_IsActiveInOrganizationID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "is_active_in_organization_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_IsArchivedInOrganizationID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_IsArchivedInOrganizationID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "is_archived_in_organization_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_JitsiDomain(meetingID int) *ValueString {
@@ -3273,13 +3203,13 @@ func (r *Fetch) Meeting_ListOfSpeakersClosingDisablesPointOfOrder(meetingID int)
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_countdown_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersCoupleCountdown(meetingID int) *ValueBool {
@@ -3426,76 +3356,76 @@ func (r *Fetch) Meeting_LockedFromInside(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoPdfBallotPaperID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoPdfBallotPaperID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_pdf_ballot_paper_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoPdfFooterLID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoPdfFooterLID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_pdf_footer_l_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoPdfFooterRID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoPdfFooterRID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_pdf_footer_r_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoPdfHeaderLID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoPdfHeaderLID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_pdf_header_l_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoPdfHeaderRID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoPdfHeaderRID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_pdf_header_r_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoProjectorHeaderID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoProjectorHeaderID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_projector_header_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoProjectorMainID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoProjectorMainID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_projector_main_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_LogoWebHeaderID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_LogoWebHeaderID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_web_header_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MediafileIDs(meetingID int) *ValueIntSlice {
@@ -4137,13 +4067,13 @@ func (r *Fetch) Meeting_PollCandidateListIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "poll_countdown_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
@@ -4353,13 +4283,13 @@ func (r *Fetch) Meeting_TagIDs(meetingID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt {
+func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("meeting", meetingID, "template_for_organization_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_TimeZone(meetingID int) *ValueString {
@@ -4578,13 +4508,13 @@ func (r *Fetch) Meeting_WelcomeTitle(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionBlock_AgendaItemID(motionBlockID int) *ValueMaybeInt {
+func (r *Fetch) MotionBlock_AgendaItemID(motionBlockID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_block", motionBlockID, "agenda_item_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionBlock_ID(motionBlockID int) *ValueInt {
@@ -4713,13 +4643,13 @@ func (r *Fetch) MotionCategory_Name(motionCategoryID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionCategory_ParentID(motionCategoryID int) *ValueMaybeInt {
+func (r *Fetch) MotionCategory_ParentID(motionCategoryID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_category", motionCategoryID, "parent_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionCategory_Prefix(motionCategoryID int) *ValueString {
@@ -4992,13 +4922,13 @@ func (r *Fetch) MotionEditor_MeetingID(motionEditorID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionEditor_MeetingUserID(motionEditorID int) *ValueMaybeInt {
+func (r *Fetch) MotionEditor_MeetingUserID(motionEditorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_editor", motionEditorID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionEditor_MotionID(motionEditorID int) *ValueInt {
@@ -5073,13 +5003,13 @@ func (r *Fetch) MotionState_CssClass(motionStateID int) *ValueEnum[dstypes.Motio
 	return &ValueEnum[dstypes.MotionState_CssClass]{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMaybeInt {
+func (r *Fetch) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_state", motionStateID, "first_state_of_workflow_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
@@ -5235,13 +5165,13 @@ func (r *Fetch) MotionState_SubmitterWithdrawBackIDs(motionStateID int) *ValueIn
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionState_SubmitterWithdrawStateID(motionStateID int) *ValueMaybeInt {
+func (r *Fetch) MotionState_SubmitterWithdrawStateID(motionStateID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_state", motionStateID, "submitter_withdraw_state_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionState_Weight(motionStateID int) *ValueInt {
@@ -5280,13 +5210,13 @@ func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueMaybeInt {
+func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_submitter", motionSubmitterID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
@@ -5325,13 +5255,13 @@ func (r *Fetch) MotionSupporter_MeetingID(motionSupporterID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionSupporter_MeetingUserID(motionSupporterID int) *ValueMaybeInt {
+func (r *Fetch) MotionSupporter_MeetingUserID(motionSupporterID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_supporter", motionSupporterID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionSupporter_MotionID(motionSupporterID int) *ValueInt {
@@ -5343,22 +5273,22 @@ func (r *Fetch) MotionSupporter_MotionID(motionSupporterID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
+func (r *Fetch) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_workflow", motionWorkflowID, "default_amendment_workflow_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionWorkflow_DefaultWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
+func (r *Fetch) MotionWorkflow_DefaultWorkflowMeetingID(motionWorkflowID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_workflow", motionWorkflowID, "default_workflow_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkflow_FirstStateID(motionWorkflowID int) *ValueInt {
@@ -5433,13 +5363,13 @@ func (r *Fetch) MotionWorkingGroupSpeaker_MeetingID(motionWorkingGroupSpeakerID 
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MotionWorkingGroupSpeaker_MeetingUserID(motionWorkingGroupSpeakerID int) *ValueMaybeInt {
+func (r *Fetch) MotionWorkingGroupSpeaker_MeetingUserID(motionWorkingGroupSpeakerID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion_working_group_speaker", motionWorkingGroupSpeakerID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) MotionWorkingGroupSpeaker_MotionID(motionWorkingGroupSpeakerID int) *ValueInt {
@@ -5469,13 +5399,13 @@ func (r *Fetch) Motion_AdditionalSubmitter(motionID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "agenda_item_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_AllDerivedMotionIDs(motionID int) *ValueIntSlice {
@@ -5523,22 +5453,22 @@ func (r *Fetch) Motion_AttachmentMeetingMediafileIDs(motionID int) *ValueIntSlic
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_BlockID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_BlockID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "block_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_CategoryID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_CategoryID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "category_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_CategoryWeight(motionID int) *ValueInt {
@@ -5649,13 +5579,13 @@ func (r *Fetch) Motion_LastModified(motionID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_LeadMotionID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_LeadMotionID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "lead_motion_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_ListOfSpeakersID(motionID int) *ValueInt {
@@ -5721,22 +5651,22 @@ func (r *Fetch) Motion_OptionIDs(motionID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_OriginID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_OriginID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "origin_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_OriginMeetingID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_OriginMeetingID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "origin_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_PersonalNoteIDs(motionID int) *ValueIntSlice {
@@ -5793,13 +5723,13 @@ func (r *Fetch) Motion_RecommendationExtensionReferenceIDs(motionID int) *ValueS
 	return &ValueStringSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_RecommendationID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_RecommendationID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "recommendation_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_ReferencedInMotionRecommendationExtensionIDs(motionID int) *ValueIntSlice {
@@ -5838,13 +5768,13 @@ func (r *Fetch) Motion_SortChildIDs(motionID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_SortParentID(motionID int) *ValueMaybeInt {
+func (r *Fetch) Motion_SortParentID(motionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("motion", motionID, "sort_parent_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_SortWeight(motionID int) *ValueInt {
@@ -5973,13 +5903,13 @@ func (r *Fetch) Option_Abstain(optionID int) *ValueDecimal {
 	return &ValueDecimal{fetch: r, key: key}
 }
 
-func (r *Fetch) Option_ContentObjectID(optionID int) *ValueMaybeString {
+func (r *Fetch) Option_ContentObjectID(optionID int) *ValueMaybe[string] {
 	key, err := dskey.FromParts("option", optionID, "content_object_id")
 	if err != nil {
-		return &ValueMaybeString{err: err}
+		return &ValueMaybe[string]{err: err}
 	}
 
-	return &ValueMaybeString{fetch: r, key: key}
+	return &ValueMaybe[string]{fetch: r, key: key}
 }
 
 func (r *Fetch) Option_ID(optionID int) *ValueInt {
@@ -6009,13 +5939,13 @@ func (r *Fetch) Option_No(optionID int) *ValueDecimal {
 	return &ValueDecimal{fetch: r, key: key}
 }
 
-func (r *Fetch) Option_PollID(optionID int) *ValueMaybeInt {
+func (r *Fetch) Option_PollID(optionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("option", optionID, "poll_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Option_Text(optionID int) *ValueString {
@@ -6027,13 +5957,13 @@ func (r *Fetch) Option_Text(optionID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Option_UsedAsGlobalOptionInPollID(optionID int) *ValueMaybeInt {
+func (r *Fetch) Option_UsedAsGlobalOptionInPollID(optionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("option", optionID, "used_as_global_option_in_poll_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Option_VoteIDs(optionID int) *ValueIntSlice {
@@ -6630,13 +6560,13 @@ func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueMaybeInt {
+func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("poll_candidate", pollCandidateID, "user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
@@ -6711,13 +6641,13 @@ func (r *Fetch) Poll_GlobalNo(pollID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Poll_GlobalOptionID(pollID int) *ValueMaybeInt {
+func (r *Fetch) Poll_GlobalOptionID(pollID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("poll", pollID, "global_option_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
@@ -6927,22 +6857,22 @@ func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Projection_CurrentProjectorID(projectionID int) *ValueMaybeInt {
+func (r *Fetch) Projection_CurrentProjectorID(projectionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projection", projectionID, "current_projector_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projection_HistoryProjectorID(projectionID int) *ValueMaybeInt {
+func (r *Fetch) Projection_HistoryProjectorID(projectionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projection", projectionID, "history_projector_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Projection_ID(projectionID int) *ValueInt {
@@ -6972,13 +6902,13 @@ func (r *Fetch) Projection_Options(projectionID int) *ValueJSON {
 	return &ValueJSON{fetch: r, key: key}
 }
 
-func (r *Fetch) Projection_PreviewProjectorID(projectionID int) *ValueMaybeInt {
+func (r *Fetch) Projection_PreviewProjectorID(projectionID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projection", projectionID, "preview_projector_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Projection_Stable(projectionID int) *ValueBool {
@@ -7080,22 +7010,22 @@ func (r *Fetch) ProjectorCountdown_Title(projectorCountdownID int) *ValueString 
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
+func (r *Fetch) ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(projectorCountdownID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector_countdown", projectorCountdownID, "used_as_list_of_speakers_countdown_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) ProjectorCountdown_UsedAsPollCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
+func (r *Fetch) ProjectorCountdown_UsedAsPollCountdownMeetingID(projectorCountdownID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector_countdown", projectorCountdownID, "used_as_poll_countdown_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) ProjectorMessage_ID(projectorMessageID int) *ValueInt {
@@ -7359,139 +7289,139 @@ func (r *Fetch) Projector_ShowTitle(projectorID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_agenda_item_list_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_amendment_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_assignment_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_assignment_poll_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForCountdownInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForCountdownInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_countdown_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentLosInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentLosInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_current_los_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_list_of_speakers_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForMediafileInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMediafileInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_mediafile_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForMessageInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMessageInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_message_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_motion_block_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_motion_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_motion_poll_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForPollInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForPollInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_poll_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_topic_in_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
-func (r *Fetch) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *ValueMaybeInt {
+func (r *Fetch) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("projector", projectorID, "used_as_reference_projector_meeting_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Projector_Width(projectorID int) *ValueInt {
@@ -7557,13 +7487,13 @@ func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueMaybeInt {
+func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("speaker", speakerID, "meeting_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
@@ -7593,13 +7523,13 @@ func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
+func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("speaker", speakerID, "point_of_order_category_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueEnum[dstypes.Speaker_SpeechState] {
@@ -7611,13 +7541,13 @@ func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueEnum[dstypes.Speaker_Sp
 	return &ValueEnum[dstypes.Speaker_SpeechState]{fetch: r, key: key}
 }
 
-func (r *Fetch) Speaker_StructureLevelListOfSpeakersID(speakerID int) *ValueMaybeInt {
+func (r *Fetch) Speaker_StructureLevelListOfSpeakersID(speakerID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("speaker", speakerID, "structure_level_list_of_speakers_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_TotalPause(speakerID int) *ValueInt {
@@ -8133,13 +8063,13 @@ func (r *Fetch) Theme_PrimaryA700(themeID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Theme_ThemeForOrganizationID(themeID int) *ValueMaybeInt {
+func (r *Fetch) Theme_ThemeForOrganizationID(themeID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("theme", themeID, "theme_for_organization_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Theme_Warn100(themeID int) *ValueString {
@@ -8448,13 +8378,13 @@ func (r *Fetch) User_FirstName(userID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
+func (r *Fetch) User_GenderID(userID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("user", userID, "gender_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) User_HistoryEntryIDs(userID int) *ValueIntSlice {
@@ -8475,13 +8405,13 @@ func (r *Fetch) User_HistoryPositionIDs(userID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) User_HomeCommitteeID(userID int) *ValueMaybeInt {
+func (r *Fetch) User_HomeCommitteeID(userID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("user", userID, "home_committee_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) User_ID(userID int) *ValueInt {
@@ -8682,13 +8612,13 @@ func (r *Fetch) User_VoteIDs(userID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Vote_DelegatedUserID(voteID int) *ValueMaybeInt {
+func (r *Fetch) Vote_DelegatedUserID(voteID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("vote", voteID, "delegated_user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_ID(voteID int) *ValueInt {
@@ -8718,13 +8648,13 @@ func (r *Fetch) Vote_OptionID(voteID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Vote_UserID(voteID int) *ValueMaybeInt {
+func (r *Fetch) Vote_UserID(voteID int) *ValueMaybe[int] {
 	key, err := dskey.FromParts("vote", voteID, "user_id")
 	if err != nil {
-		return &ValueMaybeInt{err: err}
+		return &ValueMaybe[int]{err: err}
 	}
 
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueMaybe[int]{fetch: r, key: key}
 }
 
 func (r *Fetch) Vote_UserToken(voteID int) *ValueString {
