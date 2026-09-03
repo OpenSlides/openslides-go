@@ -63,7 +63,7 @@ type AgendaItem struct {
 	ItemNumber      string
 	Level           int
 	MeetingID       int
-	ParentID        dsfetch.Maybe[int]
+	ParentID        int
 	ProjectionIDs   []int
 	TagIDs          []int
 	Type            dstypes.AgendaItem_Type
@@ -174,7 +174,7 @@ func (r *Fetch) AgendaItem(ids ...int) *agendaItemBuilder {
 
 // Assignment has all fields from assignment.
 type Assignment struct {
-	AgendaItemID                   dsfetch.Maybe[int]
+	AgendaItemID                   int
 	AttachmentMeetingMediafileIDs  []int
 	CandidateIDs                   []int
 	DefaultPollDescription         string
@@ -352,7 +352,7 @@ type AssignmentCandidate struct {
 	AssignmentID  int
 	ID            int
 	MeetingID     int
-	MeetingUserID dsfetch.Maybe[int]
+	MeetingUserID int
 	Weight        int
 	Assignment    *Assignment
 	Meeting       *Meeting
@@ -519,7 +519,7 @@ type ChatMessage struct {
 	Created       int
 	ID            int
 	MeetingID     int
-	MeetingUserID dsfetch.Maybe[int]
+	MeetingUserID int
 	ChatGroup     *ChatGroup
 	Meeting       *Meeting
 	MeetingUser   *dsfetch.Maybe[MeetingUser]
@@ -592,7 +592,7 @@ type Committee struct {
 	AllChildIDs                         []int
 	AllParentIDs                        []int
 	ChildIDs                            []int
-	DefaultMeetingID                    dsfetch.Maybe[int]
+	DefaultMeetingID                    int
 	Description                         string
 	ExternalID                          string
 	ForwardToCommitteeIDs               []int
@@ -603,7 +603,7 @@ type Committee struct {
 	NativeUserIDs                       []int
 	OrganizationID                      int
 	OrganizationTagIDs                  []int
-	ParentID                            dsfetch.Maybe[int]
+	ParentID                            int
 	ReceiveForwardingsFromCommitteeIDs  []int
 	UserIDs                             []int
 	AllChildList                        []Committee
@@ -876,9 +876,9 @@ func (r *Fetch) Gender(ids ...int) *genderBuilder {
 
 // Group has all fields from group.
 type Group struct {
-	AdminGroupForMeetingID                   dsfetch.Maybe[int]
-	AnonymousGroupForMeetingID               dsfetch.Maybe[int]
-	DefaultGroupForMeetingID                 dsfetch.Maybe[int]
+	AdminGroupForMeetingID                   int
+	AnonymousGroupForMeetingID               int
+	DefaultGroupForMeetingID                 int
 	ExternalID                               string
 	ID                                       int
 	MeetingID                                int
@@ -890,10 +890,10 @@ type Group struct {
 	PollIDs                                  []int
 	ReadChatGroupIDs                         []int
 	ReadCommentSectionIDs                    []int
-	UsedAsAssignmentPollDefaultID            dsfetch.Maybe[int]
-	UsedAsMotionPollDefaultID                dsfetch.Maybe[int]
-	UsedAsPollDefaultID                      dsfetch.Maybe[int]
-	UsedAsTopicPollDefaultID                 dsfetch.Maybe[int]
+	UsedAsAssignmentPollDefaultID            int
+	UsedAsMotionPollDefaultID                int
+	UsedAsPollDefaultID                      int
+	UsedAsTopicPollDefaultID                 int
 	Weight                                   int
 	WriteChatGroupIDs                        []int
 	WriteCommentSectionIDs                   []int
@@ -1147,8 +1147,8 @@ func (r *Fetch) Group(ids ...int) *groupBuilder {
 type HistoryEntry struct {
 	Entries         []string
 	ID              int
-	MeetingID       dsfetch.Maybe[int]
-	ModelID         dsfetch.Maybe[string]
+	MeetingID       int
+	ModelID         string
 	OriginalModelID string
 	PositionID      int
 	Meeting         *dsfetch.Maybe[Meeting]
@@ -1212,7 +1212,7 @@ type HistoryPosition struct {
 	ID             int
 	OriginalUserID int
 	Timestamp      int
-	UserID         dsfetch.Maybe[int]
+	UserID         int
 	EntryList      []HistoryEntry
 	User           *dsfetch.Maybe[User]
 }
@@ -1412,9 +1412,9 @@ type Mediafile struct {
 	MeetingMediafileIDs                 []int
 	Mimetype                            string
 	OwnerID                             string
-	ParentID                            dsfetch.Maybe[int]
+	ParentID                            int
 	PdfInformation                      json.RawMessage
-	PublishedToMeetingsInOrganizationID dsfetch.Maybe[int]
+	PublishedToMeetingsInOrganizationID int
 	Title                               string
 	Token                               string
 	ChildList                           []Mediafile
@@ -1508,7 +1508,7 @@ func (r *Fetch) Mediafile(ids ...int) *mediafileBuilder {
 
 // Meeting has all fields from meeting.
 type Meeting struct {
-	AdminGroupID                                 dsfetch.Maybe[int]
+	AdminGroupID                                 int
 	AgendaEnableNumbering                        bool
 	AgendaItemCreation                           dstypes.Meeting_AgendaItemCreation
 	AgendaItemIDs                                []int
@@ -1519,7 +1519,7 @@ type Meeting struct {
 	AgendaShowSubtitles                          bool
 	AgendaShowTopicNavigationOnDetailView        bool
 	AllProjectionIDs                             []int
-	AnonymousGroupID                             dsfetch.Maybe[int]
+	AnonymousGroupID                             int
 	ApplauseEnable                               bool
 	ApplauseMaxAmount                            int
 	ApplauseMinAmount                            int
@@ -1555,7 +1555,7 @@ type Meeting struct {
 	ConferenceStreamUrl                          string
 	CustomTranslations                           json.RawMessage
 	DefaultGroupID                               int
-	DefaultMeetingForCommitteeID                 dsfetch.Maybe[int]
+	DefaultMeetingForCommitteeID                 int
 	DefaultProjectorAgendaItemListIDs            []int
 	DefaultProjectorAmendmentIDs                 []int
 	DefaultProjectorAssignmentIDs                []int
@@ -1584,20 +1584,20 @@ type Meeting struct {
 	ExportPdfPagenumberAlignment                 dstypes.Meeting_ExportPdfPagenumberAlignment
 	ExportPdfPagesize                            dstypes.Meeting_ExportPdfPagesize
 	ExternalID                                   string
-	FontBoldID                                   dsfetch.Maybe[int]
-	FontBoldItalicID                             dsfetch.Maybe[int]
-	FontChyronSpeakerNameID                      dsfetch.Maybe[int]
-	FontItalicID                                 dsfetch.Maybe[int]
-	FontMonospaceID                              dsfetch.Maybe[int]
-	FontProjectorH1ID                            dsfetch.Maybe[int]
-	FontProjectorH2ID                            dsfetch.Maybe[int]
-	FontRegularID                                dsfetch.Maybe[int]
+	FontBoldID                                   int
+	FontBoldItalicID                             int
+	FontChyronSpeakerNameID                      int
+	FontItalicID                                 int
+	FontMonospaceID                              int
+	FontProjectorH1ID                            int
+	FontProjectorH2ID                            int
+	FontRegularID                                int
 	ForwardedMotionIDs                           []int
 	GroupIDs                                     []int
 	ID                                           int
 	ImportedAt                                   int
-	IsActiveInOrganizationID                     dsfetch.Maybe[int]
-	IsArchivedInOrganizationID                   dsfetch.Maybe[int]
+	IsActiveInOrganizationID                     int
+	IsArchivedInOrganizationID                   int
 	JitsiDomain                                  string
 	JitsiRoomName                                string
 	JitsiRoomPassword                            string
@@ -1608,7 +1608,7 @@ type Meeting struct {
 	ListOfSpeakersCanCreatePointOfOrderForOthers bool
 	ListOfSpeakersCanSetContributionSelf         bool
 	ListOfSpeakersClosingDisablesPointOfOrder    bool
-	ListOfSpeakersCountdownID                    dsfetch.Maybe[int]
+	ListOfSpeakersCountdownID                    int
 	ListOfSpeakersCoupleCountdown                bool
 	ListOfSpeakersDefaultStructureLevelTime      int
 	ListOfSpeakersEnableInterposedQuestion       bool
@@ -1625,14 +1625,14 @@ type Meeting struct {
 	ListOfSpeakersSpeakerNoteForEveryone         bool
 	Location                                     string
 	LockedFromInside                             bool
-	LogoPdfBallotPaperID                         dsfetch.Maybe[int]
-	LogoPdfFooterLID                             dsfetch.Maybe[int]
-	LogoPdfFooterRID                             dsfetch.Maybe[int]
-	LogoPdfHeaderLID                             dsfetch.Maybe[int]
-	LogoPdfHeaderRID                             dsfetch.Maybe[int]
-	LogoProjectorHeaderID                        dsfetch.Maybe[int]
-	LogoProjectorMainID                          dsfetch.Maybe[int]
-	LogoWebHeaderID                              dsfetch.Maybe[int]
+	LogoPdfBallotPaperID                         int
+	LogoPdfFooterLID                             int
+	LogoPdfFooterRID                             int
+	LogoPdfHeaderLID                             int
+	LogoPdfHeaderRID                             int
+	LogoProjectorHeaderID                        int
+	LogoProjectorMainID                          int
+	LogoWebHeaderID                              int
 	MediafileIDs                                 []int
 	MeetingMediafileIDs                          []int
 	MeetingUserIDs                               []int
@@ -1704,7 +1704,7 @@ type Meeting struct {
 	PollBallotPaperSelection                     dstypes.BallotPaperSelection
 	PollCandidateIDs                             []int
 	PollCandidateListIDs                         []int
-	PollCountdownID                              dsfetch.Maybe[int]
+	PollCountdownID                              int
 	PollCoupleCountdown                          bool
 	PollDefaultBackend                           dstypes.PollBackends
 	PollDefaultGroupIDs                          []int
@@ -1728,7 +1728,7 @@ type Meeting struct {
 	StructureLevelIDs                            []int
 	StructureLevelListOfSpeakersIDs              []int
 	TagIDs                                       []int
-	TemplateForOrganizationID                    dsfetch.Maybe[int]
+	TemplateForOrganizationID                    int
 	TimeZone                                     string
 	TopicIDs                                     []int
 	TopicPollDefaultGroupIDs                     []int
@@ -3184,26 +3184,26 @@ type MeetingMediafile struct {
 	ID                                     int
 	InheritedAccessGroupIDs                []int
 	IsPublic                               bool
-	ListOfSpeakersID                       dsfetch.Maybe[int]
+	ListOfSpeakersID                       int
 	MediafileID                            int
 	MeetingID                              int
 	ProjectionIDs                          []int
-	UsedAsFontBoldInMeetingID              dsfetch.Maybe[int]
-	UsedAsFontBoldItalicInMeetingID        dsfetch.Maybe[int]
-	UsedAsFontChyronSpeakerNameInMeetingID dsfetch.Maybe[int]
-	UsedAsFontItalicInMeetingID            dsfetch.Maybe[int]
-	UsedAsFontMonospaceInMeetingID         dsfetch.Maybe[int]
-	UsedAsFontProjectorH1InMeetingID       dsfetch.Maybe[int]
-	UsedAsFontProjectorH2InMeetingID       dsfetch.Maybe[int]
-	UsedAsFontRegularInMeetingID           dsfetch.Maybe[int]
-	UsedAsLogoPdfBallotPaperInMeetingID    dsfetch.Maybe[int]
-	UsedAsLogoPdfFooterLInMeetingID        dsfetch.Maybe[int]
-	UsedAsLogoPdfFooterRInMeetingID        dsfetch.Maybe[int]
-	UsedAsLogoPdfHeaderLInMeetingID        dsfetch.Maybe[int]
-	UsedAsLogoPdfHeaderRInMeetingID        dsfetch.Maybe[int]
-	UsedAsLogoProjectorHeaderInMeetingID   dsfetch.Maybe[int]
-	UsedAsLogoProjectorMainInMeetingID     dsfetch.Maybe[int]
-	UsedAsLogoWebHeaderInMeetingID         dsfetch.Maybe[int]
+	UsedAsFontBoldInMeetingID              int
+	UsedAsFontBoldItalicInMeetingID        int
+	UsedAsFontChyronSpeakerNameInMeetingID int
+	UsedAsFontItalicInMeetingID            int
+	UsedAsFontMonospaceInMeetingID         int
+	UsedAsFontProjectorH1InMeetingID       int
+	UsedAsFontProjectorH2InMeetingID       int
+	UsedAsFontRegularInMeetingID           int
+	UsedAsLogoPdfBallotPaperInMeetingID    int
+	UsedAsLogoPdfFooterLInMeetingID        int
+	UsedAsLogoPdfFooterRInMeetingID        int
+	UsedAsLogoPdfHeaderLInMeetingID        int
+	UsedAsLogoPdfHeaderRInMeetingID        int
+	UsedAsLogoProjectorHeaderInMeetingID   int
+	UsedAsLogoProjectorMainInMeetingID     int
+	UsedAsLogoWebHeaderInMeetingID         int
 	AccessGroupList                        []Group
 	InheritedAccessGroupList               []Group
 	ListOfSpeakers                         *dsfetch.Maybe[ListOfSpeakers]
@@ -3540,7 +3540,7 @@ type MeetingUser struct {
 	SpeakerIDs                    []int
 	StructureLevelIDs             []int
 	UserID                        int
-	VoteDelegatedToID             dsfetch.Maybe[int]
+	VoteDelegatedToID             int
 	VoteDelegationsFromIDs        []int
 	VoteWeight                    decimal.Decimal
 	AssignmentCandidateList       []AssignmentCandidate
@@ -3770,14 +3770,14 @@ func (r *Fetch) MeetingUser(ids ...int) *meetingUserBuilder {
 // Motion has all fields from motion.
 type Motion struct {
 	AdditionalSubmitter                           string
-	AgendaItemID                                  dsfetch.Maybe[int]
+	AgendaItemID                                  int
 	AllDerivedMotionIDs                           []int
 	AllOriginIDs                                  []int
 	AmendmentIDs                                  []int
 	AmendmentParagraphs                           json.RawMessage
 	AttachmentMeetingMediafileIDs                 []int
-	BlockID                                       dsfetch.Maybe[int]
-	CategoryID                                    dsfetch.Maybe[int]
+	BlockID                                       int
+	CategoryID                                    int
 	CategoryWeight                                int
 	ChangeRecommendationIDs                       []int
 	CommentIDs                                    []int
@@ -3790,7 +3790,7 @@ type Motion struct {
 	ID                                            int
 	IDenticalMotionIDs                            []int
 	LastModified                                  int
-	LeadMotionID                                  dsfetch.Maybe[int]
+	LeadMotionID                                  int
 	ListOfSpeakersID                              int
 	MarkedForwarded                               bool
 	MeetingID                                     int
@@ -3798,20 +3798,20 @@ type Motion struct {
 	Number                                        string
 	NumberValue                                   int
 	OptionIDs                                     []int
-	OriginID                                      dsfetch.Maybe[int]
-	OriginMeetingID                               dsfetch.Maybe[int]
+	OriginID                                      int
+	OriginMeetingID                               int
 	PersonalNoteIDs                               []int
 	PollIDs                                       []int
 	ProjectionIDs                                 []int
 	Reason                                        string
 	RecommendationExtension                       string
 	RecommendationExtensionReferenceIDs           []string
-	RecommendationID                              dsfetch.Maybe[int]
+	RecommendationID                              int
 	ReferencedInMotionRecommendationExtensionIDs  []int
 	ReferencedInMotionStateExtensionIDs           []int
 	SequentialNumber                              int
 	SortChildIDs                                  []int
-	SortParentID                                  dsfetch.Maybe[int]
+	SortParentID                                  int
 	SortWeight                                    int
 	StartLineNumber                               int
 	StateExtension                                string
@@ -4313,7 +4313,7 @@ func (r *Fetch) Motion(ids ...int) *motionBuilder {
 
 // MotionBlock has all fields from motion_block.
 type MotionBlock struct {
-	AgendaItemID     dsfetch.Maybe[int]
+	AgendaItemID     int
 	ID               int
 	Internal         bool
 	ListOfSpeakersID int
@@ -4426,7 +4426,7 @@ type MotionCategory struct {
 	MeetingID        int
 	MotionIDs        []int
 	Name             string
-	ParentID         dsfetch.Maybe[int]
+	ParentID         int
 	Prefix           string
 	SequentialNumber int
 	Weight           int
@@ -4761,7 +4761,7 @@ func (r *Fetch) MotionCommentSection(ids ...int) *motionCommentSectionBuilder {
 type MotionEditor struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID dsfetch.Maybe[int]
+	MeetingUserID int
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
@@ -4838,7 +4838,7 @@ type MotionState struct {
 	AllowSubmitterEdit               bool
 	AllowSupport                     bool
 	CssClass                         dstypes.MotionState_CssClass
-	FirstStateOfWorkflowID           dsfetch.Maybe[int]
+	FirstStateOfWorkflowID           int
 	ID                               int
 	IsInternal                       bool
 	MeetingID                        int
@@ -4856,7 +4856,7 @@ type MotionState struct {
 	ShowStateExtensionField          bool
 	StateButtonLabel                 string
 	SubmitterWithdrawBackIDs         []int
-	SubmitterWithdrawStateID         dsfetch.Maybe[int]
+	SubmitterWithdrawStateID         int
 	Weight                           int
 	WorkflowID                       int
 	FirstStateOfWorkflow             *dsfetch.Maybe[MotionWorkflow]
@@ -5028,7 +5028,7 @@ func (r *Fetch) MotionState(ids ...int) *motionStateBuilder {
 type MotionSubmitter struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID dsfetch.Maybe[int]
+	MeetingUserID int
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
@@ -5101,7 +5101,7 @@ func (r *Fetch) MotionSubmitter(ids ...int) *motionSubmitterBuilder {
 type MotionSupporter struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID dsfetch.Maybe[int]
+	MeetingUserID int
 	MotionID      int
 	Meeting       *Meeting
 	MeetingUser   *dsfetch.Maybe[MeetingUser]
@@ -5170,8 +5170,8 @@ func (r *Fetch) MotionSupporter(ids ...int) *motionSupporterBuilder {
 
 // MotionWorkflow has all fields from motion_workflow.
 type MotionWorkflow struct {
-	DefaultAmendmentWorkflowMeetingID dsfetch.Maybe[int]
-	DefaultWorkflowMeetingID          dsfetch.Maybe[int]
+	DefaultAmendmentWorkflowMeetingID int
+	DefaultWorkflowMeetingID          int
 	FirstStateID                      int
 	ID                                int
 	MeetingID                         int
@@ -5276,7 +5276,7 @@ func (r *Fetch) MotionWorkflow(ids ...int) *motionWorkflowBuilder {
 type MotionWorkingGroupSpeaker struct {
 	ID            int
 	MeetingID     int
-	MeetingUserID dsfetch.Maybe[int]
+	MeetingUserID int
 	MotionID      int
 	Weight        int
 	Meeting       *Meeting
@@ -5348,13 +5348,13 @@ func (r *Fetch) MotionWorkingGroupSpeaker(ids ...int) *motionWorkingGroupSpeaker
 // Option has all fields from option.
 type Option struct {
 	Abstain                    decimal.Decimal
-	ContentObjectID            dsfetch.Maybe[string]
+	ContentObjectID            string
 	ID                         int
 	MeetingID                  int
 	No                         decimal.Decimal
-	PollID                     dsfetch.Maybe[int]
+	PollID                     int
 	Text                       string
-	UsedAsGlobalOptionInPollID dsfetch.Maybe[int]
+	UsedAsGlobalOptionInPollID int
 	VoteIDs                    []int
 	Weight                     int
 	Yes                        decimal.Decimal
@@ -5875,7 +5875,7 @@ type Poll struct {
 	EntitledUsersAtStop   json.RawMessage
 	GlobalAbstain         bool
 	GlobalNo              bool
-	GlobalOptionID        dsfetch.Maybe[int]
+	GlobalOptionID        int
 	GlobalYes             bool
 	ID                    int
 	IsPseudoanonymized    bool
@@ -6032,7 +6032,7 @@ type PollCandidate struct {
 	ID                  int
 	MeetingID           int
 	PollCandidateListID int
-	UserID              dsfetch.Maybe[int]
+	UserID              int
 	Weight              int
 	Meeting             *Meeting
 	PollCandidateList   *PollCandidateList
@@ -6176,12 +6176,12 @@ func (r *Fetch) PollCandidateList(ids ...int) *pollCandidateListBuilder {
 type Projection struct {
 	Content            json.RawMessage
 	ContentObjectID    string
-	CurrentProjectorID dsfetch.Maybe[int]
-	HistoryProjectorID dsfetch.Maybe[int]
+	CurrentProjectorID int
+	HistoryProjectorID int
 	ID                 int
 	MeetingID          int
 	Options            json.RawMessage
-	PreviewProjectorID dsfetch.Maybe[int]
+	PreviewProjectorID int
 	Stable             bool
 	Type               string
 	Weight             int
@@ -6296,21 +6296,21 @@ type Projector struct {
 	ShowHeaderFooter                                   bool
 	ShowLogo                                           bool
 	ShowTitle                                          bool
-	UsedAsDefaultProjectorForAgendaItemListInMeetingID dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForAmendmentInMeetingID      dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForAssignmentInMeetingID     dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForAssignmentPollInMeetingID dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForCountdownInMeetingID      dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForCurrentLosInMeetingID     dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForListOfSpeakersInMeetingID dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForMediafileInMeetingID      dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForMessageInMeetingID        dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForMotionBlockInMeetingID    dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForMotionInMeetingID         dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForMotionPollInMeetingID     dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForPollInMeetingID           dsfetch.Maybe[int]
-	UsedAsDefaultProjectorForTopicInMeetingID          dsfetch.Maybe[int]
-	UsedAsReferenceProjectorMeetingID                  dsfetch.Maybe[int]
+	UsedAsDefaultProjectorForAgendaItemListInMeetingID int
+	UsedAsDefaultProjectorForAmendmentInMeetingID      int
+	UsedAsDefaultProjectorForAssignmentInMeetingID     int
+	UsedAsDefaultProjectorForAssignmentPollInMeetingID int
+	UsedAsDefaultProjectorForCountdownInMeetingID      int
+	UsedAsDefaultProjectorForCurrentLosInMeetingID     int
+	UsedAsDefaultProjectorForListOfSpeakersInMeetingID int
+	UsedAsDefaultProjectorForMediafileInMeetingID      int
+	UsedAsDefaultProjectorForMessageInMeetingID        int
+	UsedAsDefaultProjectorForMotionBlockInMeetingID    int
+	UsedAsDefaultProjectorForMotionInMeetingID         int
+	UsedAsDefaultProjectorForMotionPollInMeetingID     int
+	UsedAsDefaultProjectorForPollInMeetingID           int
+	UsedAsDefaultProjectorForTopicInMeetingID          int
+	UsedAsReferenceProjectorMeetingID                  int
 	Width                                              int
 	CurrentProjectionList                              []Projection
 	HistoryProjectionList                              []Projection
@@ -6619,8 +6619,8 @@ type ProjectorCountdown struct {
 	ProjectionIDs                          []int
 	Running                                bool
 	Title                                  string
-	UsedAsListOfSpeakersCountdownMeetingID dsfetch.Maybe[int]
-	UsedAsPollCountdownMeetingID           dsfetch.Maybe[int]
+	UsedAsListOfSpeakersCountdownMeetingID int
+	UsedAsPollCountdownMeetingID           int
 	Meeting                                *Meeting
 	ProjectionList                         []Projection
 	UsedAsListOfSpeakersCountdownMeeting   *dsfetch.Maybe[Meeting]
@@ -6773,13 +6773,13 @@ type Speaker struct {
 	ID                             int
 	ListOfSpeakersID               int
 	MeetingID                      int
-	MeetingUserID                  dsfetch.Maybe[int]
+	MeetingUserID                  int
 	Note                           string
 	PauseTime                      int
 	PointOfOrder                   bool
-	PointOfOrderCategoryID         dsfetch.Maybe[int]
+	PointOfOrderCategoryID         int
 	SpeechState                    dstypes.Speaker_SpeechState
-	StructureLevelListOfSpeakersID dsfetch.Maybe[int]
+	StructureLevelListOfSpeakersID int
 	TotalPause                     int
 	UnpauseTime                    int
 	Weight                         int
@@ -7140,7 +7140,7 @@ type Theme struct {
 	PrimaryA200            string
 	PrimaryA400            string
 	PrimaryA700            string
-	ThemeForOrganizationID dsfetch.Maybe[int]
+	ThemeForOrganizationID int
 	Warn100                string
 	Warn200                string
 	Warn300                string
@@ -7388,10 +7388,10 @@ type User struct {
 	Email                       string
 	External                    bool
 	FirstName                   string
-	GenderID                    dsfetch.Maybe[int]
+	GenderID                    int
 	HistoryEntryIDs             []int
 	HistoryPositionIDs          []int
-	HomeCommitteeID             dsfetch.Maybe[int]
+	HomeCommitteeID             int
 	ID                          int
 	IsActive                    bool
 	IsDemoUser                  bool
@@ -7668,11 +7668,11 @@ func (r *Fetch) User(ids ...int) *userBuilder {
 
 // Vote has all fields from vote.
 type Vote struct {
-	DelegatedUserID dsfetch.Maybe[int]
+	DelegatedUserID int
 	ID              int
 	MeetingID       int
 	OptionID        int
-	UserID          dsfetch.Maybe[int]
+	UserID          int
 	UserToken       string
 	Value           string
 	Weight          decimal.Decimal

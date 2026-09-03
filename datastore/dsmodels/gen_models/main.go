@@ -184,7 +184,7 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 			CollectionName: collectionName,
 		}
 		for fieldName, collectionField := range collection.Fields {
-			typeName := dsgen.ValueType(collectionName, fieldName, collectionField)
+			typeName, _ := dsgen.ValueType(collectionName, fieldName, collectionField)
 			if unwrapped, ok := strings.CutPrefix(typeName, "ValueEnum["); ok {
 				typeName = strings.TrimSuffix(unwrapped, "]")
 			}

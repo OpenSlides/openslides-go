@@ -152,7 +152,11 @@ func toFields(raw map[string]collection.Collection) ([]field, error) {
 		for fieldName, collectionField := range collection.Fields {
 			f := field{}
 			f.GoName = dsgen.GoName(collectionName) + "_" + dsgen.GoName(fieldName)
-			f.ValueType = dsgen.ValueType(collectionName, fieldName, collectionField)
+			valueType, goType := dsgen.ValueType(collectionName, fieldName, collectionField)
+			f.ValueType = valueType
+			if !collectionField.Required {
+				f.ValueType = fmt.Sprintf("ValueMaybe[%s]", goType)
+			}
 			f.Collection = dsgen.FirstLower(dsgen.GoName(collectionName))
 			f.CollectionName = collectionName
 			f.FieldName = fieldName
