@@ -299,131 +299,160 @@ func convertPGArray(typeMap *pgtype.Map, value []byte, desc pgconn.FieldDescript
 	return json.Marshal(dst)
 }
 
-// Update listens on pg notify to fetch updates.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	var conn *pgx.Conn
-	defer func() {
-		if conn != nil {
-			conn.Close(context.Background())
-		}
-	}()
-
-	lastXactID := 0
-	for {
-		if ctx.Err() != nil {
-			return
-		}
-
-		if conn == nil || conn.IsClosed() {
-			var err error
-			conn, err = getPostgresConnection(ctx, p.notifyConfig)
-			if err != nil {
-				updateFn(nil, fmt.Errorf("get postgres connection: %w", err))
-				continue
-			}
-			if lastXactID > 0 {
-				oslog.Info("Database reconnected")
-			}
-
-			if _, err := conn.Exec(ctx, "LISTEN os_notify"); err != nil {
-				updateFn(nil, fmt.Errorf("listen on channel os_notify: %w", err))
-				continue
-			}
-		}
-
-		notification, err := conn.WaitForNotification(ctx)
-		if err != nil {
-			updateFn(nil, fmt.Errorf("wait for notification: %w", err))
-			continue
-		}
-
-		var payload struct {
-			XACTID int `json:"xactId"`
-		}
-
-		if err := json.Unmarshal([]byte(notification.Payload), &payload); err != nil {
-			updateFn(nil, fmt.Errorf("unmarshal notify payload: %w", err))
-			continue
-		}
-
-		var sql string
-		args := []any{payload.XACTID}
-		if lastXactID > 0 && lastXactID+1 < payload.XACTID {
-			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id <= $1::xid8 AND xact_id > $2::xid8;`
-			args = append(args, lastXactID)
-		} else {
-			sql = `SELECT DISTINCT operation, fqid, updated_fields FROM os_notify_log_t WHERE xact_id = $1::xid8;`
-		}
-		rows, err := conn.Query(ctx, sql, args...)
-		if err != nil {
-			updateFn(nil, fmt.Errorf("query fqids for transactions %v: %w", args, err))
-			continue
-		}
-
-		updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
-			Operation     string
-			Fqid          string
-			UpdatedFields []string
-		}])
-		if err != nil {
-			if conn.IsClosed() {
-				continue
-			} else {
-				panic(fmt.Errorf("parse notify_log: %w", err))
-			}
-		}
-
-		nonFatalErrs := []error{}
-		debugLevelErrs := []error{}
-
-		var deletedKeys []dskey.Key
-		var updatedKeys []dskey.Key
-		for _, updateLog := range updateLogs {
-			collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
-			if err != nil {
-				nonFatalErrs = append(nonFatalErrs, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
-				continue
-			}
-
-			keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
-			if err != nil {
-				debugLevelErrs = append(debugLevelErrs, fmt.Errorf("creating key list from notification: %w", err))
-			}
-
-			switch updateLog.Operation {
-			case "delete":
-				deletedKeys = append(deletedKeys, keys...)
-			case "insert", "update":
-				updatedKeys = append(updatedKeys, keys...)
-			}
-		}
-
-		// TODO: don't use getWithConn for insert operation
-		values, err := p.Get(ctx, updatedKeys...)
-		if err != nil {
-			updateFn(nil, fmt.Errorf("fetching keys %v: %w", updatedKeys, err))
-			if conn.IsClosed() {
-				continue
-			} else {
-				panic("error on healty connection - exiting")
-			}
-		}
-
-		if values == nil && len(deletedKeys) != 0 {
-			values = map[dskey.Key][]byte{}
-		}
-
-		for _, key := range deletedKeys {
-			values[key] = nil
-		}
-
-		if len(debugLevelErrs) > 0 {
-			oslog.Debug("notify update: %s", errors.Join(debugLevelErrs...))
-		}
-
-		updateFn(values, errors.Join(nonFatalErrs...))
-		lastXactID = payload.XACTID
+	conn, err := getNotifyConnection(ctx, p.notifyConfig)
+	if err != nil {
+		// Use panic here since we can not be sure, that the service handles the
+		// error correctly.
+		panic(fmt.Errorf("get notify connection: %w", err))
 	}
+	defer conn.Close(context.Background())
+
+	lastID, err := getCurID(ctx, conn)
+	if err != nil {
+		// Use panic here since we can not be sure, that the service handles the
+		// error correctly.
+		panic(fmt.Errorf("get current lastXactID: %w", err))
+	}
+
+	for {
+		if conn.IsClosed() {
+			conn, err = getNotifyConnection(ctx, p.notifyConfig)
+			if err != nil {
+				updateFn(nil, fmt.Errorf("get notify connection: %w", err))
+				continue
+			}
+			oslog.Info("reconnected to notify channel")
+		}
+
+		newLastXactID, err := p.updateInner(ctx, conn, lastID, updateFn)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			updateFn(nil, err)
+			continue
+		}
+		if newLastXactID != 0 {
+			lastID = newLastXactID
+		}
+	}
+}
+
+func getNotifyConnection(ctx context.Context, notifyConfig *pgx.ConnConfig) (*pgx.Conn, error) {
+	conn, err := getPostgresConnection(ctx, notifyConfig)
+	if err != nil {
+		return nil, fmt.Errorf("get postgres connection: %w", err)
+	}
+
+	if _, err := conn.Exec(ctx, "LISTEN os_notify"); err != nil {
+		return nil, fmt.Errorf("listen on channel os_notify: %w", err)
+	}
+
+	return conn, nil
+}
+
+// Update listens on pg notify to fetch updates.
+func (p *FlowPostgres) updateInner(ctx context.Context, conn *pgx.Conn, lastID int, updateFn func(map[dskey.Key][]byte, error)) (int, error) {
+	if _, err := conn.WaitForNotification(ctx); err != nil {
+		return 0, fmt.Errorf("wait for notification: %w", err)
+	}
+
+	debugLastIDID := lastID
+	sql := `SELECT id, operation, fqid, updated_fields FROM os_notify_log_t WHERE id > $1 ORDER BY id`
+	rows, err := conn.Query(ctx, sql, lastID)
+	if err != nil {
+		return 0, fmt.Errorf("query fqids since %d: %w", lastID, err)
+	}
+
+	updateLogs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+		ID            int
+		Operation     string
+		Fqid          string
+		UpdatedFields []string
+	}])
+	if err != nil {
+		return 0, fmt.Errorf("parse notify_log: %w", err)
+	}
+
+	// TODO: If notify would send the os_notify_log_t.id (instead of xactID) it
+	// could be skiped before the select.
+	if len(updateLogs) == 0 {
+		return 0, nil
+	}
+
+	keyOperation := make(map[dskey.Key]bool)
+	nonFatalErrs := []error{}
+	debugLevelErrs := []error{}
+	for _, updateLog := range updateLogs {
+		if updateLog.ID > lastID {
+			lastID = updateLog.ID
+		}
+
+		collectionName, id, err := getCollectionNameAndID(updateLog.Fqid)
+		if err != nil {
+			nonFatalErrs = append(nonFatalErrs, fmt.Errorf("split fqid from %s: %w", updateLog.Fqid, err))
+			continue
+		}
+
+		keys, err := createKeyList(collectionName, id, updateLog.UpdatedFields)
+		if err != nil {
+			//debugLevelErrs = append(debugLevelErrs, fmt.Errorf("creating key list from notification: %w", err))
+		}
+
+		switch updateLog.Operation {
+		case "delete":
+			for _, key := range keys {
+				keyOperation[key] = false
+			}
+		case "insert", "update":
+			for _, key := range keys {
+				keyOperation[key] = true
+			}
+		}
+	}
+
+	var deletedKeys []dskey.Key
+	var updatedKeys []dskey.Key
+	for key, operation := range keyOperation {
+		if !operation {
+			deletedKeys = append(deletedKeys, key)
+		} else {
+			updatedKeys = append(updatedKeys, key)
+		}
+	}
+
+	oslog.Debug("notify from %d to %d: %d updates, %d deletions", debugLastIDID, lastID, len(updatedKeys), len(deletedKeys))
+
+	values, err := p.Get(ctx, updatedKeys...)
+	if err != nil {
+		return 0, fmt.Errorf("fetching keys %v: %w", updatedKeys, err)
+	}
+
+	if values == nil && len(deletedKeys) != 0 {
+		values = map[dskey.Key][]byte{}
+	}
+
+	for _, key := range deletedKeys {
+		values[key] = nil
+	}
+
+	if len(debugLevelErrs) > 0 {
+		oslog.Debug("notify update: %s", errors.Join(debugLevelErrs...))
+	}
+
+	updateFn(values, errors.Join(nonFatalErrs...))
+
+	return lastID, nil
+}
+
+func getCurID(ctx context.Context, conn *pgx.Conn) (xactID int, err error) {
+	var maxID int
+	if err := conn.QueryRow(ctx, "SELECT max(id) FROM os_notify_log_t").Scan(&maxID); err != nil {
+		return 0, fmt.Errorf("get cur xact id: %w", err)
+	}
+
+	return maxID, nil
 }
 
 func waitPostgresAvailable(ctx context.Context, config *pgx.ConnConfig) error {
