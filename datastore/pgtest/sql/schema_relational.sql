@@ -1,18 +1,18 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '49f4cae8785d53b5410e743e2872587c'
+-- MODELS_YML_CHECKSUM = 'c0bc5378f4886b235ed9d26699d40ea9'
 
 
 -- ENUM definitions
 
 CREATE TYPE enum_languages AS ENUM ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr');
 
-CREATE TYPE enum_onehundred_percent_bases AS ENUM ('no_general', 'yes_no', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+CREATE TYPE enum_onehundred_percent_bases AS ENUM ('no_general', 'yes_no', 'yes_no_abstain', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
-CREATE TYPE enum_approval_onehundred_percent_bases AS ENUM ('yes_no', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+CREATE TYPE enum_approval_onehundred_percent_bases AS ENUM ('yes_no', 'yes_no_abstain', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
-CREATE TYPE enum_rating_approval_onehundred_percent_bases AS ENUM ('yes_no', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+CREATE TYPE enum_rating_approval_onehundred_percent_bases AS ENUM ('yes_no', 'yes_no_abstain', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
 CREATE TYPE enum_rating_score_onehundred_percent_bases AS ENUM ('yes_no', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
@@ -4428,10 +4428,6 @@ FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll', 'meeting_id');
 -- definition trigger prevent_updates for poll_ballot.weight
 CREATE TRIGGER tr_constant_poll_ballot_weight BEFORE UPDATE OF weight ON poll_ballot_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'weight');
-
--- definition trigger prevent_updates for poll_ballot.value
-CREATE TRIGGER tr_constant_poll_ballot_value BEFORE UPDATE OF value ON poll_ballot_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'value');
 
 -- definition trigger prevent_updates for poll_ballot.poll_id
 CREATE TRIGGER tr_constant_poll_ballot_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_t

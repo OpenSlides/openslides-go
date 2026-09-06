@@ -24,6 +24,7 @@ type ApprovalOnehundredPercentBases string
 
 const (
 	ApprovalOnehundredPercentBasesYesNo           ApprovalOnehundredPercentBases = "yes_no"
+	ApprovalOnehundredPercentBasesYesNoAbstain    ApprovalOnehundredPercentBases = "yes_no_abstain"
 	ApprovalOnehundredPercentBasesValid           ApprovalOnehundredPercentBases = "valid"
 	ApprovalOnehundredPercentBasesCast            ApprovalOnehundredPercentBases = "cast"
 	ApprovalOnehundredPercentBasesEntitled        ApprovalOnehundredPercentBases = "entitled"
@@ -261,6 +262,7 @@ type RatingApprovalOnehundredPercentBases string
 
 const (
 	RatingApprovalOnehundredPercentBasesYesNo           RatingApprovalOnehundredPercentBases = "yes_no"
+	RatingApprovalOnehundredPercentBasesYesNoAbstain    RatingApprovalOnehundredPercentBases = "yes_no_abstain"
 	RatingApprovalOnehundredPercentBasesValid           RatingApprovalOnehundredPercentBases = "valid"
 	RatingApprovalOnehundredPercentBasesCast            RatingApprovalOnehundredPercentBases = "cast"
 	RatingApprovalOnehundredPercentBasesEntitled        RatingApprovalOnehundredPercentBases = "entitled"
