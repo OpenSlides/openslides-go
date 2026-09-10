@@ -7150,6 +7150,7 @@ func (r *Fetch) PollConfigRatingApproval(ids ...int) *pollConfigRatingApprovalBu
 
 // PollConfigRatingScore has all fields from poll_config_rating_score.
 type PollConfigRatingScore struct {
+	AllowAbstain          bool
 	ID                    int
 	MaxOptionsAmount      int
 	MaxVoteSum            int
@@ -7169,6 +7170,7 @@ type pollConfigRatingScoreBuilder struct {
 func (b *pollConfigRatingScoreBuilder) lazy(ds *Fetch, idI any) *PollConfigRatingScore {
 	id := idI.(int)
 	c := PollConfigRatingScore{}
+	ds.PollConfigRatingScore_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigRatingScore_ID(id).Lazy(&c.ID)
 	ds.PollConfigRatingScore_MaxOptionsAmount(id).Lazy(&c.MaxOptionsAmount)
 	ds.PollConfigRatingScore_MaxVoteSum(id).Lazy(&c.MaxVoteSum)
@@ -7210,6 +7212,7 @@ func (r *Fetch) PollConfigRatingScore(ids ...int) *pollConfigRatingScoreBuilder 
 
 // PollConfigSelection has all fields from poll_config_selection.
 type PollConfigSelection struct {
+	AllowAbstain          bool
 	AllowNota             bool
 	DisplayChart          string
 	ID                    int
@@ -7229,6 +7232,7 @@ type pollConfigSelectionBuilder struct {
 func (b *pollConfigSelectionBuilder) lazy(ds *Fetch, idI any) *PollConfigSelection {
 	id := idI.(int)
 	c := PollConfigSelection{}
+	ds.PollConfigSelection_AllowAbstain(id).Lazy(&c.AllowAbstain)
 	ds.PollConfigSelection_AllowNota(id).Lazy(&c.AllowNota)
 	ds.PollConfigSelection_DisplayChart(id).Lazy(&c.DisplayChart)
 	ds.PollConfigSelection_ID(id).Lazy(&c.ID)

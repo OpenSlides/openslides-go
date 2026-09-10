@@ -6648,6 +6648,15 @@ func (r *Fetch) PollConfigRatingApproval_RequiredMajority(pollConfigRatingApprov
 	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
 }
 
+func (r *Fetch) PollConfigRatingScore_AllowAbstain(pollConfigRatingScoreID int) *ValueBool {
+	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "allow_abstain")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) PollConfigRatingScore_ID(pollConfigRatingScoreID int) *ValueInt {
 	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "id")
 	if err != nil {
@@ -6727,6 +6736,15 @@ func (r *Fetch) PollConfigRatingScore_RequiredMajority(pollConfigRatingScoreID i
 	}
 
 	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
+}
+
+func (r *Fetch) PollConfigSelection_AllowAbstain(pollConfigSelectionID int) *ValueBool {
+	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "allow_abstain")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) PollConfigSelection_AllowNota(pollConfigSelectionID int) *ValueBool {
