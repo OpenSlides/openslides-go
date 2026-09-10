@@ -81,6 +81,11 @@ func NewPostgresTest(t *testing.T) (*PostgresTest, error) {
 			"POSTGRES_PASSWORD=openslides",
 			"POSTGRES_DB=postgres",
 		}),
+		dockertest.WithCmd([]string{
+			"postgres",
+			"-c", "max_locks_per_transaction=512",
+			"-c", "shared_buffers=512MB",
+		}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("run postgres: %w", err)
