@@ -121,6 +121,11 @@ func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool)
 		if val, set := id.Value(); set {
 			ids = append(ids, val)
 		}
+	} else if idField.Type().Name() == "Maybe[string]" {
+		id := idField.Interface().(dsfetch.Maybe[string])
+		if val, set := id.Value(); set {
+			fqids = append(fqids, val)
+		}
 	}
 
 	return ids, fqids
