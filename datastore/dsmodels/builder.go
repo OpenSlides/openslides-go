@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/maybe"
 )
 
 type builderWrapperI interface {
@@ -92,7 +92,14 @@ func (b *builder[C, T, M]) Preload(rel builderWrapperI) {
 func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool) []int {
 	ids := []int{}
 	if many {
-		ids = idField.Interface().([]int)
+		if idField.Type().Name() == "Maybe[[]int]" {
+			maybeIds := idField.Interface().(maybe.Maybe[[]int])
+			if val, set := maybeIds.Value(); set {
+				ids = val
+			}
+		} else {
+			ids = idField.Interface().([]int)
+		}
 	} else if idField.Kind() == reflect.Int {
 		ids = append(ids, int(idField.Int()))
 	} else if idField.Type().Name() == "Maybe[int]" {
@@ -101,7 +108,7 @@ func getRelationIds(idField reflect.Value, targetField reflect.Value, many bool)
 		relValue.MethodByName("SetNull").Call([]reflect.Value{})
 		targetField.Set(relValue)
 
-		id := idField.Interface().(dsfetch.Maybe[int])
+		id := idField.Interface().(maybe.Maybe[int])
 		if val, set := id.Value(); set {
 			ids = append(ids, val)
 		}

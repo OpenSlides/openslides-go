@@ -1,14 +1,14 @@
-package dsfetch_test
+package maybe_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/maybe"
 )
 
 func TestMaybe(t *testing.T) {
-	var maybeInt dsfetch.Maybe[int]
+	var maybeInt maybe.Maybe[int]
 
 	if got := maybeInt.Null(); !got {
 		t.Errorf("empty Maybe[int].Null() == %v, expected true", got)
@@ -32,7 +32,7 @@ func TestMaybe(t *testing.T) {
 		t.Errorf("setted Maybe[int].Value() == %v, expected 0", got)
 	}
 
-	other := dsfetch.MaybeValue(0)
+	other := maybe.New(0)
 
 	if other != maybeInt {
 		t.Errorf("setted Maybe[int] != MaybeValue: %v, %v", other, maybeInt)
@@ -42,7 +42,7 @@ func TestMaybe(t *testing.T) {
 func TestMaybeUnmarshall(t *testing.T) {
 	jsonzero := []byte(`null`)
 
-	var value dsfetch.Maybe[int]
+	var value maybe.Maybe[int]
 	if err := json.Unmarshal(jsonzero, &value); err != nil {
 		t.Fatalf("Error: %v", err)
 	}

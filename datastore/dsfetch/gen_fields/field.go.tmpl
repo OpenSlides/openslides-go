@@ -5,5 +5,5 @@ func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
 		return  &{{.ValueType}}{err: err}
 	}
 
-	return &{{.ValueType}}{fetch: r, key: key {{if .Required}},required:true{{end}} }
+	return &{{.ValueType}}{fetch: r, key: key }
 }

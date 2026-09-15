@@ -67,40 +67,34 @@ func ZeroValue(t string) string {
 	return "unknown type " + t
 }
 
-// ValueType returns the fetch Value type name for a field, handling relations, base types, and enums.
-func ValueType(collection, fieldName string, field *collection.Field) string {
-	required := field.Required
+// ValueType returns the fetch Value type name for a field and the related go
+// type. Handling relations, base types, and enums.
+func ValueType(collection, fieldName string, field *collection.Field) (string, string) {
+	//required := field.Required
 	collectionType := field.Type
 
-	if !required && collectionType == "relation" {
-		return "ValueMaybeInt"
-	}
-
-	if !required && collectionType == "generic-relation" {
-		return "ValueMaybeString"
-	}
-
 	if field.Enum.GlobalName != "" || len(field.Enum.Values) != 0 {
-		return fmt.Sprintf("ValueEnum[dstypes.%s]", EnumName(collection, fieldName, field))
+		goType := fmt.Sprintf("dstypes.%s", EnumName(collection, fieldName, field))
+		return fmt.Sprintf("ValueEnum[%s]", goType), goType
 	}
 
 	switch collectionType {
 	case "number", "relation", "timestamp":
-		return "ValueInt"
+		return "ValueInt", "int"
 	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "timezone":
-		return "ValueString"
+		return "ValueString", "string"
 	case "decimal(6)":
-		return "ValueDecimal"
+		return "ValueDecimal", "decimal.Decimal"
 	case "boolean":
-		return "ValueBool"
+		return "ValueBool", "bool"
 	case "float":
-		return "ValueFloat"
+		return "ValueFloat", "float64"
 	case "relation-list", "number[]":
-		return "ValueIntSlice"
+		return "ValueIntSlice", "[]int"
 	case "JSON":
-		return "ValueJSON"
+		return "ValueJSON", "json.RawMessage"
 	case "string[]", "text[]", "generic-relation-list":
-		return "ValueStringSlice"
+		return "ValueStringSlice", "[]string"
 	default:
 		panic(fmt.Sprintf("Unknown type %q", collectionType))
 	}
