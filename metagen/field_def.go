@@ -1165,7 +1165,6 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_approval/required_majority":       "A",
 
 	// poll_config_rating_score
-	"poll_config_rating_score/allow_abstain":           "A",
 	"poll_config_rating_score/id":                      "A",
 	"poll_config_rating_score/max_options_amount":      "A",
 	"poll_config_rating_score/max_vote_sum":            "A",
@@ -1177,7 +1176,6 @@ var RestrictionModes = map[string]string{
 	"poll_config_rating_score/required_majority":       "A",
 
 	// poll_config_selection
-	"poll_config_selection/allow_abstain":           "A",
 	"poll_config_selection/allow_nota":              "A",
 	"poll_config_selection/display_chart":           "A",
 	"poll_config_selection/id":                      "A",

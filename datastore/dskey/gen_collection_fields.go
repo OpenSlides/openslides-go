@@ -743,7 +743,6 @@ var collectionFields = [...]collectionField{
 	{"poll_config_rating_approval", "poll_id"},
 	{"poll_config_rating_approval", "required_majority"},
 	{"poll_config_rating_score", "A"},
-	{"poll_config_rating_score", "allow_abstain"},
 	{"poll_config_rating_score", "id"},
 	{"poll_config_rating_score", "max_options_amount"},
 	{"poll_config_rating_score", "max_vote_sum"},
@@ -754,7 +753,6 @@ var collectionFields = [...]collectionField{
 	{"poll_config_rating_score", "poll_id"},
 	{"poll_config_rating_score", "required_majority"},
 	{"poll_config_selection", "A"},
-	{"poll_config_selection", "allow_abstain"},
 	{"poll_config_selection", "allow_nota"},
 	{"poll_config_selection", "display_chart"},
 	{"poll_config_selection", "id"},
@@ -2472,496 +2470,492 @@ func collectionFieldToID(cf string) int {
 		return 739
 	case "poll_config_rating_score/A":
 		return 740
-	case "poll_config_rating_score/allow_abstain":
-		return 741
 	case "poll_config_rating_score/id":
-		return 742
+		return 741
 	case "poll_config_rating_score/max_options_amount":
-		return 743
+		return 742
 	case "poll_config_rating_score/max_vote_sum":
-		return 744
+		return 743
 	case "poll_config_rating_score/max_votes_per_option":
-		return 745
+		return 744
 	case "poll_config_rating_score/min_options_amount":
-		return 746
+		return 745
 	case "poll_config_rating_score/min_vote_sum":
-		return 747
+		return 746
 	case "poll_config_rating_score/onehundred_percent_base":
-		return 748
+		return 747
 	case "poll_config_rating_score/poll_id":
-		return 749
+		return 748
 	case "poll_config_rating_score/required_majority":
-		return 750
+		return 749
 	case "poll_config_selection/A":
-		return 751
-	case "poll_config_selection/allow_abstain":
-		return 752
+		return 750
 	case "poll_config_selection/allow_nota":
-		return 753
+		return 751
 	case "poll_config_selection/display_chart":
-		return 754
+		return 752
 	case "poll_config_selection/id":
-		return 755
+		return 753
 	case "poll_config_selection/max_options_amount":
-		return 756
+		return 754
 	case "poll_config_selection/min_options_amount":
-		return 757
+		return 755
 	case "poll_config_selection/onehundred_percent_base":
-		return 758
+		return 756
 	case "poll_config_selection/poll_id":
-		return 759
+		return 757
 	case "poll_config_selection/required_majority":
-		return 760
+		return 758
 	case "poll_config_selection/strike_out":
-		return 761
+		return 759
 	case "poll_config_stv_scottish/A":
-		return 762
+		return 760
 	case "poll_config_stv_scottish/id":
-		return 763
+		return 761
 	case "poll_config_stv_scottish/poll_id":
-		return 764
+		return 762
 	case "poll_config_stv_scottish/posts":
-		return 765
+		return 763
 	case "poll_entitled_user/A":
-		return 766
+		return 764
 	case "poll_entitled_user/id":
-		return 767
+		return 765
 	case "poll_entitled_user/meeting_user_id":
-		return 768
+		return 766
 	case "poll_entitled_user/poll_id":
-		return 769
+		return 767
 	case "poll_option/A":
-		return 770
+		return 768
 	case "poll_option/content_object_id":
-		return 771
+		return 769
 	case "poll_option/id":
-		return 772
+		return 770
 	case "poll_option/poll_id":
-		return 773
+		return 771
 	case "poll_option/text":
-		return 774
+		return 772
 	case "poll_option/weight":
-		return 775
+		return 773
 	case "projection/A":
-		return 776
+		return 774
 	case "projection/content_object_id":
-		return 777
+		return 775
 	case "projection/current_projector_id":
-		return 778
+		return 776
 	case "projection/history_projector_id":
-		return 779
+		return 777
 	case "projection/id":
-		return 780
+		return 778
 	case "projection/meeting_id":
-		return 781
+		return 779
 	case "projection/options":
-		return 782
+		return 780
 	case "projection/preview_projector_id":
-		return 783
+		return 781
 	case "projection/stable":
-		return 784
+		return 782
 	case "projection/type":
-		return 785
+		return 783
 	case "projection/weight":
-		return 786
+		return 784
 	case "projector/A":
-		return 787
+		return 785
 	case "projector/aspect_ratio_denominator":
-		return 788
+		return 786
 	case "projector/aspect_ratio_numerator":
-		return 789
+		return 787
 	case "projector/background_color":
-		return 790
+		return 788
 	case "projector/chyron_background_color":
-		return 791
+		return 789
 	case "projector/chyron_background_color_2":
-		return 792
+		return 790
 	case "projector/chyron_font_color":
-		return 793
+		return 791
 	case "projector/chyron_font_color_2":
-		return 794
+		return 792
 	case "projector/color":
-		return 795
+		return 793
 	case "projector/current_projection_ids":
-		return 796
+		return 794
 	case "projector/header_background_color":
-		return 797
+		return 795
 	case "projector/header_font_color":
-		return 798
+		return 796
 	case "projector/header_h1_color":
-		return 799
+		return 797
 	case "projector/history_projection_ids":
-		return 800
+		return 798
 	case "projector/id":
-		return 801
+		return 799
 	case "projector/is_internal":
-		return 802
+		return 800
 	case "projector/meeting_id":
-		return 803
+		return 801
 	case "projector/name":
-		return 804
+		return 802
 	case "projector/preview_projection_ids":
-		return 805
+		return 803
 	case "projector/scale":
-		return 806
+		return 804
 	case "projector/scroll":
-		return 807
+		return 805
 	case "projector/sequential_number":
-		return 808
+		return 806
 	case "projector/show_clock":
-		return 809
+		return 807
 	case "projector/show_header_footer":
-		return 810
+		return 808
 	case "projector/show_logo":
-		return 811
+		return 809
 	case "projector/show_title":
-		return 812
+		return 810
 	case "projector/used_as_default_projector_for_agenda_item_list_in_meeting_id":
-		return 813
+		return 811
 	case "projector/used_as_default_projector_for_amendment_in_meeting_id":
-		return 814
+		return 812
 	case "projector/used_as_default_projector_for_assignment_in_meeting_id":
-		return 815
+		return 813
 	case "projector/used_as_default_projector_for_assignment_poll_in_meeting_id":
-		return 816
+		return 814
 	case "projector/used_as_default_projector_for_countdown_in_meeting_id":
-		return 817
+		return 815
 	case "projector/used_as_default_projector_for_current_los_in_meeting_id":
-		return 818
+		return 816
 	case "projector/used_as_default_projector_for_list_of_speakers_in_meeting_id":
-		return 819
+		return 817
 	case "projector/used_as_default_projector_for_mediafile_in_meeting_id":
-		return 820
+		return 818
 	case "projector/used_as_default_projector_for_message_in_meeting_id":
-		return 821
+		return 819
 	case "projector/used_as_default_projector_for_motion_block_in_meeting_id":
-		return 822
+		return 820
 	case "projector/used_as_default_projector_for_motion_in_meeting_id":
-		return 823
+		return 821
 	case "projector/used_as_default_projector_for_motion_poll_in_meeting_id":
-		return 824
+		return 822
 	case "projector/used_as_default_projector_for_topic_in_meeting_id":
-		return 825
+		return 823
 	case "projector/used_as_default_projector_for_topic_poll_in_meeting_id":
-		return 826
+		return 824
 	case "projector/used_as_reference_projector_meeting_id":
-		return 827
+		return 825
 	case "projector/width":
-		return 828
+		return 826
 	case "projector_countdown/A":
-		return 829
+		return 827
 	case "projector_countdown/countdown_time":
-		return 830
+		return 828
 	case "projector_countdown/default_time":
-		return 831
+		return 829
 	case "projector_countdown/description":
-		return 832
+		return 830
 	case "projector_countdown/id":
-		return 833
+		return 831
 	case "projector_countdown/meeting_id":
-		return 834
+		return 832
 	case "projector_countdown/projection_ids":
-		return 835
+		return 833
 	case "projector_countdown/running":
-		return 836
+		return 834
 	case "projector_countdown/title":
-		return 837
+		return 835
 	case "projector_countdown/used_as_list_of_speakers_countdown_meeting_id":
-		return 838
+		return 836
 	case "projector_countdown/used_as_poll_countdown_meeting_id":
-		return 839
+		return 837
 	case "projector_message/A":
-		return 840
+		return 838
 	case "projector_message/id":
-		return 841
+		return 839
 	case "projector_message/meeting_id":
-		return 842
+		return 840
 	case "projector_message/message":
-		return 843
+		return 841
 	case "projector_message/projection_ids":
-		return 844
+		return 842
 	case "speaker/A":
-		return 845
+		return 843
 	case "speaker/answer":
-		return 846
+		return 844
 	case "speaker/begin_time":
-		return 847
+		return 845
 	case "speaker/end_time":
-		return 848
+		return 846
 	case "speaker/id":
-		return 849
+		return 847
 	case "speaker/list_of_speakers_id":
-		return 850
+		return 848
 	case "speaker/meeting_id":
-		return 851
+		return 849
 	case "speaker/meeting_user_id":
-		return 852
+		return 850
 	case "speaker/note":
-		return 853
+		return 851
 	case "speaker/pause_time":
-		return 854
+		return 852
 	case "speaker/point_of_order":
-		return 855
+		return 853
 	case "speaker/point_of_order_category_id":
-		return 856
+		return 854
 	case "speaker/speech_state":
-		return 857
+		return 855
 	case "speaker/structure_level_list_of_speakers_id":
-		return 858
+		return 856
 	case "speaker/total_pause":
-		return 859
+		return 857
 	case "speaker/unpause_time":
-		return 860
+		return 858
 	case "speaker/weight":
-		return 861
+		return 859
 	case "structure_level/A":
-		return 862
+		return 860
 	case "structure_level/color":
-		return 863
+		return 861
 	case "structure_level/default_time":
-		return 864
+		return 862
 	case "structure_level/id":
-		return 865
+		return 863
 	case "structure_level/meeting_id":
-		return 866
+		return 864
 	case "structure_level/meeting_user_ids":
-		return 867
+		return 865
 	case "structure_level/name":
-		return 868
+		return 866
 	case "structure_level/structure_level_list_of_speakers_ids":
-		return 869
+		return 867
 	case "structure_level_list_of_speakers/A":
-		return 870
+		return 868
 	case "structure_level_list_of_speakers/additional_time":
-		return 871
+		return 869
 	case "structure_level_list_of_speakers/current_start_time":
-		return 872
+		return 870
 	case "structure_level_list_of_speakers/id":
-		return 873
+		return 871
 	case "structure_level_list_of_speakers/initial_time":
-		return 874
+		return 872
 	case "structure_level_list_of_speakers/list_of_speakers_id":
-		return 875
+		return 873
 	case "structure_level_list_of_speakers/meeting_id":
-		return 876
+		return 874
 	case "structure_level_list_of_speakers/remaining_time":
-		return 877
+		return 875
 	case "structure_level_list_of_speakers/speaker_ids":
-		return 878
+		return 876
 	case "structure_level_list_of_speakers/structure_level_id":
-		return 879
+		return 877
 	case "tag/A":
-		return 880
+		return 878
 	case "tag/id":
-		return 881
+		return 879
 	case "tag/meeting_id":
-		return 882
+		return 880
 	case "tag/name":
-		return 883
+		return 881
 	case "tag/tagged_ids":
-		return 884
+		return 882
 	case "theme/A":
-		return 885
+		return 883
 	case "theme/abstain":
-		return 886
+		return 884
 	case "theme/accent_100":
-		return 887
+		return 885
 	case "theme/accent_200":
-		return 888
+		return 886
 	case "theme/accent_300":
-		return 889
+		return 887
 	case "theme/accent_400":
-		return 890
+		return 888
 	case "theme/accent_50":
-		return 891
+		return 889
 	case "theme/accent_500":
-		return 892
+		return 890
 	case "theme/accent_600":
-		return 893
+		return 891
 	case "theme/accent_700":
-		return 894
+		return 892
 	case "theme/accent_800":
-		return 895
+		return 893
 	case "theme/accent_900":
-		return 896
+		return 894
 	case "theme/accent_a100":
-		return 897
+		return 895
 	case "theme/accent_a200":
-		return 898
+		return 896
 	case "theme/accent_a400":
-		return 899
+		return 897
 	case "theme/accent_a700":
-		return 900
+		return 898
 	case "theme/headbar":
-		return 901
+		return 899
 	case "theme/id":
-		return 902
+		return 900
 	case "theme/name":
-		return 903
+		return 901
 	case "theme/no":
-		return 904
+		return 902
 	case "theme/organization_id":
-		return 905
+		return 903
 	case "theme/primary_100":
-		return 906
+		return 904
 	case "theme/primary_200":
-		return 907
+		return 905
 	case "theme/primary_300":
-		return 908
+		return 906
 	case "theme/primary_400":
-		return 909
+		return 907
 	case "theme/primary_50":
-		return 910
+		return 908
 	case "theme/primary_500":
-		return 911
+		return 909
 	case "theme/primary_600":
-		return 912
+		return 910
 	case "theme/primary_700":
-		return 913
+		return 911
 	case "theme/primary_800":
-		return 914
+		return 912
 	case "theme/primary_900":
-		return 915
+		return 913
 	case "theme/primary_a100":
-		return 916
+		return 914
 	case "theme/primary_a200":
-		return 917
+		return 915
 	case "theme/primary_a400":
-		return 918
+		return 916
 	case "theme/primary_a700":
-		return 919
+		return 917
 	case "theme/theme_for_organization_id":
-		return 920
+		return 918
 	case "theme/warn_100":
-		return 921
+		return 919
 	case "theme/warn_200":
-		return 922
+		return 920
 	case "theme/warn_300":
-		return 923
+		return 921
 	case "theme/warn_400":
-		return 924
+		return 922
 	case "theme/warn_50":
-		return 925
+		return 923
 	case "theme/warn_500":
-		return 926
+		return 924
 	case "theme/warn_600":
-		return 927
+		return 925
 	case "theme/warn_700":
-		return 928
+		return 926
 	case "theme/warn_800":
-		return 929
+		return 927
 	case "theme/warn_900":
-		return 930
+		return 928
 	case "theme/warn_a100":
-		return 931
+		return 929
 	case "theme/warn_a200":
-		return 932
+		return 930
 	case "theme/warn_a400":
-		return 933
+		return 931
 	case "theme/warn_a700":
-		return 934
+		return 932
 	case "theme/yes":
-		return 935
+		return 933
 	case "topic/A":
-		return 936
+		return 934
 	case "topic/agenda_item_id":
-		return 937
+		return 935
 	case "topic/attachment_meeting_mediafile_ids":
-		return 938
+		return 936
 	case "topic/history_entry_ids":
-		return 939
+		return 937
 	case "topic/id":
-		return 940
+		return 938
 	case "topic/list_of_speakers_id":
-		return 941
+		return 939
 	case "topic/meeting_id":
-		return 942
+		return 940
 	case "topic/poll_ids":
-		return 943
+		return 941
 	case "topic/projection_ids":
-		return 944
+		return 942
 	case "topic/sequential_number":
-		return 945
+		return 943
 	case "topic/text":
-		return 946
+		return 944
 	case "topic/title":
-		return 947
+		return 945
 	case "user/A":
-		return 948
+		return 946
 	case "user/B":
-		return 949
+		return 947
 	case "user/D":
-		return 950
+		return 948
 	case "user/E":
-		return 951
+		return 949
 	case "user/F":
-		return 952
+		return 950
 	case "user/G":
-		return 953
+		return 951
 	case "user/H":
-		return 954
+		return 952
 	case "user/can_change_own_password":
-		return 955
+		return 953
 	case "user/committee_ids":
-		return 956
+		return 954
 	case "user/committee_management_ids":
-		return 957
+		return 955
 	case "user/default_password":
-		return 958
+		return 956
 	case "user/default_vote_weight":
-		return 959
+		return 957
 	case "user/email":
-		return 960
+		return 958
 	case "user/external":
-		return 961
+		return 959
 	case "user/first_name":
-		return 962
+		return 960
 	case "user/gender_id":
-		return 963
+		return 961
 	case "user/history_entry_ids":
-		return 964
+		return 962
 	case "user/history_position_ids":
-		return 965
+		return 963
 	case "user/home_committee_id":
-		return 966
+		return 964
 	case "user/id":
-		return 967
+		return 965
 	case "user/is_active":
-		return 968
+		return 966
 	case "user/is_demo_user":
-		return 969
+		return 967
 	case "user/is_physical_person":
-		return 970
+		return 968
 	case "user/is_present_in_meeting_ids":
-		return 971
+		return 969
 	case "user/last_email_sent":
-		return 972
+		return 970
 	case "user/last_login":
-		return 973
+		return 971
 	case "user/last_name":
-		return 974
+		return 972
 	case "user/meeting_ids":
-		return 975
+		return 973
 	case "user/meeting_user_ids":
-		return 976
+		return 974
 	case "user/member_number":
-		return 977
+		return 975
 	case "user/organization_id":
-		return 978
+		return 976
 	case "user/organization_management_level":
-		return 979
+		return 977
 	case "user/password":
-		return 980
+		return 978
 	case "user/poll_option_ids":
-		return 981
+		return 979
 	case "user/pronoun":
-		return 982
+		return 980
 	case "user/saml_id":
-		return 983
+		return 981
 	case "user/title":
-		return 984
+		return 982
 	case "user/username":
-		return 985
+		return 983
 	default:
 		return -1
 	}
