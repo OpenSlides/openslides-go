@@ -18,6 +18,7 @@ import (
 	"text/template"
 
 	"github.com/OpenSlides/openslides-go/collection"
+	"github.com/OpenSlides/openslides-go/datastore/dsgen"
 )
 
 //go:embed value.go.tmpl
@@ -117,7 +118,7 @@ func genValueTypes(buf *bytes.Buffer) error {
 		}{
 			name,
 			typesToGo[name],
-			zeroValue(typesToGo[name]),
+			dsgen.ZeroValue(typesToGo[name]),
 			strings.HasPrefix(name, "ValueMaybe"),
 		}
 		if err := tmpl.Execute(buf, data); err != nil {
@@ -125,21 +126,6 @@ func genValueTypes(buf *bytes.Buffer) error {
 		}
 	}
 	return nil
-}
-
-// zeroValue returns the zero value for a go type
-func zeroValue(t string) string {
-	switch t {
-	case "int", "float32":
-		return "0"
-	case "string":
-		return `""`
-	case "bool":
-		return "false"
-	case "json.RawMessage", "[]int", "[]string":
-		return "nil"
-	}
-	return "unknown type " + t
 }
 
 func genCollections(buf *bytes.Buffer, fromYML map[string]collection.Collection) error {
@@ -190,20 +176,29 @@ type CollectionRelation struct {
 func toCollections(raw map[string]collection.Collection) []Collection {
 	var collections []Collection
 	for collectionName, collection := range raw {
-		colGoName := goName(collectionName)
-		colGoNameLc := string(colGoName[0]+32) + string(colGoName[1:])
+		colGoName := dsgen.GoName(collectionName)
+		colGoNameLc := dsgen.FirstLower(colGoName)
 		col := Collection{
 			GoName:         colGoName,
 			GoNameLc:       colGoNameLc,
 			CollectionName: collectionName,
 		}
 		for fieldName, collectionField := range collection.Fields {
+			typeName := dsgen.ValueType(collectionName, fieldName, collectionField)
+			if unwrapped, ok := strings.CutPrefix(typeName, "ValueEnum["); ok {
+				typeName = strings.TrimSuffix(unwrapped, "]")
+			}
+			fieldTypeName, ok := typesToGo[typeName]
+			if !ok {
+				fieldTypeName = typeName
+			}
+
 			col.Fields = append(
 				col.Fields,
 				CollectionField{
-					Name:      goName(fieldName),
-					Type:      typesToGo[valueType(collectionField.Type, collectionField.Required)],
-					FetchName: goName(collectionName) + "_" + goName(fieldName),
+					Name:      dsgen.GoName(fieldName),
+					Type:      fieldTypeName,
+					FetchName: dsgen.GoName(collectionName) + "_" + dsgen.GoName(fieldName),
 				},
 			)
 
@@ -218,8 +213,8 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 				continue
 			}
 
-			toType := goName(relation.ToCollections()[0].Collection)
-			toTypeLc := string(toType[0]+32) + string(toType[1:])
+			toType := dsgen.GoName(relation.ToCollections()[0].Collection)
+			toTypeLc := dsgen.FirstLower(toType)
 
 			resultType := fmt.Sprintf("*%s", toType)
 			if !relation.List() && !collectionField.Required {
@@ -229,15 +224,15 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 				resultType = fmt.Sprintf("[]%s", toType)
 			}
 
-			methodName := withoutID(goName(fieldName))
-			structFieldName := string(methodName[0]+32) + string(methodName[1:])
+			methodName := dsgen.WithoutID(dsgen.GoName(fieldName))
+			structFieldName := dsgen.FirstLower(methodName)
 
 			col.Relations = append(
 				col.Relations,
 				CollectionRelation{
 					ResultType:      resultType,
 					IsList:          relation.List(),
-					FieldName:       goName(fieldName),
+					FieldName:       dsgen.GoName(fieldName),
 					MethodName:      methodName,
 					StructFieldName: structFieldName,
 					Type:            toType,
@@ -262,69 +257,4 @@ func toCollections(raw map[string]collection.Collection) []Collection {
 		return cmp.Compare(a.GoName, b.GoName)
 	})
 	return collections
-}
-
-func goName(name string) string {
-	if name == "id" {
-		return "ID"
-	}
-
-	name = strings.ReplaceAll(name, "_$", "")
-
-	parts := strings.Split(name, "_")
-	for i := range parts {
-		parts[i] = strings.Title(parts[i])
-	}
-	name = strings.Join(parts, "")
-
-	name = strings.ReplaceAll(name, "Id", "ID")
-	return name
-}
-
-func withoutID(in string) string {
-	result := strings.TrimSuffix(strings.TrimSuffix(in, "ID"), "IDs")
-
-	if strings.HasSuffix(in, "IDs") {
-		return result + "List"
-	}
-	return result
-}
-
-func valueType(collectionType string, required bool) string {
-	if !required && collectionType == "relation" {
-		return "ValueMaybeInt"
-	}
-
-	if !required && collectionType == "generic-relation" {
-		return "ValueMaybeString"
-	}
-
-	switch collectionType {
-	case "number", "relation", "timestamp":
-		return "ValueInt"
-
-	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "timezone":
-		return "ValueString"
-
-	case "decimal(6)":
-		return "ValueDecimal"
-
-	case "boolean":
-		return "ValueBool"
-
-	case "float":
-		return "ValueFloat"
-
-	case "relation-list", "number[]":
-		return "ValueIntSlice"
-
-	case "JSON":
-		return "ValueJSON"
-
-	case "string[]", "text[]", "generic-relation-list":
-		return "ValueStringSlice"
-
-	default:
-		panic(fmt.Sprintf("Unknown type %q", collectionType))
-	}
 }
