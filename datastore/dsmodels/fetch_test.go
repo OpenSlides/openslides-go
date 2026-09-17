@@ -279,3 +279,33 @@ func TestPolymorphicPreload(t *testing.T) {
 		t.Errorf("res.ContentObject.Title = %s, expected 'foo'", topic.Title)
 	}
 }
+
+func TestPolymorphicPreloadOnNonRequired(t *testing.T) {
+	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	history_entry/1:
+		position_id: 1
+		meeting_id: 1
+		model_id: motion/1
+	motion/1:
+		sequential_number: 1
+		title: foo
+		meeting_id: 1
+		list_of_speakers_id: 1
+		state_id: 1
+	`)))
+
+	hQ := ds.HistoryEntry(1)
+	res, err := hQ.Preload(hQ.Model()).First(t.Context())
+	if err != nil {
+		t.Errorf("HistoryEntry 1 with motion returned unexpected error: %v", err)
+	}
+
+	motion, isMotion := res.Model.(*dsmodels.Motion)
+	if !isMotion {
+		t.Errorf("type of res.Model = %s, expected *dsmodels.Motion", reflect.TypeOf(res.Model))
+	}
+
+	if motion.Title != "foo" {
+		t.Errorf("res.Model.Title = %s, expected 'foo'", motion.Title)
+	}
+}
