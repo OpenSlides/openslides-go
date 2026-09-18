@@ -1111,6 +1111,7 @@ var RestrictionModes = map[string]string{
 	"point_of_order_category/text":        "A",
 
 	// poll
+	"poll/allow_empty":         "A",
 	"poll/allow_invalid":       "A",
 	"poll/allow_vote_split":    "A",
 	"poll/anonymized":          "A",
@@ -1195,6 +1196,7 @@ var RestrictionModes = map[string]string{
 	"poll_entitled_user/id":              "A",
 	"poll_entitled_user/meeting_user_id": "A",
 	"poll_entitled_user/poll_id":         "A",
+	"poll_entitled_user/present":         "A",
 
 	// poll_option
 	"poll_option/content_object_id": "A",

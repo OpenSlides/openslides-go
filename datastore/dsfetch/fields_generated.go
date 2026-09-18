@@ -6864,6 +6864,15 @@ func (r *Fetch) PollEntitledUser_PollID(pollEntitledUserID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) PollEntitledUser_Present(pollEntitledUserID int) *ValueBool {
+	key, err := dskey.FromParts("poll_entitled_user", pollEntitledUserID, "present")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) PollOption_ContentObjectID(pollOptionID int) *ValueMaybeString {
 	key, err := dskey.FromParts("poll_option", pollOptionID, "content_object_id")
 	if err != nil {
@@ -6907,6 +6916,15 @@ func (r *Fetch) PollOption_Weight(pollOptionID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Poll_AllowEmpty(pollID int) *ValueBool {
+	key, err := dskey.FromParts("poll", pollID, "allow_empty")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_AllowInvalid(pollID int) *ValueBool {

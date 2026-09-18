@@ -6546,6 +6546,7 @@ func (r *Fetch) PointOfOrderCategory(ids ...int) *pointOfOrderCategoryBuilder {
 
 // Poll has all fields from poll.
 type Poll struct {
+	AllowEmpty        bool
 	AllowInvalid      bool
 	AllowVoteSplit    bool
 	Anonymized        bool
@@ -6584,6 +6585,7 @@ type pollBuilder struct {
 func (b *pollBuilder) lazy(ds *Fetch, idI any) *Poll {
 	id := idI.(int)
 	c := Poll{}
+	ds.Poll_AllowEmpty(id).Lazy(&c.AllowEmpty)
 	ds.Poll_AllowInvalid(id).Lazy(&c.AllowInvalid)
 	ds.Poll_AllowVoteSplit(id).Lazy(&c.AllowVoteSplit)
 	ds.Poll_Anonymized(id).Lazy(&c.Anonymized)
@@ -7321,6 +7323,7 @@ type PollEntitledUser struct {
 	ID            int
 	MeetingUserID dsfetch.Maybe[int]
 	PollID        int
+	Present       bool
 	MeetingUser   *dsfetch.Maybe[MeetingUser]
 	Poll          *Poll
 }
@@ -7335,6 +7338,7 @@ func (b *pollEntitledUserBuilder) lazy(ds *Fetch, idI any) *PollEntitledUser {
 	ds.PollEntitledUser_ID(id).Lazy(&c.ID)
 	ds.PollEntitledUser_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.PollEntitledUser_PollID(id).Lazy(&c.PollID)
+	ds.PollEntitledUser_Present(id).Lazy(&c.Present)
 	return &c
 }
 
