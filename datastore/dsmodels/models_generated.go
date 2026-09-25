@@ -7160,7 +7160,7 @@ type PollConfigRatingScore struct {
 	MinVoteSum            int
 	OnehundredPercentBase dstypes.RatingScoreOnehundredPercentBases
 	PollID                int
-	RequiredMajority      dstypes.RequiredMajority
+	RequiredMajority      dstypes.RequiredMajoritySelection
 	Poll                  *Poll
 }
 
@@ -7219,7 +7219,7 @@ type PollConfigSelection struct {
 	MinOptionsAmount      int
 	OnehundredPercentBase dstypes.SelectionOnehundredPercentBases
 	PollID                int
-	RequiredMajority      dstypes.RequiredMajority
+	RequiredMajority      dstypes.RequiredMajoritySelection
 	StrikeOut             bool
 	Poll                  *Poll
 }

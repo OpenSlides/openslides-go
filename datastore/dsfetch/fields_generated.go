@@ -6720,13 +6720,13 @@ func (r *Fetch) PollConfigRatingScore_PollID(pollConfigRatingScoreID int) *Value
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollConfigRatingScore_RequiredMajority(pollConfigRatingScoreID int) *ValueEnum[dstypes.RequiredMajority] {
+func (r *Fetch) PollConfigRatingScore_RequiredMajority(pollConfigRatingScoreID int) *ValueEnum[dstypes.RequiredMajoritySelection] {
 	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "required_majority")
 	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
+		return &ValueEnum[dstypes.RequiredMajoritySelection]{err: err}
 	}
 
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
+	return &ValueEnum[dstypes.RequiredMajoritySelection]{fetch: r, key: key}
 }
 
 func (r *Fetch) PollConfigSelection_AllowNota(pollConfigSelectionID int) *ValueBool {
@@ -6792,13 +6792,13 @@ func (r *Fetch) PollConfigSelection_PollID(pollConfigSelectionID int) *ValueInt 
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollConfigSelection_RequiredMajority(pollConfigSelectionID int) *ValueEnum[dstypes.RequiredMajority] {
+func (r *Fetch) PollConfigSelection_RequiredMajority(pollConfigSelectionID int) *ValueEnum[dstypes.RequiredMajoritySelection] {
 	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "required_majority")
 	if err != nil {
-		return &ValueEnum[dstypes.RequiredMajority]{err: err}
+		return &ValueEnum[dstypes.RequiredMajoritySelection]{err: err}
 	}
 
-	return &ValueEnum[dstypes.RequiredMajority]{fetch: r, key: key}
+	return &ValueEnum[dstypes.RequiredMajoritySelection]{fetch: r, key: key}
 }
 
 func (r *Fetch) PollConfigSelection_StrikeOut(pollConfigSelectionID int) *ValueBool {

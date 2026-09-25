@@ -1,7 +1,7 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = 'ed742ae83f643bf3411ab88aabbedaa4'
+-- MODELS_YML_CHECKSUM = '9c3eb095db22de07a7ea76175a6df02a'
 
 
 -- ENUM definitions
@@ -19,6 +19,8 @@ CREATE TYPE enum_rating_score_onehundred_percent_bases AS ENUM ('yes_no', 'valid
 CREATE TYPE enum_selection_onehundred_percent_bases AS ENUM ('no_general', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
 CREATE TYPE enum_required_majority AS ENUM ('no_majority', 'two_third_majority', 'absolute_majority');
+
+CREATE TYPE enum_required_majority_selection AS ENUM ('no_majority', 'two_third_majority', 'absolute_majority', 'simple_majority');
 
 CREATE TYPE enum_poll_visibility AS ENUM ('manually', 'named', 'open', 'secret');
 
@@ -2099,7 +2101,7 @@ CREATE TABLE poll_config_rating_score_t (
         CONSTRAINT default_poll_config_rating_score_min_vote_sum DEFAULT 0,
     onehundred_percent_base enum_rating_score_onehundred_percent_bases
         CONSTRAINT required_poll_config_rating_score_onehundred_percent_base NOT NULL,
-    required_majority enum_required_majority
+    required_majority enum_required_majority_selection
         CONSTRAINT default_poll_config_rating_score_required_majority DEFAULT 'no_majority'
 );
 
@@ -2118,7 +2120,7 @@ CREATE TABLE poll_config_selection_t (
         CONSTRAINT default_poll_config_selection_strike_out DEFAULT False,
     onehundred_percent_base enum_selection_onehundred_percent_bases
         CONSTRAINT required_poll_config_selection_onehundred_percent_base NOT NULL,
-    required_majority enum_required_majority
+    required_majority enum_required_majority_selection
         CONSTRAINT default_poll_config_selection_required_majority DEFAULT 'no_majority',
     display_chart varchar(256)
 );

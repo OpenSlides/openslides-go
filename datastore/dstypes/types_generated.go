@@ -291,6 +291,16 @@ const (
 	RequiredMajorityAbsoluteMajority RequiredMajority = "absolute_majority"
 )
 
+// RequiredMajoritySelection represents the RequiredMajoritySelection enum type.
+type RequiredMajoritySelection string
+
+const (
+	RequiredMajoritySelectionNoMajority       RequiredMajoritySelection = "no_majority"
+	RequiredMajoritySelectionTwoThirdMajority RequiredMajoritySelection = "two_third_majority"
+	RequiredMajoritySelectionAbsoluteMajority RequiredMajoritySelection = "absolute_majority"
+	RequiredMajoritySelectionSimpleMajority   RequiredMajoritySelection = "simple_majority"
+)
+
 // SelectionOnehundredPercentBases represents the SelectionOnehundredPercentBases enum type.
 type SelectionOnehundredPercentBases string
 
