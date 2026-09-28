@@ -9,7 +9,11 @@ import (
 	"slices"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 )
+
+// TPermission is a type of all valid permission strings.
+type TPermission string
 
 // Permission holds the information which permissions and groups a user has.
 type Permission struct {
@@ -35,7 +39,7 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 	}
 
 	if !lockedMeeting {
-		isOrgaAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, OMLCanManageOrganization)
+		isOrgaAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 		if err != nil {
 			return nil, fmt.Errorf("getting organization management level: %w", err)
 		}
@@ -236,7 +240,7 @@ func (p *Permission) InGroup(groupIDs ...int) bool {
 }
 
 // HasOrganizationManagementLevel returns true if the user has the level or a higher level
-func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID int, level OrganizationManagementLevel) (bool, error) {
+func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID int, level dstypes.User_OrganizationManagementLevel) (bool, error) {
 	if userID == 0 {
 		return false, nil
 	}
@@ -246,15 +250,15 @@ func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, user
 		return false, fmt.Errorf("getting oml of user %d: %w", userID, err)
 	}
 
-	switch OrganizationManagementLevel(oml) {
-	case OMLSuperadmin:
+	switch dstypes.User_OrganizationManagementLevel(oml) {
+	case dstypes.User_OrganizationManagementLevelSuperadmin:
 		return true, nil
 
-	case OMLCanManageOrganization:
-		return level == OMLCanManageOrganization || level == OMLCanManageUsers, nil
+	case dstypes.User_OrganizationManagementLevelCanManageOrganization:
+		return level == dstypes.User_OrganizationManagementLevelCanManageOrganization || level == dstypes.User_OrganizationManagementLevelCanManageUsers, nil
 
-	case OMLCanManageUsers:
-		return level == OMLCanManageUsers, nil
+	case dstypes.User_OrganizationManagementLevelCanManageUsers:
+		return level == dstypes.User_OrganizationManagementLevelCanManageUsers, nil
 	}
 	return false, nil
 }

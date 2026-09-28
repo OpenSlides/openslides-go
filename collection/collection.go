@@ -40,6 +40,20 @@ func openWithMeta(path string, meta []byte) (Collection, error) {
 	return wrapper.Collection, nil
 }
 
+// Meta contains global infos for collections
+type Meta struct {
+	EnumDefinitions map[string][]string `yaml:"enum_definitions"`
+}
+
+func parseMeta(meta []byte) (Meta, error) {
+	var result Meta
+	if err := yaml.Unmarshal(meta, &result); err != nil {
+		return Meta{}, fmt.Errorf("parse yml: %w", err)
+	}
+
+	return result, nil
+}
+
 func indent(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	indent := strings.Repeat(" ", 2)
@@ -63,12 +77,23 @@ func Collections(meta string) (map[string]Collection, error) {
 		return nil, fmt.Errorf("reading collections: %w", err)
 	}
 
+	metaParsed, err := parseMeta(metaContent)
+	if err != nil {
+		return nil, fmt.Errorf("reading collection meta: %w", err)
+	}
+
 	all := make(map[string]Collection)
 	for _, collection := range collections {
 		c, err := openWithMeta(filepath.Join(meta, "collections", collection.Name()), metaContent)
 		if err != nil {
 			return nil, fmt.Errorf("reading collection %s: %w", collection.Name(), err)
 		}
+		for _, f := range c.Fields {
+			if f != nil && f.Enum.GlobalName != "" {
+				f.Enum.Values = metaParsed.EnumDefinitions[f.Enum.GlobalName]
+			}
+		}
+
 		nameWithoutExt := strings.TrimSuffix(collection.Name(), ".yml")
 		all[nameWithoutExt] = c
 	}
@@ -87,6 +112,7 @@ type Field struct {
 	restrictionMode string
 	relation        Relation
 	Required        bool
+	Enum            Enum
 }
 
 // Relation returns the relation object if the Field is a relation. In other
@@ -110,6 +136,7 @@ func (f *Field) UnmarshalYAML(node []byte) error {
 		Type            string `yaml:"type"`
 		RestrictionMode string `yaml:"restriction_mode"`
 		Required        bool   `yaml:"required"`
+		Enum            Enum   `yaml:"enum"`
 	}
 	if err := yaml.Unmarshal(node, &typer); err != nil {
 		return fmt.Errorf("field object without type: %w", err)
@@ -118,6 +145,7 @@ func (f *Field) UnmarshalYAML(node []byte) error {
 	f.Type = typer.Type
 	f.restrictionMode = typer.RestrictionMode
 	f.Required = typer.Required
+	f.Enum = typer.Enum
 
 	var list bool
 	switch typer.Type {
@@ -147,6 +175,35 @@ func (f *Field) UnmarshalYAML(node []byte) error {
 
 	}
 	return nil
+}
+
+// Enum represents a enum property of a field
+type Enum struct {
+	GlobalName string
+	Values     []string
+}
+
+// UnmarshalYAML decodes a model attribute from yaml.
+func (s *Enum) UnmarshalYAML(node []byte) error {
+	var str string
+	if err := yaml.Unmarshal(node, &str); err == nil {
+		*s = Enum{
+			GlobalName: str,
+			Values:     []string{},
+		}
+		return nil
+	}
+
+	var slice []string
+	if err := yaml.Unmarshal(node, &slice); err == nil {
+		*s = Enum{
+			GlobalName: "",
+			Values:     slice,
+		}
+		return nil
+	}
+
+	return fmt.Errorf("field must be a string or a list of strings")
 }
 
 // Relation represents some kind of relation between fields.
