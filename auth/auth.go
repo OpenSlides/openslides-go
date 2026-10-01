@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/OpenSlides/openslides-go/environment"
@@ -17,15 +16,18 @@ import (
 
 var (
 	envExternalHost = environment.NewVariable("IDP_EXTERNAL_HOST", "localhost:8800", "External host address")
-	logoutMU        sync.RWMutex
 )
+
+type authString string
 
 // pruneTime defines how long a topic id will be valid. This should be higher
 // than the max lifetime of a token.
 const pruneTime = 15 * time.Minute
 
 const (
-	authHeader = "Authorization"
+	authHeader                 = "Authorization"
+	sessionIDHeader            = "X-OIDC-Session"
+	userIDType      authString = "user_id"
 )
 
 // Auth authenticates a request against the idp service.
@@ -43,18 +45,21 @@ type Auth struct {
 func New(lookup environment.Environmenter) (*Auth, func(context.Context, func(error)), error) {
 	externalHost := envExternalHost.Value(lookup)
 
-	ll, err := NewLogoutListener(lookup)
+	ll, background, err := NewLogoutListener(lookup)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Close pool if an error occurs prior to returning background func
+	defer func() {
+		if r := recover(); r != nil {
+			ll.pool.Close()
+		}
+	}()
+
 	a := &Auth{
 		externalHost:   externalHost,
 		logoutListener: ll,
-	}
-
-	background := func(ctx context.Context, errorHandler func(error)) {
-		go a.listenOnLogouts(ctx, errorHandler)
 	}
 
 	return a, background, nil
@@ -64,50 +69,49 @@ func New(lookup environment.Environmenter) (*Auth, func(context.Context, func(er
 // returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	ctx := r.Context()
-
-	p := new(payloadIDP)
-	if err := a.loadTokenIDP(w, r, p); err != nil {
+	p := new(payloadIDPAccessToken)
+	if err := a.parseAccessToken(r, p); err != nil {
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
+
+	sid := r.Header.Get(sessionIDHeader)
 
 	if p.IDPID == "" {
 		return a.AuthenticatedContext(ctx, 0), nil
 	}
 
 	// Blocklist
-	//cid, sessionIDs := a.logedoutSessions.ReceiveAll()
-	//if slices.Contains(sessionIDs, p.SessionID) {
-	//	return nil, &authError{"invalid session", nil}
-	//}
+	if sid == "" || a.logoutListener.IsBlocked(sid) {
+		return nil, &authError{"invalid session", nil}
+	}
 
 	// Get OS User Id linked to IDP ID
-	ctx, _ = context.WithCancel(a.AuthenticatedContext(ctx, p.OSUserID))
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.OSUserID))
 
-	/*
-		go func() {
-			defer cancelCtx()
-
-			var sessionIDs []string
-			var err error
-			for {
-				cid, sessionIDs, err = a.logedoutSessions.ReceiveSince(ctx, cid)
-				if err != nil {
-					return
-				}
-
-				if slices.Contains(sessionIDs, p.SessionID) {
-					return
-				}
-			}
+	// Periodically check if the session has been blocked. If session is in blocklist, cancel the context
+	go func() {
+		defer func() {
+			cancelCtx()
 		}()
-	*/
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if a.logoutListener.IsBlocked(sid) {
+					return
+				}
+				time.Sleep(time.Second)
+			}
+		}
+	}()
 
 	return ctx, nil
 }
 
 // loadToken loads and validates the token. If the token is expired, it tries
 // to renew it and write the new token in the responsewriter.
-func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
+func (a *Auth) parseAccessToken(r *http.Request, payload jwt.Claims) error {
 	header := r.Header.Get(authHeader)
 	encodedToken := strings.TrimPrefix(header, "Bearer: ")
 
@@ -115,25 +119,21 @@ func (a *Auth) loadTokenIDP(w http.ResponseWriter, r *http.Request, payload jwt.
 		// No token. Handle the request as public access requst.
 		return nil
 	}
-
-	if _, err := jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
-		return nil, errors.New("token validation is handled by proxy")
-	}); err != nil {
+	if _, _, err := new(jwt.Parser).ParseUnverified(encodedToken, payload); err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
-			return authError{msg: "Invalid auth token", wrapped: invalid}
+			return authError{msg: fmt.Sprintf("Couldn't parse JWT access token %v", err), wrapped: invalid}
 		}
 	}
 
 	return nil
 }
 
-type payloadIDP struct {
+type payloadIDPAccessToken struct {
 	jwt.RegisteredClaims
-	IDPID     string `json:"sub"`
-	Issuer    string `json:"iss"`
-	SessionID string `json:"sid"` // IDP session ID
-	OSUserID  int    `json:"os_id"`
+	IDPID    string `json:"sub"`
+	Issuer   string `json:"iss"`
+	OSUserID int    `json:"os_id"`
 }
 
 // AuthenticatedContext returns a new context that contains a userID.
@@ -157,29 +157,3 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 
 }
-
-// listenOnLogouts listen on logout events and closes the connections.
-func (a *Auth) listenOnLogouts(ctx context.Context, errHandler func(error)) {
-	if errHandler == nil {
-		errHandler = func(error) {}
-	}
-
-	for {
-		select {
-		// case <-ctx.Err():
-		case <-ctx.Done():
-			return
-		}
-
-		logoutMU.Lock()
-		// Datastore Fetch
-		logoutMU.Unlock()
-		time.Sleep(time.Second)
-	}
-}
-
-type authString string
-
-const (
-	userIDType authString = "user_id"
-)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,7 +17,14 @@ var (
 	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
 	envPostgresUser         = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
 	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
+	logoutMU                sync.RWMutex
 )
+
+type BlockedSession struct {
+	ID        int
+	SessionID string
+	Timestamp *time.Time
+}
 
 type LogoutListener struct {
 	blockedSessions map[string]int
@@ -23,47 +32,126 @@ type LogoutListener struct {
 	pool            *pgxpool.Pool
 }
 
-func NewLogoutListener(lookup environment.Environmenter) (*LogoutListener, error) {
+func NewLogoutListener(lookup environment.Environmenter) (*LogoutListener, func(context.Context, func(error)), error) {
 	// Create Postgres Pool
 	addr, err := postgresDSN(lookup)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	// Close pool if an error occurs prior to returning background func
+	defer func() {
+		if r := recover(); r != nil {
+			pool.Close()
+		}
+	}()
+
 	// Create Logout Listener
-	l := &LogoutListener{
+	ll := &LogoutListener{
 		blockedSessions: make(map[string]int),
 		lookup:          lookup,
 		pool:            pool,
 	}
 
-	// Populate blocklist with database content at start-up
-	l.populate()
+	// Regularily populate blocklist as background task
+	background := func(ctx context.Context, errorHandler func(error)) {
+		// Populate blocklist with database content at start-up
+		err := ll.populate(ctx)
+		if err != nil {
+			errorHandler(err)
+			return
+		}
 
-	// Regularily populate blocklist
+		go ll.listenOnLogouts(ctx, errorHandler)
+	}
 
-	return l, nil
+	return ll, background, nil
 }
 
-func (l *LogoutListener) IsBlocked(sessionID string) bool {
-	return true
+func (ll *LogoutListener) Close() {
+	ll.pool.Close()
 }
 
-func (l *LogoutListener) populate() {
+func (ll *LogoutListener) IsBlocked(sessionID string) bool {
+	logoutMU.RLock()
+	_, found := ll.blockedSessions[sessionID]
+	logoutMU.RUnlock()
+	return found
+}
+
+func (ll *LogoutListener) populate(ctx context.Context) error {
+	logoutMU.Lock()
 	// Clear current map
-	clear(l.blockedSessions)
+	clear(ll.blockedSessions)
 
 	// Fetch all
+	rows, err := ll.pool.Query(ctx, "SELECT * FROM blocked_sessions_t;")
+	if err != nil {
+		logoutMU.Unlock()
+		return &authError{"err fetch all in blocked session handler", err}
+	}
+	defer func() {
+		rows.Close()
+		logoutMU.Unlock()
+	}()
+
+	for rows.Next() {
+		var b BlockedSession
+		err := rows.Scan(&b.ID, &b.SessionID) //, &b.Timestamp)
+
+		if err != nil {
+			return &authError{"err scaning row in blocked session handler", err}
+		}
+
+		if b.Timestamp == nil || time.Since(*b.Timestamp) <= 30*time.Minute {
+			ll.blockedSessions[b.SessionID] = b.ID
+		} else {
+			fmt.Printf("Session ID has been blocked but is outdated: %v", b.SessionID)
+		}
+
+	}
+	return nil
+}
+
+// listenOnLogouts listen on logout events and closes the connections.
+func (ll *LogoutListener) listenOnLogouts(ctx context.Context, errHandler func(error)) {
+	defer ll.Close()
+
+	if errHandler == nil {
+		errHandler = func(error) {}
+	}
+
+	var err error
+	for {
+		select {
+		// case <-ctx.Err():
+		case <-ctx.Done():
+			return
+		default:
+			if ctx.Err() != nil {
+				return
+			}
+			// Datastore Fetch
+			err = ll.populate(ctx)
+
+			if err != nil {
+				errHandler(err)
+				return
+			}
+
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 // TODO: This is the same as in flow_postgres.go. Should be reused
