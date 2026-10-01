@@ -17,7 +17,7 @@ var (
 	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
 	envPostgresUser         = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
 	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
-	logoutMU                sync.RWMutex
+	logoutMU                sync.Mutex
 )
 
 type BlockedSession struct {
@@ -30,6 +30,8 @@ type LogoutListener struct {
 	blockedSessions map[string]int
 	lookup          environment.Environmenter
 	pool            *pgxpool.Pool
+	notifyChannel   *sync.Cond
+	notifyMU        sync.Mutex
 }
 
 func NewLogoutListener(lookup environment.Environmenter) (*LogoutListener, func(context.Context, func(error)), error) {
@@ -63,6 +65,8 @@ func NewLogoutListener(lookup environment.Environmenter) (*LogoutListener, func(
 		pool:            pool,
 	}
 
+	ll.notifyChannel = sync.NewCond(&ll.notifyMU)
+
 	// Regularily populate blocklist as background task
 	background := func(ctx context.Context, errorHandler func(error)) {
 		// Populate blocklist with database content at start-up
@@ -83,27 +87,26 @@ func (ll *LogoutListener) Close() {
 }
 
 func (ll *LogoutListener) IsBlocked(sessionID string) bool {
-	logoutMU.RLock()
 	_, found := ll.blockedSessions[sessionID]
-	logoutMU.RUnlock()
 	return found
+}
+
+func (ll *LogoutListener) NotifyCond() *sync.Cond {
+	return ll.notifyChannel
 }
 
 func (ll *LogoutListener) populate(ctx context.Context) error {
 	logoutMU.Lock()
+	defer logoutMU.Unlock()
 	// Clear current map
 	clear(ll.blockedSessions)
 
 	// Fetch all
 	rows, err := ll.pool.Query(ctx, "SELECT * FROM blocked_sessions_t;")
 	if err != nil {
-		logoutMU.Unlock()
 		return &authError{"err fetch all in blocked session handler", err}
 	}
-	defer func() {
-		rows.Close()
-		logoutMU.Unlock()
-	}()
+	defer rows.Close()
 
 	for rows.Next() {
 		var b BlockedSession
@@ -118,8 +121,10 @@ func (ll *LogoutListener) populate(ctx context.Context) error {
 		} else {
 			fmt.Printf("Session ID has been blocked but is outdated: %v", b.SessionID)
 		}
-
 	}
+
+	ll.NotifyCond().Broadcast()
+
 	return nil
 }
 
@@ -131,17 +136,38 @@ func (ll *LogoutListener) listenOnLogouts(ctx context.Context, errHandler func(e
 		errHandler = func(error) {}
 	}
 
-	var err error
+	// Connect to blockes sessions notify triggers
+	conn, err := ll.pool.Acquire(ctx)
+	if err != nil {
+		errHandler(fmt.Errorf("acquiring connection for LISTEN: %w", err))
+		return
+	}
+	defer conn.Release()
+
+	if _, err = conn.Exec(ctx, "LISTEN blocked_sessions_notify"); err != nil {
+		errHandler(fmt.Errorf("subscribing to LISTEN: %w", err))
+		return
+	}
+
 	for {
 		select {
-		// case <-ctx.Err():
 		case <-ctx.Done():
 			return
 		default:
 			if ctx.Err() != nil {
 				return
 			}
-			// Datastore Fetch
+
+			_, err := conn.Conn().WaitForNotification(ctx)
+			if err != nil {
+				if err == context.Canceled {
+					return
+				}
+				errHandler(fmt.Errorf("waiting for blocked session notification: %w", err))
+				return
+			}
+
+			// Populate blocklist
 			err = ll.populate(ctx)
 
 			if err != nil {

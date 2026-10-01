@@ -98,10 +98,14 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 			case <-ctx.Done():
 				return
 			default:
+				a.logoutListener.notifyMU.Lock()
 				if a.logoutListener.IsBlocked(sid) {
+					a.logoutListener.notifyMU.Unlock()
 					return
 				}
-				time.Sleep(time.Second)
+
+				a.logoutListener.NotifyCond().Wait()
+				a.logoutListener.notifyMU.Unlock()
 			}
 		}
 	}()
