@@ -19,12 +19,14 @@ var (
 	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
 )
 
-type BlockedSession struct {
+// Datastructure for a blocked session. Wraps blocked session ID and when it has been blocked
+type blockedSession struct {
 	ID        int
 	SessionID string
 	Timestamp *time.Time
 }
 
+// Listens to logouts (in the form of blocked sessions) in the database. In that event it emits a signal to all listening goroutines
 type LogoutListener struct {
 	blockedSessions map[string]int
 	lookup          environment.Environmenter
@@ -33,6 +35,7 @@ type LogoutListener struct {
 	notifyMU        sync.Mutex
 }
 
+// Creates a new LogoutListener. Opens up a pool which is closed automatically once the background function is called
 func NewLogoutListener(lookup environment.Environmenter) (*LogoutListener, func(context.Context, func(error)), error) {
 	// Create Postgres Pool
 	addr, err := postgresDSN(lookup)
@@ -81,15 +84,18 @@ func NewLogoutListener(lookup environment.Environmenter) (*LogoutListener, func(
 	return ll, background, nil
 }
 
+// Closes the pgx pool used to listen to blocked session events
 func (ll *LogoutListener) Close() {
 	ll.pool.Close()
 }
 
+// Returns true, if the given session ID is present in the blocked sessions database table
 func (ll *LogoutListener) IsBlocked(sessionID string) bool {
 	_, found := ll.blockedSessions[sessionID]
 	return found
 }
 
+// Emits signal to all goroutines listening for notifies on the blocked sessions database table
 func (ll *LogoutListener) NotifyCond() *sync.Cond {
 	return ll.notifyChannel
 }
@@ -108,7 +114,7 @@ func (ll *LogoutListener) populate(ctx context.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var b BlockedSession
+		var b blockedSession
 		err := rows.Scan(&b.ID, &b.SessionID) //, &b.Timestamp)
 
 		if err != nil {
