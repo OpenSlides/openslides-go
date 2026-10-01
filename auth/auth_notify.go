@@ -17,7 +17,6 @@ var (
 	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
 	envPostgresUser         = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
 	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
-	logoutMU                sync.Mutex
 )
 
 type BlockedSession struct {
@@ -96,8 +95,8 @@ func (ll *LogoutListener) NotifyCond() *sync.Cond {
 }
 
 func (ll *LogoutListener) populate(ctx context.Context) error {
-	logoutMU.Lock()
-	defer logoutMU.Unlock()
+	ll.notifyMU.Lock()
+	defer ll.notifyMU.Unlock()
 	// Clear current map
 	clear(ll.blockedSessions)
 
