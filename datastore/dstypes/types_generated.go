@@ -231,11 +231,13 @@ const (
 type PollMethods string
 
 const (
-	PollMethodsApproval       PollMethods = "approval"
-	PollMethodsSelection      PollMethods = "selection"
-	PollMethodsRatingScore    PollMethods = "rating_score"
-	PollMethodsRatingApproval PollMethods = "rating_approval"
-	PollMethodsStvScottish    PollMethods = "stv_scottish"
+	PollMethodsApprovalYesNo              PollMethods = "approval.yes_no"
+	PollMethodsApprovalYesNoAbstain       PollMethods = "approval.yes_no_abstain"
+	PollMethodsSelectionYes               PollMethods = "selection.yes"
+	PollMethodsSelectionNo                PollMethods = "selection.no"
+	PollMethodsRatingScore                PollMethods = "rating_score"
+	PollMethodsRatingApprovalYesNo        PollMethods = "rating_approval.yes_no"
+	PollMethodsRatingApprovalYesNoAbstain PollMethods = "rating_approval.yes_no_abstain"
 )
 
 // PollVisibility represents the PollVisibility enum type.
