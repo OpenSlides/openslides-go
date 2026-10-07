@@ -1032,7 +1032,7 @@ type Group struct {
 	PollIDs                                  []int
 	ReadChatGroupIDs                         []int
 	ReadCommentSectionIDs                    []int
-	UsedInMeetingPollDefaultIDs              []int
+	UsedInMeetingPollSettingIDs              []int
 	Weight                                   int
 	WriteChatGroupIDs                        []int
 	WriteCommentSectionIDs                   []int
@@ -1046,7 +1046,7 @@ type Group struct {
 	PollList                                 []Poll
 	ReadChatGroupList                        []ChatGroup
 	ReadCommentSectionList                   []MotionCommentSection
-	UsedInMeetingPollDefaultList             []MeetingPollDefault
+	UsedInMeetingPollSettingList             []MeetingPollSetting
 	WriteChatGroupList                       []ChatGroup
 	WriteCommentSectionList                  []MotionCommentSection
 }
@@ -1072,7 +1072,7 @@ func (b *groupBuilder) lazy(ds *Fetch, idI any) *Group {
 	ds.Group_PollIDs(id).Lazy(&c.PollIDs)
 	ds.Group_ReadChatGroupIDs(id).Lazy(&c.ReadChatGroupIDs)
 	ds.Group_ReadCommentSectionIDs(id).Lazy(&c.ReadCommentSectionIDs)
-	ds.Group_UsedInMeetingPollDefaultIDs(id).Lazy(&c.UsedInMeetingPollDefaultIDs)
+	ds.Group_UsedInMeetingPollSettingIDs(id).Lazy(&c.UsedInMeetingPollSettingIDs)
 	ds.Group_Weight(id).Lazy(&c.Weight)
 	ds.Group_WriteChatGroupIDs(id).Lazy(&c.WriteChatGroupIDs)
 	ds.Group_WriteCommentSectionIDs(id).Lazy(&c.WriteCommentSectionIDs)
@@ -1210,15 +1210,15 @@ func (b *groupBuilder) ReadCommentSectionList() *motionCommentSectionBuilder {
 	}
 }
 
-func (b *groupBuilder) UsedInMeetingPollDefaultList() *meetingPollDefaultBuilder {
-	return &meetingPollDefaultBuilder{
-		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]{
+func (b *groupBuilder) UsedInMeetingPollSettingList() *meetingPollSettingBuilder {
+	return &meetingPollSettingBuilder{
+		builder: builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]{
 			fetch:    b.fetch,
 			parent:   b,
-			idField:  "UsedInMeetingPollDefaultIDs",
-			relField: "UsedInMeetingPollDefaultList",
+			idField:  "UsedInMeetingPollSettingIDs",
+			relField: "UsedInMeetingPollSettingList",
 			many:     true,
-			conv:     func(p *MeetingPollDefault) MeetingPollDefault { return *p },
+			conv:     func(p *MeetingPollSetting) MeetingPollSetting { return *p },
 		},
 	}
 }
@@ -1915,7 +1915,6 @@ type Meeting struct {
 	AssignmentIDs                                []int
 	AssignmentPollAddCandidatesToListOfSpeakers  bool
 	AssignmentPollConfigID                       dsfetch.Maybe[int]
-	AssignmentPollDefaultMethod                  dstypes.PollMethods
 	AssignmentsExportPreamble                    string
 	AssignmentsExportTitle                       string
 	ChatGroupIDs                                 []int
@@ -2070,16 +2069,10 @@ type Meeting struct {
 	PointOfOrderCategoryIDs                      []int
 	PollCountdownID                              dsfetch.Maybe[int]
 	PollCoupleCountdown                          bool
-	PollDefaultAllowInvalid                      bool
-	PollDefaultAllowVoteSplit                    bool
-	PollDefaultIDs                               []int
-	PollDefaultLiveVotingEnabled                 bool
-	PollDefaultRequiredMajority                  dstypes.RequiredMajority
-	PollEnableMaxVotesPerOption                  bool
-	PollEnableMaxYesVotes                        bool
 	PollIDs                                      []int
 	PollProjectionMaxColumns                     int
 	PollProjectionNameOrderFirst                 dstypes.Meeting_PollProjectionNameOrderFirst
+	PollSettingIDs                               []int
 	PresentUserIDs                               []int
 	ProjectionIDs                                []int
 	ProjectorCountdownDefaultTime                int
@@ -2098,7 +2091,6 @@ type Meeting struct {
 	TimeZone                                     string
 	TopicIDs                                     []int
 	TopicPollConfigID                            dsfetch.Maybe[int]
-	TopicPollDefaultMethod                       dstypes.PollMethods
 	UserIDs                                      []int
 	UsersAllowSelfSetPresent                     bool
 	UsersEmailBody                               string
@@ -2126,7 +2118,7 @@ type Meeting struct {
 	AnonymousGroup                               *dsfetch.Maybe[Group]
 	AssignmentCandidateList                      []AssignmentCandidate
 	AssignmentList                               []Assignment
-	AssignmentPollConfig                         *dsfetch.Maybe[MeetingPollDefault]
+	AssignmentPollConfig                         *dsfetch.Maybe[MeetingPollSetting]
 	ChatGroupList                                []ChatGroup
 	ChatMessageList                              []ChatMessage
 	Committee                                    *Committee
@@ -2178,7 +2170,7 @@ type Meeting struct {
 	MotionCommentSectionList                     []MotionCommentSection
 	MotionEditorList                             []MotionEditor
 	MotionList                                   []Motion
-	MotionPollConfig                             *dsfetch.Maybe[MeetingPollDefault]
+	MotionPollConfig                             *dsfetch.Maybe[MeetingPollSetting]
 	MotionStateList                              []MotionState
 	MotionSubmitterList                          []MotionSubmitter
 	MotionSupporterList                          []MotionSupporter
@@ -2190,8 +2182,8 @@ type Meeting struct {
 	PersonalNoteList                             []PersonalNote
 	PointOfOrderCategoryList                     []PointOfOrderCategory
 	PollCountdown                                *dsfetch.Maybe[ProjectorCountdown]
-	PollDefaultList                              []MeetingPollDefault
 	PollList                                     []Poll
+	PollSettingList                              []MeetingPollSetting
 	PresentUserList                              []User
 	ProjectionList                               []Projection
 	ProjectorCountdownList                       []ProjectorCountdown
@@ -2205,7 +2197,7 @@ type Meeting struct {
 	TagList                                      []Tag
 	TemplateForOrganization                      *dsfetch.Maybe[Organization]
 	TopicList                                    []Topic
-	TopicPollConfig                              *dsfetch.Maybe[MeetingPollDefault]
+	TopicPollConfig                              *dsfetch.Maybe[MeetingPollSetting]
 	UserList                                     []User
 }
 
@@ -2239,7 +2231,6 @@ func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
 	ds.Meeting_AssignmentIDs(id).Lazy(&c.AssignmentIDs)
 	ds.Meeting_AssignmentPollAddCandidatesToListOfSpeakers(id).Lazy(&c.AssignmentPollAddCandidatesToListOfSpeakers)
 	ds.Meeting_AssignmentPollConfigID(id).Lazy(&c.AssignmentPollConfigID)
-	ds.Meeting_AssignmentPollDefaultMethod(id).Lazy(&c.AssignmentPollDefaultMethod)
 	ds.Meeting_AssignmentsExportPreamble(id).Lazy(&c.AssignmentsExportPreamble)
 	ds.Meeting_AssignmentsExportTitle(id).Lazy(&c.AssignmentsExportTitle)
 	ds.Meeting_ChatGroupIDs(id).Lazy(&c.ChatGroupIDs)
@@ -2394,16 +2385,10 @@ func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
 	ds.Meeting_PointOfOrderCategoryIDs(id).Lazy(&c.PointOfOrderCategoryIDs)
 	ds.Meeting_PollCountdownID(id).Lazy(&c.PollCountdownID)
 	ds.Meeting_PollCoupleCountdown(id).Lazy(&c.PollCoupleCountdown)
-	ds.Meeting_PollDefaultAllowInvalid(id).Lazy(&c.PollDefaultAllowInvalid)
-	ds.Meeting_PollDefaultAllowVoteSplit(id).Lazy(&c.PollDefaultAllowVoteSplit)
-	ds.Meeting_PollDefaultIDs(id).Lazy(&c.PollDefaultIDs)
-	ds.Meeting_PollDefaultLiveVotingEnabled(id).Lazy(&c.PollDefaultLiveVotingEnabled)
-	ds.Meeting_PollDefaultRequiredMajority(id).Lazy(&c.PollDefaultRequiredMajority)
-	ds.Meeting_PollEnableMaxVotesPerOption(id).Lazy(&c.PollEnableMaxVotesPerOption)
-	ds.Meeting_PollEnableMaxYesVotes(id).Lazy(&c.PollEnableMaxYesVotes)
 	ds.Meeting_PollIDs(id).Lazy(&c.PollIDs)
 	ds.Meeting_PollProjectionMaxColumns(id).Lazy(&c.PollProjectionMaxColumns)
 	ds.Meeting_PollProjectionNameOrderFirst(id).Lazy(&c.PollProjectionNameOrderFirst)
+	ds.Meeting_PollSettingIDs(id).Lazy(&c.PollSettingIDs)
 	ds.Meeting_PresentUserIDs(id).Lazy(&c.PresentUserIDs)
 	ds.Meeting_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
 	ds.Meeting_ProjectorCountdownDefaultTime(id).Lazy(&c.ProjectorCountdownDefaultTime)
@@ -2422,7 +2407,6 @@ func (b *meetingBuilder) lazy(ds *Fetch, idI any) *Meeting {
 	ds.Meeting_TimeZone(id).Lazy(&c.TimeZone)
 	ds.Meeting_TopicIDs(id).Lazy(&c.TopicIDs)
 	ds.Meeting_TopicPollConfigID(id).Lazy(&c.TopicPollConfigID)
-	ds.Meeting_TopicPollDefaultMethod(id).Lazy(&c.TopicPollDefaultMethod)
 	ds.Meeting_UserIDs(id).Lazy(&c.UserIDs)
 	ds.Meeting_UsersAllowSelfSetPresent(id).Lazy(&c.UsersAllowSelfSetPresent)
 	ds.Meeting_UsersEmailBody(id).Lazy(&c.UsersEmailBody)
@@ -2528,14 +2512,14 @@ func (b *meetingBuilder) AssignmentList() *assignmentBuilder {
 	}
 }
 
-func (b *meetingBuilder) AssignmentPollConfig() *meetingPollDefaultBuilder {
-	return &meetingPollDefaultBuilder{
-		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]{
+func (b *meetingBuilder) AssignmentPollConfig() *meetingPollSettingBuilder {
+	return &meetingPollSettingBuilder{
+		builder: builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "AssignmentPollConfigID",
 			relField: "AssignmentPollConfig",
-			conv:     func(p *MeetingPollDefault) MeetingPollDefault { return *p },
+			conv:     func(p *MeetingPollSetting) MeetingPollSetting { return *p },
 		},
 	}
 }
@@ -3181,14 +3165,14 @@ func (b *meetingBuilder) MotionList() *motionBuilder {
 	}
 }
 
-func (b *meetingBuilder) MotionPollConfig() *meetingPollDefaultBuilder {
-	return &meetingPollDefaultBuilder{
-		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]{
+func (b *meetingBuilder) MotionPollConfig() *meetingPollSettingBuilder {
+	return &meetingPollSettingBuilder{
+		builder: builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "MotionPollConfigID",
 			relField: "MotionPollConfig",
-			conv:     func(p *MeetingPollDefault) MeetingPollDefault { return *p },
+			conv:     func(p *MeetingPollSetting) MeetingPollSetting { return *p },
 		},
 	}
 }
@@ -3333,19 +3317,6 @@ func (b *meetingBuilder) PollCountdown() *projectorCountdownBuilder {
 	}
 }
 
-func (b *meetingBuilder) PollDefaultList() *meetingPollDefaultBuilder {
-	return &meetingPollDefaultBuilder{
-		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]{
-			fetch:    b.fetch,
-			parent:   b,
-			idField:  "PollDefaultIDs",
-			relField: "PollDefaultList",
-			many:     true,
-			conv:     func(p *MeetingPollDefault) MeetingPollDefault { return *p },
-		},
-	}
-}
-
 func (b *meetingBuilder) PollList() *pollBuilder {
 	return &pollBuilder{
 		builder: builder[pollBuilder, *pollBuilder, Poll, *Poll]{
@@ -3355,6 +3326,19 @@ func (b *meetingBuilder) PollList() *pollBuilder {
 			relField: "PollList",
 			many:     true,
 			conv:     func(p *Poll) Poll { return *p },
+		},
+	}
+}
+
+func (b *meetingBuilder) PollSettingList() *meetingPollSettingBuilder {
+	return &meetingPollSettingBuilder{
+		builder: builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "PollSettingIDs",
+			relField: "PollSettingList",
+			many:     true,
+			conv:     func(p *MeetingPollSetting) MeetingPollSetting { return *p },
 		},
 	}
 }
@@ -3526,14 +3510,14 @@ func (b *meetingBuilder) TopicList() *topicBuilder {
 	}
 }
 
-func (b *meetingBuilder) TopicPollConfig() *meetingPollDefaultBuilder {
-	return &meetingPollDefaultBuilder{
-		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]{
+func (b *meetingBuilder) TopicPollConfig() *meetingPollSettingBuilder {
+	return &meetingPollSettingBuilder{
+		builder: builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]{
 			fetch:    b.fetch,
 			parent:   b,
 			idField:  "TopicPollConfigID",
 			relField: "TopicPollConfig",
-			conv:     func(p *MeetingPollDefault) MeetingPollDefault { return *p },
+			conv:     func(p *MeetingPollSetting) MeetingPollSetting { return *p },
 		},
 	}
 }
@@ -3929,17 +3913,20 @@ func (r *Fetch) MeetingMediafile(ids ...int) *meetingMediafileBuilder {
 	}
 }
 
-// MeetingPollDefault has all fields from meeting_poll_default.
-type MeetingPollDefault struct {
-	AllowAbstain                          bool
-	AllowNota                             bool
-	DisplayChart                          string
+// MeetingPollSetting has all fields from meeting_poll_setting.
+type MeetingPollSetting struct {
+	AllowLiveVoting                       bool
+	EnableCumulativeVoting                bool
+	EnableLiveVoting                      bool
+	EnableMaxOptionsLimit                 bool
+	EnableMaxYesVotes                     bool
 	GroupIDs                              []int
 	ID                                    int
 	MeetingID                             int
+	Method                                dstypes.PollMethods
 	OnehundredPercentBase                 string
+	RequiredMajority                      string
 	SortResultByVotes                     bool
-	StrikeOut                             bool
 	UsedAsAssignmentPollConfigInMeetingID dsfetch.Maybe[int]
 	UsedAsMotionPollConfigInMeetingID     dsfetch.Maybe[int]
 	UsedAsTopicPollConfigInMeetingID      dsfetch.Maybe[int]
@@ -3951,35 +3938,38 @@ type MeetingPollDefault struct {
 	UsedAsTopicPollConfigInMeeting        *dsfetch.Maybe[Meeting]
 }
 
-type meetingPollDefaultBuilder struct {
-	builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]
+type meetingPollSettingBuilder struct {
+	builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]
 }
 
-func (b *meetingPollDefaultBuilder) lazy(ds *Fetch, idI any) *MeetingPollDefault {
+func (b *meetingPollSettingBuilder) lazy(ds *Fetch, idI any) *MeetingPollSetting {
 	id := idI.(int)
-	c := MeetingPollDefault{}
-	ds.MeetingPollDefault_AllowAbstain(id).Lazy(&c.AllowAbstain)
-	ds.MeetingPollDefault_AllowNota(id).Lazy(&c.AllowNota)
-	ds.MeetingPollDefault_DisplayChart(id).Lazy(&c.DisplayChart)
-	ds.MeetingPollDefault_GroupIDs(id).Lazy(&c.GroupIDs)
-	ds.MeetingPollDefault_ID(id).Lazy(&c.ID)
-	ds.MeetingPollDefault_MeetingID(id).Lazy(&c.MeetingID)
-	ds.MeetingPollDefault_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
-	ds.MeetingPollDefault_SortResultByVotes(id).Lazy(&c.SortResultByVotes)
-	ds.MeetingPollDefault_StrikeOut(id).Lazy(&c.StrikeOut)
-	ds.MeetingPollDefault_UsedAsAssignmentPollConfigInMeetingID(id).Lazy(&c.UsedAsAssignmentPollConfigInMeetingID)
-	ds.MeetingPollDefault_UsedAsMotionPollConfigInMeetingID(id).Lazy(&c.UsedAsMotionPollConfigInMeetingID)
-	ds.MeetingPollDefault_UsedAsTopicPollConfigInMeetingID(id).Lazy(&c.UsedAsTopicPollConfigInMeetingID)
-	ds.MeetingPollDefault_Visibility(id).Lazy(&c.Visibility)
+	c := MeetingPollSetting{}
+	ds.MeetingPollSetting_AllowLiveVoting(id).Lazy(&c.AllowLiveVoting)
+	ds.MeetingPollSetting_EnableCumulativeVoting(id).Lazy(&c.EnableCumulativeVoting)
+	ds.MeetingPollSetting_EnableLiveVoting(id).Lazy(&c.EnableLiveVoting)
+	ds.MeetingPollSetting_EnableMaxOptionsLimit(id).Lazy(&c.EnableMaxOptionsLimit)
+	ds.MeetingPollSetting_EnableMaxYesVotes(id).Lazy(&c.EnableMaxYesVotes)
+	ds.MeetingPollSetting_GroupIDs(id).Lazy(&c.GroupIDs)
+	ds.MeetingPollSetting_ID(id).Lazy(&c.ID)
+	ds.MeetingPollSetting_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MeetingPollSetting_Method(id).Lazy(&c.Method)
+	ds.MeetingPollSetting_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.MeetingPollSetting_RequiredMajority(id).Lazy(&c.RequiredMajority)
+	ds.MeetingPollSetting_SortResultByVotes(id).Lazy(&c.SortResultByVotes)
+	ds.MeetingPollSetting_UsedAsAssignmentPollConfigInMeetingID(id).Lazy(&c.UsedAsAssignmentPollConfigInMeetingID)
+	ds.MeetingPollSetting_UsedAsMotionPollConfigInMeetingID(id).Lazy(&c.UsedAsMotionPollConfigInMeetingID)
+	ds.MeetingPollSetting_UsedAsTopicPollConfigInMeetingID(id).Lazy(&c.UsedAsTopicPollConfigInMeetingID)
+	ds.MeetingPollSetting_Visibility(id).Lazy(&c.Visibility)
 	return &c
 }
 
-func (b *meetingPollDefaultBuilder) Preload(rel builderWrapperI) *meetingPollDefaultBuilder {
+func (b *meetingPollSettingBuilder) Preload(rel builderWrapperI) *meetingPollSettingBuilder {
 	b.builder.Preload(rel)
 	return b
 }
 
-func (b *meetingPollDefaultBuilder) GroupList() *groupBuilder {
+func (b *meetingPollSettingBuilder) GroupList() *groupBuilder {
 	return &groupBuilder{
 		builder: builder[groupBuilder, *groupBuilder, Group, *Group]{
 			fetch:    b.fetch,
@@ -3992,7 +3982,7 @@ func (b *meetingPollDefaultBuilder) GroupList() *groupBuilder {
 	}
 }
 
-func (b *meetingPollDefaultBuilder) Meeting() *meetingBuilder {
+func (b *meetingPollSettingBuilder) Meeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
@@ -4004,7 +3994,7 @@ func (b *meetingPollDefaultBuilder) Meeting() *meetingBuilder {
 	}
 }
 
-func (b *meetingPollDefaultBuilder) UsedAsAssignmentPollConfigInMeeting() *meetingBuilder {
+func (b *meetingPollSettingBuilder) UsedAsAssignmentPollConfigInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
@@ -4016,7 +4006,7 @@ func (b *meetingPollDefaultBuilder) UsedAsAssignmentPollConfigInMeeting() *meeti
 	}
 }
 
-func (b *meetingPollDefaultBuilder) UsedAsMotionPollConfigInMeeting() *meetingBuilder {
+func (b *meetingPollSettingBuilder) UsedAsMotionPollConfigInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
@@ -4028,7 +4018,7 @@ func (b *meetingPollDefaultBuilder) UsedAsMotionPollConfigInMeeting() *meetingBu
 	}
 }
 
-func (b *meetingPollDefaultBuilder) UsedAsTopicPollConfigInMeeting() *meetingBuilder {
+func (b *meetingPollSettingBuilder) UsedAsTopicPollConfigInMeeting() *meetingBuilder {
 	return &meetingBuilder{
 		builder: builder[meetingBuilder, *meetingBuilder, Meeting, *Meeting]{
 			fetch:    b.fetch,
@@ -4040,12 +4030,12 @@ func (b *meetingPollDefaultBuilder) UsedAsTopicPollConfigInMeeting() *meetingBui
 	}
 }
 
-func (r *Fetch) MeetingPollDefault(ids ...int) *meetingPollDefaultBuilder {
-	return &meetingPollDefaultBuilder{
-		builder: builder[meetingPollDefaultBuilder, *meetingPollDefaultBuilder, MeetingPollDefault, *MeetingPollDefault]{
+func (r *Fetch) MeetingPollSetting(ids ...int) *meetingPollSettingBuilder {
+	return &meetingPollSettingBuilder{
+		builder: builder[meetingPollSettingBuilder, *meetingPollSettingBuilder, MeetingPollSetting, *MeetingPollSetting]{
 			ids:   ids,
 			fetch: r,
-			conv:  func(p *MeetingPollDefault) MeetingPollDefault { return *p },
+			conv:  func(p *MeetingPollSetting) MeetingPollSetting { return *p },
 		},
 	}
 }
