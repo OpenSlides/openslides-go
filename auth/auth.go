@@ -225,7 +225,7 @@ type payloadIDP struct {
 	IDPID  string `json:"sub"`
 	Issuer string `json:"iss"`
 	// SessionID string `json:"sid"` // IDP session ID
-	OSUserID int `json:"os_id"`
+	OSUserID int `json:"externalId"`
 }
 
 // getKey returns the RSA public key for the given kid, fetching from JWKS if needed
