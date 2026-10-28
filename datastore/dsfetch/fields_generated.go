@@ -2238,13 +2238,13 @@ func (r *Fetch) MeetingPollSetting_MeetingID(meetingPollSettingID int) *ValueInt
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) MeetingPollSetting_Method(meetingPollSettingID int) *ValueEnum[dstypes.PollMethods] {
+func (r *Fetch) MeetingPollSetting_Method(meetingPollSettingID int) *ValueEnum[dstypes.MeetingPollSetting_Method] {
 	key, err := dskey.FromParts("meeting_poll_setting", meetingPollSettingID, "method")
 	if err != nil {
-		return &ValueEnum[dstypes.PollMethods]{err: err}
+		return &ValueEnum[dstypes.MeetingPollSetting_Method]{err: err}
 	}
 
-	return &ValueEnum[dstypes.PollMethods]{fetch: r, key: key}
+	return &ValueEnum[dstypes.MeetingPollSetting_Method]{fetch: r, key: key}
 }
 
 func (r *Fetch) MeetingPollSetting_OnehundredPercentBase(meetingPollSettingID int) *ValueString {
@@ -6504,13 +6504,13 @@ func (r *Fetch) PollConfigApproval_ID(pollConfigApprovalID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) PollConfigApproval_OnehundredPercentBase(pollConfigApprovalID int) *ValueEnum[dstypes.ApprovalOnehundredPercentBases] {
+func (r *Fetch) PollConfigApproval_OnehundredPercentBase(pollConfigApprovalID int) *ValueEnum[dstypes.PollConfigApproval_OnehundredPercentBase] {
 	key, err := dskey.FromParts("poll_config_approval", pollConfigApprovalID, "onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[dstypes.ApprovalOnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.PollConfigApproval_OnehundredPercentBase]{err: err}
 	}
 
-	return &ValueEnum[dstypes.ApprovalOnehundredPercentBases]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.PollConfigApproval_OnehundredPercentBase]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollConfigApproval_PollID(pollConfigApprovalID int) *ValueInt {
@@ -6576,13 +6576,13 @@ func (r *Fetch) PollConfigRatingApproval_MinOptionsAmount(pollConfigRatingApprov
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) PollConfigRatingApproval_OnehundredPercentBase(pollConfigRatingApprovalID int) *ValueEnum[dstypes.RatingApprovalOnehundredPercentBases] {
+func (r *Fetch) PollConfigRatingApproval_OnehundredPercentBase(pollConfigRatingApprovalID int) *ValueEnum[dstypes.PollConfigRatingApproval_OnehundredPercentBase] {
 	key, err := dskey.FromParts("poll_config_rating_approval", pollConfigRatingApprovalID, "onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[dstypes.RatingApprovalOnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.PollConfigRatingApproval_OnehundredPercentBase]{err: err}
 	}
 
-	return &ValueEnum[dstypes.RatingApprovalOnehundredPercentBases]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.PollConfigRatingApproval_OnehundredPercentBase]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollConfigRatingApproval_PollID(pollConfigRatingApprovalID int) *ValueInt {
@@ -6657,13 +6657,13 @@ func (r *Fetch) PollConfigRatingScore_MinVoteSum(pollConfigRatingScoreID int) *V
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) PollConfigRatingScore_OnehundredPercentBase(pollConfigRatingScoreID int) *ValueEnum[dstypes.RatingScoreOnehundredPercentBases] {
+func (r *Fetch) PollConfigRatingScore_OnehundredPercentBase(pollConfigRatingScoreID int) *ValueEnum[dstypes.PollConfigRatingScore_OnehundredPercentBase] {
 	key, err := dskey.FromParts("poll_config_rating_score", pollConfigRatingScoreID, "onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[dstypes.RatingScoreOnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.PollConfigRatingScore_OnehundredPercentBase]{err: err}
 	}
 
-	return &ValueEnum[dstypes.RatingScoreOnehundredPercentBases]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.PollConfigRatingScore_OnehundredPercentBase]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollConfigRatingScore_PollID(pollConfigRatingScoreID int) *ValueInt {
@@ -6729,13 +6729,13 @@ func (r *Fetch) PollConfigSelection_MinOptionsAmount(pollConfigSelectionID int) 
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) PollConfigSelection_OnehundredPercentBase(pollConfigSelectionID int) *ValueEnum[dstypes.SelectionOnehundredPercentBases] {
+func (r *Fetch) PollConfigSelection_OnehundredPercentBase(pollConfigSelectionID int) *ValueEnum[dstypes.PollConfigSelection_OnehundredPercentBase] {
 	key, err := dskey.FromParts("poll_config_selection", pollConfigSelectionID, "onehundred_percent_base")
 	if err != nil {
-		return &ValueEnum[dstypes.SelectionOnehundredPercentBases]{err: err}
+		return &ValueEnum[dstypes.PollConfigSelection_OnehundredPercentBase]{err: err}
 	}
 
-	return &ValueEnum[dstypes.SelectionOnehundredPercentBases]{fetch: r, key: key, required: true}
+	return &ValueEnum[dstypes.PollConfigSelection_OnehundredPercentBase]{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) PollConfigSelection_PollID(pollConfigSelectionID int) *ValueInt {

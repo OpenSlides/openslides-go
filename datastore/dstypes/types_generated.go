@@ -19,19 +19,6 @@ const (
 	AgendaItem_TypeHidden   AgendaItem_Type = "hidden"
 )
 
-// ApprovalOnehundredPercentBases represents the ApprovalOnehundredPercentBases enum type.
-type ApprovalOnehundredPercentBases string
-
-const (
-	ApprovalOnehundredPercentBasesYesNo           ApprovalOnehundredPercentBases = "yes_no"
-	ApprovalOnehundredPercentBasesYesNoAbstain    ApprovalOnehundredPercentBases = "yes_no_abstain"
-	ApprovalOnehundredPercentBasesValid           ApprovalOnehundredPercentBases = "valid"
-	ApprovalOnehundredPercentBasesCast            ApprovalOnehundredPercentBases = "cast"
-	ApprovalOnehundredPercentBasesEntitled        ApprovalOnehundredPercentBases = "entitled"
-	ApprovalOnehundredPercentBasesEntitledPresent ApprovalOnehundredPercentBases = "entitled_present"
-	ApprovalOnehundredPercentBasesDisabled        ApprovalOnehundredPercentBases = "disabled"
-)
-
 // Assignment_Phase represents the Assignment_Phase enum type.
 type Assignment_Phase string
 
@@ -72,6 +59,19 @@ const (
 	LanguagesRu Languages = "ru"
 	LanguagesCs Languages = "cs"
 	LanguagesFr Languages = "fr"
+)
+
+// MeetingPollSetting_Method represents the MeetingPollSetting_Method enum type.
+type MeetingPollSetting_Method string
+
+const (
+	MeetingPollSetting_MethodApprovalYesNo              MeetingPollSetting_Method = "approval.yes_no"
+	MeetingPollSetting_MethodApprovalYesNoAbstain       MeetingPollSetting_Method = "approval.yes_no_abstain"
+	MeetingPollSetting_MethodSelectionYes               MeetingPollSetting_Method = "selection.yes"
+	MeetingPollSetting_MethodSelectionNo                MeetingPollSetting_Method = "selection.no"
+	MeetingPollSetting_MethodRatingScore                MeetingPollSetting_Method = "rating_score"
+	MeetingPollSetting_MethodRatingApprovalYesNo        MeetingPollSetting_Method = "rating_approval.yes_no"
+	MeetingPollSetting_MethodRatingApprovalYesNoAbstain MeetingPollSetting_Method = "rating_approval.yes_no_abstain"
 )
 
 // Meeting_AgendaItemCreation represents the Meeting_AgendaItemCreation enum type.
@@ -227,17 +227,54 @@ const (
 	MotionState_MergeAmendmentIntoFinalDoMerge    MotionState_MergeAmendmentIntoFinal = "do_merge"
 )
 
-// PollMethods represents the PollMethods enum type.
-type PollMethods string
+// PollConfigApproval_OnehundredPercentBase represents the PollConfigApproval_OnehundredPercentBase enum type.
+type PollConfigApproval_OnehundredPercentBase string
 
 const (
-	PollMethodsApprovalYesNo              PollMethods = "approval.yes_no"
-	PollMethodsApprovalYesNoAbstain       PollMethods = "approval.yes_no_abstain"
-	PollMethodsSelectionYes               PollMethods = "selection.yes"
-	PollMethodsSelectionNo                PollMethods = "selection.no"
-	PollMethodsRatingScore                PollMethods = "rating_score"
-	PollMethodsRatingApprovalYesNo        PollMethods = "rating_approval.yes_no"
-	PollMethodsRatingApprovalYesNoAbstain PollMethods = "rating_approval.yes_no_abstain"
+	PollConfigApproval_OnehundredPercentBaseYesNo           PollConfigApproval_OnehundredPercentBase = "yes_no"
+	PollConfigApproval_OnehundredPercentBaseYesNoAbstain    PollConfigApproval_OnehundredPercentBase = "yes_no_abstain"
+	PollConfigApproval_OnehundredPercentBaseValid           PollConfigApproval_OnehundredPercentBase = "valid"
+	PollConfigApproval_OnehundredPercentBaseCast            PollConfigApproval_OnehundredPercentBase = "cast"
+	PollConfigApproval_OnehundredPercentBaseEntitled        PollConfigApproval_OnehundredPercentBase = "entitled"
+	PollConfigApproval_OnehundredPercentBaseEntitledPresent PollConfigApproval_OnehundredPercentBase = "entitled_present"
+	PollConfigApproval_OnehundredPercentBaseDisabled        PollConfigApproval_OnehundredPercentBase = "disabled"
+)
+
+// PollConfigRatingApproval_OnehundredPercentBase represents the PollConfigRatingApproval_OnehundredPercentBase enum type.
+type PollConfigRatingApproval_OnehundredPercentBase string
+
+const (
+	PollConfigRatingApproval_OnehundredPercentBaseYesNo           PollConfigRatingApproval_OnehundredPercentBase = "yes_no"
+	PollConfigRatingApproval_OnehundredPercentBaseYesNoAbstain    PollConfigRatingApproval_OnehundredPercentBase = "yes_no_abstain"
+	PollConfigRatingApproval_OnehundredPercentBaseValid           PollConfigRatingApproval_OnehundredPercentBase = "valid"
+	PollConfigRatingApproval_OnehundredPercentBaseCast            PollConfigRatingApproval_OnehundredPercentBase = "cast"
+	PollConfigRatingApproval_OnehundredPercentBaseEntitled        PollConfigRatingApproval_OnehundredPercentBase = "entitled"
+	PollConfigRatingApproval_OnehundredPercentBaseEntitledPresent PollConfigRatingApproval_OnehundredPercentBase = "entitled_present"
+	PollConfigRatingApproval_OnehundredPercentBaseDisabled        PollConfigRatingApproval_OnehundredPercentBase = "disabled"
+)
+
+// PollConfigRatingScore_OnehundredPercentBase represents the PollConfigRatingScore_OnehundredPercentBase enum type.
+type PollConfigRatingScore_OnehundredPercentBase string
+
+const (
+	PollConfigRatingScore_OnehundredPercentBaseNoGeneral       PollConfigRatingScore_OnehundredPercentBase = "no_general"
+	PollConfigRatingScore_OnehundredPercentBaseValid           PollConfigRatingScore_OnehundredPercentBase = "valid"
+	PollConfigRatingScore_OnehundredPercentBaseCast            PollConfigRatingScore_OnehundredPercentBase = "cast"
+	PollConfigRatingScore_OnehundredPercentBaseEntitled        PollConfigRatingScore_OnehundredPercentBase = "entitled"
+	PollConfigRatingScore_OnehundredPercentBaseEntitledPresent PollConfigRatingScore_OnehundredPercentBase = "entitled_present"
+	PollConfigRatingScore_OnehundredPercentBaseDisabled        PollConfigRatingScore_OnehundredPercentBase = "disabled"
+)
+
+// PollConfigSelection_OnehundredPercentBase represents the PollConfigSelection_OnehundredPercentBase enum type.
+type PollConfigSelection_OnehundredPercentBase string
+
+const (
+	PollConfigSelection_OnehundredPercentBaseNoGeneral       PollConfigSelection_OnehundredPercentBase = "no_general"
+	PollConfigSelection_OnehundredPercentBaseValid           PollConfigSelection_OnehundredPercentBase = "valid"
+	PollConfigSelection_OnehundredPercentBaseCast            PollConfigSelection_OnehundredPercentBase = "cast"
+	PollConfigSelection_OnehundredPercentBaseEntitled        PollConfigSelection_OnehundredPercentBase = "entitled"
+	PollConfigSelection_OnehundredPercentBaseEntitledPresent PollConfigSelection_OnehundredPercentBase = "entitled_present"
+	PollConfigSelection_OnehundredPercentBaseDisabled        PollConfigSelection_OnehundredPercentBase = "disabled"
 )
 
 // PollVisibility represents the PollVisibility enum type.
@@ -259,31 +296,6 @@ const (
 	Poll_StateFinished Poll_State = "finished"
 )
 
-// RatingApprovalOnehundredPercentBases represents the RatingApprovalOnehundredPercentBases enum type.
-type RatingApprovalOnehundredPercentBases string
-
-const (
-	RatingApprovalOnehundredPercentBasesYesNo           RatingApprovalOnehundredPercentBases = "yes_no"
-	RatingApprovalOnehundredPercentBasesYesNoAbstain    RatingApprovalOnehundredPercentBases = "yes_no_abstain"
-	RatingApprovalOnehundredPercentBasesValid           RatingApprovalOnehundredPercentBases = "valid"
-	RatingApprovalOnehundredPercentBasesCast            RatingApprovalOnehundredPercentBases = "cast"
-	RatingApprovalOnehundredPercentBasesEntitled        RatingApprovalOnehundredPercentBases = "entitled"
-	RatingApprovalOnehundredPercentBasesEntitledPresent RatingApprovalOnehundredPercentBases = "entitled_present"
-	RatingApprovalOnehundredPercentBasesDisabled        RatingApprovalOnehundredPercentBases = "disabled"
-)
-
-// RatingScoreOnehundredPercentBases represents the RatingScoreOnehundredPercentBases enum type.
-type RatingScoreOnehundredPercentBases string
-
-const (
-	RatingScoreOnehundredPercentBasesYesNo           RatingScoreOnehundredPercentBases = "yes_no"
-	RatingScoreOnehundredPercentBasesValid           RatingScoreOnehundredPercentBases = "valid"
-	RatingScoreOnehundredPercentBasesCast            RatingScoreOnehundredPercentBases = "cast"
-	RatingScoreOnehundredPercentBasesEntitled        RatingScoreOnehundredPercentBases = "entitled"
-	RatingScoreOnehundredPercentBasesEntitledPresent RatingScoreOnehundredPercentBases = "entitled_present"
-	RatingScoreOnehundredPercentBasesDisabled        RatingScoreOnehundredPercentBases = "disabled"
-)
-
 // RequiredMajority represents the RequiredMajority enum type.
 type RequiredMajority string
 
@@ -301,18 +313,6 @@ const (
 	RequiredMajoritySelectionTwoThirdMajority RequiredMajoritySelection = "two_third_majority"
 	RequiredMajoritySelectionAbsoluteMajority RequiredMajoritySelection = "absolute_majority"
 	RequiredMajoritySelectionSimpleMajority   RequiredMajoritySelection = "simple_majority"
-)
-
-// SelectionOnehundredPercentBases represents the SelectionOnehundredPercentBases enum type.
-type SelectionOnehundredPercentBases string
-
-const (
-	SelectionOnehundredPercentBasesNoGeneral       SelectionOnehundredPercentBases = "no_general"
-	SelectionOnehundredPercentBasesValid           SelectionOnehundredPercentBases = "valid"
-	SelectionOnehundredPercentBasesCast            SelectionOnehundredPercentBases = "cast"
-	SelectionOnehundredPercentBasesEntitled        SelectionOnehundredPercentBases = "entitled"
-	SelectionOnehundredPercentBasesEntitledPresent SelectionOnehundredPercentBases = "entitled_present"
-	SelectionOnehundredPercentBasesDisabled        SelectionOnehundredPercentBases = "disabled"
 )
 
 // Speaker_SpeechState represents the Speaker_SpeechState enum type.

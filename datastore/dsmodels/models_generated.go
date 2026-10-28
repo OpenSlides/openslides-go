@@ -3923,7 +3923,7 @@ type MeetingPollSetting struct {
 	GroupIDs                              []int
 	ID                                    int
 	MeetingID                             int
-	Method                                dstypes.PollMethods
+	Method                                dstypes.MeetingPollSetting_Method
 	OnehundredPercentBase                 string
 	RequiredMajority                      string
 	SortResultByVotes                     bool
@@ -7034,7 +7034,7 @@ func (r *Fetch) PollBallotUser(ids ...int) *pollBallotUserBuilder {
 type PollConfigApproval struct {
 	AllowAbstain          bool
 	ID                    int
-	OnehundredPercentBase dstypes.ApprovalOnehundredPercentBases
+	OnehundredPercentBase dstypes.PollConfigApproval_OnehundredPercentBase
 	PollID                int
 	RequiredMajority      dstypes.RequiredMajority
 	Poll                  *Poll
@@ -7089,7 +7089,7 @@ type PollConfigRatingApproval struct {
 	MaxOptionsAmount      int
 	MaxYesAmount          int
 	MinOptionsAmount      int
-	OnehundredPercentBase dstypes.RatingApprovalOnehundredPercentBases
+	OnehundredPercentBase dstypes.PollConfigRatingApproval_OnehundredPercentBase
 	PollID                int
 	RequiredMajority      dstypes.RequiredMajority
 	Poll                  *Poll
@@ -7148,7 +7148,7 @@ type PollConfigRatingScore struct {
 	MaxVotesPerOption     int
 	MinOptionsAmount      int
 	MinVoteSum            int
-	OnehundredPercentBase dstypes.RatingScoreOnehundredPercentBases
+	OnehundredPercentBase dstypes.PollConfigRatingScore_OnehundredPercentBase
 	PollID                int
 	RequiredMajority      dstypes.RequiredMajoritySelection
 	Poll                  *Poll
@@ -7207,7 +7207,7 @@ type PollConfigSelection struct {
 	ID                    int
 	MaxOptionsAmount      int
 	MinOptionsAmount      int
-	OnehundredPercentBase dstypes.SelectionOnehundredPercentBases
+	OnehundredPercentBase dstypes.PollConfigSelection_OnehundredPercentBase
 	PollID                int
 	RequiredMajority      dstypes.RequiredMajoritySelection
 	StrikeOut             bool
