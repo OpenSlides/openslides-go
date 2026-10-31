@@ -7,6 +7,7 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/benbjohnson/immutable"
 )
 
@@ -33,6 +34,12 @@ func (s Snapshot) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]b
 		if s.notFoundHandler == nil {
 			return nil, IncompleteSnapshotError{notFound}
 		}
+		if len(notFound) < 10 {
+			oslog.Warn("The keys %v are requested but not in the snapshot", notFound)
+		} else {
+			oslog.Warn("%d keys are requested but not in the snapshot", len(notFound))
+		}
+
 		found, err := s.notFoundHandler.Get(ctx, notFound...)
 		if err != nil {
 			return nil, fmt.Errorf("not found handler: %w", err)
