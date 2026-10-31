@@ -59,7 +59,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: service/go.mod
+          go-version: "1.27"
           cache: true
 
       - name: Create temporary go.work (service + openslides-go)
