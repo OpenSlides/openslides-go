@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
-	"github.com/benbjohnson/immutable"
 )
 
 // ErrNotExist is returned from pendingmap.Get() when a key was not pending at
@@ -41,14 +40,14 @@ var ErrNotExist = errors.New("key does not exist")
 // pending. SetEmptyIfPending() sets a value to its zero value if it is pending.
 type PendingMap struct {
 	mu      sync.RWMutex
-	data    *immutable.Map[dskey.Key, []byte]
+	data    map[dskey.Key][]byte
 	pending map[dskey.Key]chan struct{}
 }
 
 // New initializes a pendingDict.
 func New() *PendingMap {
 	return &PendingMap{
-		data:    immutable.NewMap[dskey.Key, []byte](nil),
+		data:    make(map[dskey.Key][]byte),
 		pending: make(map[dskey.Key]chan struct{}),
 	}
 }
@@ -76,7 +75,7 @@ func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key
 	out := make(map[dskey.Key][]byte, len(keys))
 	err := pm.reading(func() error {
 		for _, k := range keys {
-			v, ok := pm.data.Get(k)
+			v, ok := pm.data[k]
 			if !ok {
 				return ErrNotExist
 			}
@@ -89,14 +88,6 @@ func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key
 	}
 
 	return out, nil
-}
-
-// Snapshot returns a snapshot of the data inside the pending map.
-func (pm *PendingMap) Snapshot() *immutable.Map[dskey.Key, []byte] {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	return pm.data
 }
 
 // waitForPending blocks until all the given keys are not pending anymore.
@@ -149,7 +140,7 @@ func (pm *PendingMap) MarkPending(keys ...dskey.Key) []dskey.Key {
 	var needMark []dskey.Key
 	pm.reading(func() error {
 		for _, key := range keys {
-			if _, inStore := pm.data.Get(key); inStore {
+			if _, inStore := pm.data[key]; inStore {
 				continue
 			}
 			if _, isPending := pm.pending[key]; isPending {
@@ -175,7 +166,7 @@ func (pm *PendingMap) MarkPending(keys ...dskey.Key) []dskey.Key {
 			continue
 		}
 
-		if _, inStore := pm.data.Get(key); inStore {
+		if _, inStore := pm.data[key]; inStore {
 			// The other caller has already the data
 			continue
 		}
@@ -194,7 +185,7 @@ func (pm *PendingMap) UnMarkPending(keys ...dskey.Key) {
 	defer pm.mu.Unlock()
 
 	for _, key := range keys {
-		if _, ok := pm.data.Get(key); ok {
+		if _, ok := pm.data[key]; ok {
 			continue
 		}
 		pending := pm.pending[key]
@@ -208,25 +199,7 @@ func (pm *PendingMap) UnMarkPending(keys ...dskey.Key) {
 	}
 }
 
-// Set updates values.
-//
-// Informs all listeners.
-func (pm *PendingMap) Set(data map[dskey.Key][]byte) {
-	pm.mu.Lock()
-	defer pm.mu.Unlock()
-
-	for key, value := range data {
-		pm.data = pm.data.Set(key, value)
-
-		if pending, isPending := pm.pending[key]; isPending {
-			close(pending)
-			delete(pm.pending, key)
-		}
-	}
-}
-
-// SetIfPendingOrExists updates values, but only if the key already exists or is
-// pending.
+// SetIfPendingOrExists updates values, but only if the key already exists or is pending.
 //
 // If the key is pending, it is unmarked and all listeners are informed.
 func (pm *PendingMap) SetIfPendingOrExists(data map[dskey.Key][]byte) {
@@ -235,13 +208,13 @@ func (pm *PendingMap) SetIfPendingOrExists(data map[dskey.Key][]byte) {
 
 	for key, value := range data {
 		pending := pm.pending[key]
-		_, exists := pm.data.Get(key)
+		_, exists := pm.data[key]
 
 		if pending == nil && !exists {
 			continue
 		}
 
-		pm.data = pm.data.Set(key, value)
+		pm.data[key] = value
 
 		if pending != nil {
 			close(pending)
@@ -259,7 +232,7 @@ func (pm *PendingMap) SetIfPending(data map[dskey.Key][]byte) {
 
 	for key, value := range data {
 		if pending, isPending := pm.pending[key]; isPending {
-			pm.data = pm.data.Set(key, value)
+			pm.data[key] = value
 			close(pending)
 			delete(pm.pending, key)
 		}
@@ -271,7 +244,7 @@ func (pm *PendingMap) Reset() {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	pm.data = immutable.NewMap[dskey.Key, []byte](nil)
+	pm.data = make(map[dskey.Key][]byte)
 	pm.pending = make(map[dskey.Key]chan struct{})
 }
 
@@ -280,7 +253,7 @@ func (pm *PendingMap) Len() int {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	return pm.data.Len()
+	return len(pm.data)
 }
 
 func (pm *PendingMap) reading(cmd func() error) error {
@@ -296,9 +269,7 @@ func (pm *PendingMap) Size() int {
 	defer pm.mu.RUnlock()
 
 	var size int
-	itr := pm.data.Iterator()
-	for !itr.Done() {
-		_, v, _ := itr.Next()
+	for _, v := range pm.data {
 		size += len(v)
 	}
 	return size
