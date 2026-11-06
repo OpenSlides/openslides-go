@@ -10,7 +10,7 @@ require (
 	github.com/ory/dockertest/v4 v4.0.1
 	github.com/ostcar/topic v0.7.0
 	github.com/rs/zerolog v1.35.1
-	github.com/shopspring/decimal v1.4.0
+	github.com/shopspring/decimal v1.6.0
 	golang.org/x/sync v0.24.0
 	golang.org/x/sys v0.48.0
 )
