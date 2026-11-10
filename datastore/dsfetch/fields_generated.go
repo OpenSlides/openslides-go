@@ -3822,6 +3822,15 @@ func (r *Fetch) Meeting_MotionsDefaultWorkflowID(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Meeting_MotionsEnableConsultationSequence(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_consultation_sequence")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsEnableEditor(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_editor")
 	if err != nil {

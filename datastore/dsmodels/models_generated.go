@@ -1669,6 +1669,7 @@ type Meeting struct {
 	MotionsDefaultLineNumbering                  dstypes.Meeting_MotionsDefaultLineNumbering
 	MotionsDefaultSorting                        dstypes.Meeting_MotionsDefaultSorting
 	MotionsDefaultWorkflowID                     int
+	MotionsEnableConsultationSequence            bool
 	MotionsEnableEditor                          bool
 	MotionsEnableOriginMotionDisplay             bool
 	MotionsEnableReasonOnProjector               bool
@@ -2013,6 +2014,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_MotionsDefaultLineNumbering(id).Lazy(&c.MotionsDefaultLineNumbering)
 	ds.Meeting_MotionsDefaultSorting(id).Lazy(&c.MotionsDefaultSorting)
 	ds.Meeting_MotionsDefaultWorkflowID(id).Lazy(&c.MotionsDefaultWorkflowID)
+	ds.Meeting_MotionsEnableConsultationSequence(id).Lazy(&c.MotionsEnableConsultationSequence)
 	ds.Meeting_MotionsEnableEditor(id).Lazy(&c.MotionsEnableEditor)
 	ds.Meeting_MotionsEnableOriginMotionDisplay(id).Lazy(&c.MotionsEnableOriginMotionDisplay)
 	ds.Meeting_MotionsEnableReasonOnProjector(id).Lazy(&c.MotionsEnableReasonOnProjector)
