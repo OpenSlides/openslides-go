@@ -3,6 +3,7 @@ module github.com/OpenSlides/openslides-go
 go 1.26.0
 
 require (
+	github.com/benbjohnson/immutable v0.4.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/gomodule/redigo v1.9.3
@@ -43,5 +44,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
+	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf // indirect
 	golang.org/x/text v0.40.0 // indirect
 )
