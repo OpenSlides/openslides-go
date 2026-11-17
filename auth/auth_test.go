@@ -29,7 +29,7 @@ func TestAuth(t *testing.T) {
 	const invalidSecret = "wrong-auth-dev-key"
 	const cookieName = "refreshId"
 
-	cookie, authHeader, validHeader, err := authtest.ValidTokens([]byte(auth.DebugCookieKey), []byte(auth.DebugTokenKey), 1)
+	cookie, authHeader, validHeader, err := authtest.ValidTokens([]byte("auth.DebugCookieKey"), []byte("auth.DebugTokenKey"), 1)
 	if err != nil {
 		t.Fatalf("Create tokens: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestAuth(t *testing.T) {
 		"userId":    1,
 		"sessionId": "123",
 		"exp":       123,
-	}).SignedString([]byte(auth.DebugTokenKey))
+	}).SignedString([]byte("auth.DebugTokenKey"))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestAuth(t *testing.T) {
 		"AUTH_PORT":     port,
 		"AUTH_PROTOCOL": schema,
 	})
-	a, _, _ := auth.New(env, nil)
+	a, _, _ := auth.New(env)
 
 	for _, tt := range []struct {
 		name    string
@@ -203,7 +203,7 @@ func TestAuth(t *testing.T) {
 }
 
 func TestFromContext(t *testing.T) {
-	a, _, _ := auth.New(environment.ForTests{}, nil)
+	a, _, _ := auth.New(environment.ForTests{})
 
 	t.Run("Empty Context", func(t *testing.T) {
 		defer func() {
@@ -250,7 +250,7 @@ func TestLogout(t *testing.T) {
 	logouter := NewLockoutEventMock()
 	defer logouter.Close()
 
-	a, bg, _ := auth.New(environment.ForTests{}, logouter)
+	a, bg, _ := auth.New(environment.ForTests{})
 	go bg(shutdownCtx, errHandler)
 
 	t.Run("Closing session", func(t *testing.T) {
@@ -326,7 +326,7 @@ func validSession(t *testing.T, opts ...validOption) (http.ResponseWriter, *http
 
 	validCookie, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sessionId": config.sessionID,
-	}).SignedString([]byte(auth.DebugCookieKey))
+	}).SignedString([]byte("auth.DebugCookieKey"))
 	if err != nil {
 		t.Fatalf("Can not sign cookie token: %v", err)
 	}
@@ -335,7 +335,7 @@ func validSession(t *testing.T, opts ...validOption) (http.ResponseWriter, *http
 	validHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,
 		"sessionId": config.sessionID,
-	}).SignedString([]byte(auth.DebugTokenKey))
+	}).SignedString([]byte("auth.DebugTokenKey"))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}
