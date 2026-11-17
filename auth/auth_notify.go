@@ -118,6 +118,7 @@ func (ll *LogoutListener) populate(ctx context.Context) error {
 		err := rows.Scan(&b.ID, &b.SessionID) //, &b.Timestamp)
 
 		if err != nil {
+			fmt.Printf("Session ID has been blocked but is outdated: %v", err)
 			return &authError{"err scaning row in blocked session handler", err}
 		}
 
