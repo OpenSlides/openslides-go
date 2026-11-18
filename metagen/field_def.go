@@ -713,6 +713,7 @@ var RestrictionModes = map[string]string{
 	"meeting/motions_default_amendment_workflow_id":                 "B",
 	"meeting/motions_default_sorting":                               "B",
 	"meeting/motions_default_workflow_id":                           "B",
+	"meeting/motions_enable_consultation_sequence":                  "B",
 	"meeting/motions_enable_editor":                                 "B",
 	"meeting/motions_enable_origin_motion_display":                  "B",
 	"meeting/motions_enable_reason_on_projector":                    "B",
