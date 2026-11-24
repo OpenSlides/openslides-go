@@ -463,7 +463,7 @@ func getPostgresConnection(ctx context.Context, connConfig *pgx.ConnConfig) (*pg
 	for {
 		conn, err := pgx.ConnectConfig(ctx, connConfig)
 		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				// TODO: This is inverted. The function should only retry on
 				// some known error and return on any unknown error. But I don't
 				// know what the error is, on which the service should retry. If
