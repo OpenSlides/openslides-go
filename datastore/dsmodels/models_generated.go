@@ -597,6 +597,7 @@ type Committee struct {
 	ExternalID                          string
 	ForwardToCommitteeIDs               []int
 	ID                                  int
+	IDentityKey                         string
 	ManagerIDs                          []int
 	MeetingIDs                          []int
 	Name                                string
@@ -635,6 +636,7 @@ func (b *committeeBuilder) lazy(ds *Fetch, id int) *Committee {
 	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
 	ds.Committee_ForwardToCommitteeIDs(id).Lazy(&c.ForwardToCommitteeIDs)
 	ds.Committee_ID(id).Lazy(&c.ID)
+	ds.Committee_IDentityKey(id).Lazy(&c.IDentityKey)
 	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
 	ds.Committee_MeetingIDs(id).Lazy(&c.MeetingIDs)
 	ds.Committee_Name(id).Lazy(&c.Name)
@@ -1268,6 +1270,183 @@ func (r *Fetch) HistoryPosition(ids ...int) *historyPositionBuilder {
 	}
 }
 
+// IDmCondition has all fields from idm_condition.
+type IDmCondition struct {
+	ID       int
+	IDmField string
+	MapperID int
+	Regex    string
+	Mapper   *IDmMapper
+}
+
+type iDmConditionBuilder struct {
+	builder[iDmConditionBuilder, *iDmConditionBuilder, IDmCondition]
+}
+
+func (b *iDmConditionBuilder) lazy(ds *Fetch, id int) *IDmCondition {
+	c := IDmCondition{}
+	ds.IDmCondition_ID(id).Lazy(&c.ID)
+	ds.IDmCondition_IDmField(id).Lazy(&c.IDmField)
+	ds.IDmCondition_MapperID(id).Lazy(&c.MapperID)
+	ds.IDmCondition_Regex(id).Lazy(&c.Regex)
+	return &c
+}
+
+func (b *iDmConditionBuilder) Preload(rel builderWrapperI) *iDmConditionBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *iDmConditionBuilder) Mapper() *iDmMapperBuilder {
+	return &iDmMapperBuilder{
+		builder: builder[iDmMapperBuilder, *iDmMapperBuilder, IDmMapper]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MapperID",
+			relField: "Mapper",
+		},
+	}
+}
+
+func (r *Fetch) IDmCondition(ids ...int) *iDmConditionBuilder {
+	return &iDmConditionBuilder{
+		builder: builder[iDmConditionBuilder, *iDmConditionBuilder, IDmCondition]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// IDmMapper has all fields from idm_mapper.
+type IDmMapper struct {
+	ConditionIDs     []int
+	GroupExternalIDs []string
+	ID               int
+	MappingIDs       []int
+	OrganizationID   int
+	Weight           int
+	ConditionList    []IDmCondition
+	MappingList      []IDmMapping
+	Organization     *Organization
+}
+
+type iDmMapperBuilder struct {
+	builder[iDmMapperBuilder, *iDmMapperBuilder, IDmMapper]
+}
+
+func (b *iDmMapperBuilder) lazy(ds *Fetch, id int) *IDmMapper {
+	c := IDmMapper{}
+	ds.IDmMapper_ConditionIDs(id).Lazy(&c.ConditionIDs)
+	ds.IDmMapper_GroupExternalIDs(id).Lazy(&c.GroupExternalIDs)
+	ds.IDmMapper_ID(id).Lazy(&c.ID)
+	ds.IDmMapper_MappingIDs(id).Lazy(&c.MappingIDs)
+	ds.IDmMapper_OrganizationID(id).Lazy(&c.OrganizationID)
+	ds.IDmMapper_Weight(id).Lazy(&c.Weight)
+	return &c
+}
+
+func (b *iDmMapperBuilder) Preload(rel builderWrapperI) *iDmMapperBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *iDmMapperBuilder) ConditionList() *iDmConditionBuilder {
+	return &iDmConditionBuilder{
+		builder: builder[iDmConditionBuilder, *iDmConditionBuilder, IDmCondition]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "ConditionIDs",
+			relField: "ConditionList",
+			many:     true,
+		},
+	}
+}
+
+func (b *iDmMapperBuilder) MappingList() *iDmMappingBuilder {
+	return &iDmMappingBuilder{
+		builder: builder[iDmMappingBuilder, *iDmMappingBuilder, IDmMapping]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MappingIDs",
+			relField: "MappingList",
+			many:     true,
+		},
+	}
+}
+
+func (b *iDmMapperBuilder) Organization() *organizationBuilder {
+	return &organizationBuilder{
+		builder: builder[organizationBuilder, *organizationBuilder, Organization]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "OrganizationID",
+			relField: "Organization",
+		},
+	}
+}
+
+func (r *Fetch) IDmMapper(ids ...int) *iDmMapperBuilder {
+	return &iDmMapperBuilder{
+		builder: builder[iDmMapperBuilder, *iDmMapperBuilder, IDmMapper]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
+// IDmMapping has all fields from idm_mapping.
+type IDmMapping struct {
+	AllowUpdate     bool
+	DefaultValue    string
+	ID              int
+	IDmField        string
+	MapperID        int
+	OsField         dstypes.IDmMapping_OsField
+	OverrideDefault bool
+	Mapper          *IDmMapper
+}
+
+type iDmMappingBuilder struct {
+	builder[iDmMappingBuilder, *iDmMappingBuilder, IDmMapping]
+}
+
+func (b *iDmMappingBuilder) lazy(ds *Fetch, id int) *IDmMapping {
+	c := IDmMapping{}
+	ds.IDmMapping_AllowUpdate(id).Lazy(&c.AllowUpdate)
+	ds.IDmMapping_DefaultValue(id).Lazy(&c.DefaultValue)
+	ds.IDmMapping_ID(id).Lazy(&c.ID)
+	ds.IDmMapping_IDmField(id).Lazy(&c.IDmField)
+	ds.IDmMapping_MapperID(id).Lazy(&c.MapperID)
+	ds.IDmMapping_OsField(id).Lazy(&c.OsField)
+	ds.IDmMapping_OverrideDefault(id).Lazy(&c.OverrideDefault)
+	return &c
+}
+
+func (b *iDmMappingBuilder) Preload(rel builderWrapperI) *iDmMappingBuilder {
+	b.builder.Preload(rel)
+	return b
+}
+
+func (b *iDmMappingBuilder) Mapper() *iDmMapperBuilder {
+	return &iDmMapperBuilder{
+		builder: builder[iDmMapperBuilder, *iDmMapperBuilder, IDmMapper]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "MapperID",
+			relField: "Mapper",
+		},
+	}
+}
+
+func (r *Fetch) IDmMapping(ids ...int) *iDmMappingBuilder {
+	return &iDmMappingBuilder{
+		builder: builder[iDmMappingBuilder, *iDmMappingBuilder, IDmMapping]{
+			ids:   ids,
+			fetch: r,
+		},
+	}
+}
+
 // ImportPreview has all fields from import_preview.
 type ImportPreview struct {
 	Created int
@@ -1572,6 +1751,7 @@ type Meeting struct {
 	DefaultProjectorTopicIDs                     []int
 	Description                                  string
 	EnableAnonymous                              bool
+	EnableIDmMatching                            bool
 	EndTime                                      int
 	ExportCsvEncoding                            dstypes.Meeting_ExportCsvEncoding
 	ExportCsvSeparator                           string
@@ -1917,6 +2097,7 @@ func (b *meetingBuilder) lazy(ds *Fetch, id int) *Meeting {
 	ds.Meeting_DefaultProjectorTopicIDs(id).Lazy(&c.DefaultProjectorTopicIDs)
 	ds.Meeting_Description(id).Lazy(&c.Description)
 	ds.Meeting_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
+	ds.Meeting_EnableIDmMatching(id).Lazy(&c.EnableIDmMatching)
 	ds.Meeting_EndTime(id).Lazy(&c.EndTime)
 	ds.Meeting_ExportCsvEncoding(id).Lazy(&c.ExportCsvEncoding)
 	ds.Meeting_ExportCsvSeparator(id).Lazy(&c.ExportCsvSeparator)
@@ -5458,6 +5639,10 @@ type Organization struct {
 	EnableElectronicVoting                  bool
 	GenderIDs                               []int
 	ID                                      int
+	IDmCommitteeManagementKey               string
+	IDmIDentityKey                          string
+	IDmMapperIDs                            []int
+	IDmOrganizationManagmentKey             string
 	LegalNotice                             string
 	LimitOfMeetings                         int
 	LimitOfUsers                            int
@@ -5491,6 +5676,7 @@ type Organization struct {
 	ArchivedMeetingList                     []Meeting
 	CommitteeList                           []Committee
 	GenderList                              []Gender
+	IDmMapperList                           []IDmMapper
 	MediafileList                           []Mediafile
 	OrganizationTagList                     []OrganizationTag
 	PublishedMediafileList                  []Mediafile
@@ -5517,6 +5703,10 @@ func (b *organizationBuilder) lazy(ds *Fetch, id int) *Organization {
 	ds.Organization_EnableElectronicVoting(id).Lazy(&c.EnableElectronicVoting)
 	ds.Organization_GenderIDs(id).Lazy(&c.GenderIDs)
 	ds.Organization_ID(id).Lazy(&c.ID)
+	ds.Organization_IDmCommitteeManagementKey(id).Lazy(&c.IDmCommitteeManagementKey)
+	ds.Organization_IDmIDentityKey(id).Lazy(&c.IDmIDentityKey)
+	ds.Organization_IDmMapperIDs(id).Lazy(&c.IDmMapperIDs)
+	ds.Organization_IDmOrganizationManagmentKey(id).Lazy(&c.IDmOrganizationManagmentKey)
 	ds.Organization_LegalNotice(id).Lazy(&c.LegalNotice)
 	ds.Organization_LimitOfMeetings(id).Lazy(&c.LimitOfMeetings)
 	ds.Organization_LimitOfUsers(id).Lazy(&c.LimitOfUsers)
@@ -5597,6 +5787,18 @@ func (b *organizationBuilder) GenderList() *genderBuilder {
 			parent:   b,
 			idField:  "GenderIDs",
 			relField: "GenderList",
+			many:     true,
+		},
+	}
+}
+
+func (b *organizationBuilder) IDmMapperList() *iDmMapperBuilder {
+	return &iDmMapperBuilder{
+		builder: builder[iDmMapperBuilder, *iDmMapperBuilder, IDmMapper]{
+			fetch:    b.fetch,
+			parent:   b,
+			idField:  "IDmMapperIDs",
+			relField: "IDmMapperList",
 			many:     true,
 		},
 	}
