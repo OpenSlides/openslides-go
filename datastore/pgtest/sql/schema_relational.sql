@@ -1,18 +1,18 @@
 
 -- schema_relational.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
--- MODELS_YML_CHECKSUM = '6d57fc1334aa53d0f1ff08b541766955'
+-- MODELS_YML_CHECKSUM = '8bf8d57558762fe4934e9c9a869d0445'
 
 
 -- ENUM definitions
 
 CREATE TYPE enum_languages AS ENUM ('en', 'de', 'it', 'es', 'ru', 'cs', 'fr');
 
-CREATE TYPE enum_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
+CREATE TYPE enum_required_majority AS ENUM ('no_majority', 'two_third_majority', 'absolute_majority');
 
-CREATE TYPE enum_poll_backends AS ENUM ('long', 'fast');
+CREATE TYPE enum_required_majority_selection AS ENUM ('no_majority', 'two_third_majority', 'absolute_majority', 'simple_majority');
 
-CREATE TYPE enum_onehundred_percent_bases AS ENUM ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+CREATE TYPE enum_poll_visibility AS ENUM ('manually', 'named', 'open', 'secret');
 
 CREATE TYPE enum_action_worker_state AS ENUM ('running', 'end', 'aborted');
 
@@ -20,7 +20,7 @@ CREATE TYPE enum_agenda_item_type AS ENUM ('common', 'internal', 'hidden');
 
 CREATE TYPE enum_assignment_phase AS ENUM ('search', 'voting', 'finished');
 
-CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'assignment.can_manage', 'assignment.can_manage_polls', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'list_of_speakers.can_manage_moderator_notes', 'list_of_speakers.can_see_moderator_notes', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_see_origin', 'motion.can_support', 'poll.can_manage', 'poll.can_see_progress', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update', 'user.can_edit_own_delegation');
+CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_manage_polls', 'agenda_item.can_see_polls', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'assignment.can_manage', 'assignment.can_manage_polls', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see_polls', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'list_of_speakers.can_manage_moderator_notes', 'list_of_speakers.can_see_moderator_notes', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_see_origin', 'motion.can_support', 'poll.can_see_progress', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see_sensitive_data', 'user.can_see', 'user.can_update', 'user.can_edit_own_delegation');
 
 CREATE TYPE enum_import_preview_name AS ENUM ('account', 'participant', 'topic', 'committee', 'motion');
 
@@ -50,9 +50,11 @@ CREATE TYPE enum_meeting_motions_number_type AS ENUM ('per_category', 'serially_
 
 CREATE TYPE enum_meeting_motions_amendments_text_mode AS ENUM ('freestyle', 'fulltext', 'paragraph');
 
-CREATE TYPE enum_meeting_motion_poll_projection_name_order_first AS ENUM ('first_name', 'last_name');
-
 CREATE TYPE enum_meeting_users_pdf_wlan_encryption AS ENUM ('', 'WEP', 'WPA', 'nopass');
+
+CREATE TYPE enum_meeting_poll_projection_name_order_first AS ENUM ('first_name', 'last_name');
+
+CREATE TYPE enum_meeting_poll_setting_method AS ENUM ('approval.yes_no', 'approval.yes_no_abstain', 'selection.yes', 'selection.no', 'rating_score', 'rating_approval.yes_no', 'rating_approval.yes_no_abstain');
 
 CREATE TYPE enum_motion_change_recommendation_type AS ENUM ('replacement', 'insertion', 'deletion', 'other');
 
@@ -62,11 +64,15 @@ CREATE TYPE enum_motion_state_restrictions AS ENUM ('motion.can_see_internal', '
 
 CREATE TYPE enum_motion_state_merge_amendment_into_final AS ENUM ('do_not_merge', 'undefined', 'do_merge');
 
-CREATE TYPE enum_poll_type AS ENUM ('analog', 'named', 'pseudoanonymous', 'cryptographic');
+CREATE TYPE enum_poll_state AS ENUM ('created', 'started', 'finished');
 
-CREATE TYPE enum_poll_pollmethod AS ENUM ('Y', 'YN', 'YNA', 'N');
+CREATE TYPE enum_poll_config_approval_onehundred_percent_base AS ENUM ('yes_no', 'yes_no_abstain', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
-CREATE TYPE enum_poll_state AS ENUM ('created', 'started', 'finished', 'published');
+CREATE TYPE enum_poll_config_rating_approval_onehundred_percent_base AS ENUM ('yes_no', 'yes_no_abstain', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+
+CREATE TYPE enum_poll_config_rating_score_onehundred_percent_base AS ENUM ('no_general', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+
+CREATE TYPE enum_poll_config_selection_onehundred_percent_base AS ENUM ('no_general', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
 CREATE TYPE enum_speaker_speech_state AS ENUM ('contribution', 'pro', 'contra', 'intervention', 'interposed_question');
 
@@ -260,11 +266,11 @@ RETURNS trigger AS $log_modified_calculated_id_array_field_trigger$
 -- 0. log_collection – Target collection for the log entry
 -- 1. log_collection_id_column – Column used to fetch the 'log_collection' id
 --    (ignored if 'log_collection_id_sql' is provided => may be NULL)
--- 2. log_collection_id_sql – Custom SQL to fetch the 'log_collection' id. Result column needs to be called 'id'
+-- 2. log_collection_id_sql – Custom SQL to fetch the 'log_collection' id
 -- 3. log_field – Field to be logged
 -- 4. added_item_column – Column used to fetch the value added to 'log_field'
 --    (ignored if 'added_item_sql' is provided => may be NULL)
--- 5. added_item_sql – Custom SQL to fetch the value added to 'log_field'. Result column needs to be called 'id'
+-- 5. added_item_sql – Custom SQL to fetch the value added to 'log_field'
 DECLARE
     log_collection TEXT := TG_ARGV[0];
     log_collection_id_column TEXT := TG_ARGV[1];
@@ -275,51 +281,39 @@ DECLARE
 
     new_hstore hstore := hstore(NEW);
     log_collection_id INTEGER;
-    log_collection_ids INTEGER[];
     added_item INTEGER;
-    added_items INTEGER[];
     old_log_field_value INTEGER[];
     fqid_var TEXT;
 BEGIN
     -- No related log_collection instance -> return
     IF (log_collection_id_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', log_collection_id_sql) INTO log_collection_ids USING NEW;
+        EXECUTE log_collection_id_sql INTO log_collection_id USING NEW;
     ELSE
         log_collection_id := new_hstore -> log_collection_id_column;
-        IF log_collection_id IS NULL THEN
-            RETURN NEW;
-        END IF;
-        log_collection_ids := ARRAY[log_collection_id];
     END IF;
 
-    IF array_length(log_collection_ids,1) IS NULL THEN
+    IF log_collection_id IS NULL THEN
         RETURN NEW;
     END IF;
 
     -- No value in column used for log_field -> return
     -- Value deletion on update is processed in after-trigger
     IF (added_item_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', added_item_sql) INTO added_items USING NEW;
+        EXECUTE added_item_sql INTO added_item USING NEW;
     ELSE
         added_item := new_hstore -> added_item_column;
-        IF added_item IS NULL THEN
-            RETURN NEW;
-        END IF;
-        added_items := ARRAY[added_item];
     END IF;
 
-    IF array_length(added_items,1) IS NULL THEN
+    IF added_item IS NULL THEN
         RETURN NEW;
     END IF;
 
-    -- Add log entries only if log_field value actually changes
-    FOREACH log_collection_id IN ARRAY log_collection_ids LOOP
-        EXECUTE format('SELECT %I from %I where id = %L', log_field, log_collection, log_collection_id) INTO old_log_field_value;
-        IF old_log_field_value IS NULL OR NOT (added_items <@ old_log_field_value) THEN
-            fqid_var := log_collection || '/' || log_collection_id;
-            CALL log_field_change('update', fqid_var, ARRAY[log_field]);
-        END IF;
-    END LOOP;
+    -- Add log entry only if log_field value actually changes
+    EXECUTE format('SELECT %I from %I where id = %L', log_field, log_collection, log_collection_id) INTO old_log_field_value;
+    IF old_log_field_value IS NULL OR NOT (added_item = ANY(old_log_field_value)) THEN
+        fqid_var := log_collection || '/' || log_collection_id;
+        CALL log_field_change('update', fqid_var, ARRAY[log_field]);
+    END IF;
 
     RETURN NEW;
 END;
@@ -331,11 +325,11 @@ RETURNS trigger AS $log_modified_calculated_id_array_field_trigger$
 -- 0. log_collection – Target collection for the log entry
 -- 1. log_collection_id_column – Column used to fetch the 'log_collection' id
 --    (ignored if 'log_collection_id_sql' is provided => may be NULL)
--- 2. log_collection_id_sql – Custom SQL to fetch the 'log_collection' id. Result column needs to be called 'id'
+-- 2. log_collection_id_sql – Custom SQL to fetch the 'log_collection' id
 -- 3. log_field – Field to be logged
 -- 4. deleted_item_column – Column used to fetch the value deleted from 'log_field'
 --    (ignored if 'deleted_item_sql' is provided => may be NULL)
--- 5. deleted_item_sql – Custom SQL to fetch the value deleted from 'log_field'. Result column needs to be called 'id'
+-- 5. deleted_item_sql – Custom SQL to fetch the value deleted from 'log_field'
 DECLARE
     log_collection TEXT := TG_ARGV[0];
     log_collection_id_column TEXT := TG_ARGV[1];
@@ -346,51 +340,39 @@ DECLARE
 
     old_hstore hstore := hstore(OLD);
     log_collection_id INTEGER;
-    log_collection_ids INTEGER[];
     deleted_item INTEGER;
-    deleted_items INTEGER[];
     new_log_field_value INTEGER[];
     fqid_var TEXT;
 BEGIN
     -- No related log_collection instance -> return
     IF (log_collection_id_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', log_collection_id_sql) INTO log_collection_ids USING OLD;
+        EXECUTE log_collection_id_sql INTO log_collection_id USING OLD;
     ELSE
         log_collection_id := old_hstore -> log_collection_id_column;
-        IF log_collection_id IS NULL THEN
-            RETURN NULL;
-        END IF;
-        log_collection_ids := ARRAY[log_collection_id];
     END IF;
 
-    IF array_length(log_collection_ids,1) IS NULL THEN
+    IF log_collection_id IS NULL THEN
         RETURN NULL;
     END IF;
 
     -- No value in column used for log_field -> return
     -- Value adding on update is processed in before-trigger
     IF (deleted_item_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', deleted_item_sql) INTO deleted_items USING OLD;
+        EXECUTE deleted_item_sql INTO deleted_item USING OLD;
     ELSE
         deleted_item := old_hstore -> deleted_item_column;
-        IF deleted_item IS NULL THEN
-            RETURN NULL;
-        END IF;
-        deleted_items := ARRAY[deleted_item];
     END IF;
 
-    IF array_length(deleted_items,1) IS NULL THEN
+    IF deleted_item IS NULL THEN
         RETURN NULL;
     END IF;
 
-    -- Add log entries only if log_field value actually changes
-    FOREACH log_collection_id IN ARRAY log_collection_ids LOOP
-        EXECUTE format('SELECT %I from %I where id = %L', log_field, log_collection, log_collection_id) INTO new_log_field_value;
-        IF new_log_field_value IS NULL OR NOT (deleted_items <@ new_log_field_value) THEN
-            fqid_var := log_collection || '/' || log_collection_id;
-            CALL log_field_change('update', fqid_var, ARRAY[log_field]);
-        END IF;
-    END LOOP;
+    -- Add log entry only if log_field value actually changes
+    EXECUTE format('SELECT %I from %I where id = %L', log_field, log_collection, log_collection_id) INTO new_log_field_value;
+    IF new_log_field_value IS NULL OR NOT (deleted_item = ANY(new_log_field_value)) THEN
+        fqid_var := log_collection || '/' || log_collection_id;
+        CALL log_field_change('update', fqid_var, ARRAY[log_field]);
+    END IF;
 
     RETURN NULL;
 END;
@@ -1068,10 +1050,6 @@ CREATE TABLE group_t (
         CONSTRAINT required_group_name NOT NULL,
     permissions enum_group_permissions[],
     weight integer,
-    used_as_motion_poll_default_id integer,
-    used_as_assignment_poll_default_id integer,
-    used_as_topic_poll_default_id integer,
-    used_as_poll_default_id integer,
     meeting_id integer
         CONSTRAINT required_group_meeting_id NOT NULL,
     CONSTRAINT unique_group_meeting_id_external_id UNIQUE (meeting_id, external_id)
@@ -1085,13 +1063,15 @@ CREATE TABLE history_entry_t (
     entries text[],
     original_model_id varchar(256),
     model_id varchar(100),
-    model_id_user_id integer
-        CONSTRAINT generated_always_as_history_entry_model_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    model_id_motion_id integer
-        CONSTRAINT generated_always_as_history_entry_model_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'motion' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     model_id_assignment_id integer
         CONSTRAINT generated_always_as_history_entry_model_id_assignment_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'assignment' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('user','motion','assignment')),
+    model_id_motion_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'motion' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    model_id_topic_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_topic_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'topic' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    model_id_user_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'user' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','topic','user')),
     position_id integer
         CONSTRAINT required_history_entry_position_id NOT NULL,
     meeting_id integer
@@ -1413,26 +1393,6 @@ CREATE TABLE meeting_t (
     motions_enable_restricted_editor_for_manager boolean,
     motions_enable_restricted_editor_for_non_manager boolean
         CONSTRAINT default_meeting_motions_enable_restricted_editor_for_non493da85 DEFAULT True,
-    motions_enable_consultation_sequence boolean
-        CONSTRAINT default_meeting_motions_enable_consultation_sequence DEFAULT True,
-    motion_poll_ballot_paper_selection enum_ballot_paper_selection
-        CONSTRAINT default_meeting_motion_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
-    motion_poll_ballot_paper_number integer
-        CONSTRAINT default_meeting_motion_poll_ballot_paper_number DEFAULT 8,
-    motion_poll_default_type varchar(256)
-        CONSTRAINT default_meeting_motion_poll_default_type DEFAULT 'pseudoanonymous',
-    motion_poll_default_method varchar(256)
-        CONSTRAINT default_meeting_motion_poll_default_method DEFAULT 'YNA',
-    motion_poll_default_onehundred_percent_base enum_onehundred_percent_bases
-        CONSTRAINT default_meeting_motion_poll_default_onehundred_percent_base DEFAULT 'YNA',
-    motion_poll_default_backend enum_poll_backends
-        CONSTRAINT default_meeting_motion_poll_default_backend DEFAULT 'fast',
-    motion_poll_projection_name_order_first enum_meeting_motion_poll_projection_name_order_first
-        CONSTRAINT required_meeting_motion_poll_projection_name_order_first NOT NULL
-        CONSTRAINT default_meeting_motion_poll_projection_name_order_first DEFAULT 'last_name',
-    motion_poll_projection_max_columns integer
-        CONSTRAINT required_meeting_motion_poll_projection_max_columns NOT NULL
-        CONSTRAINT default_meeting_motion_poll_projection_max_columns DEFAULT 6,
     users_enable_presence_view boolean
         CONSTRAINT default_meeting_users_enable_presence_view DEFAULT False,
     users_enable_vote_weight boolean
@@ -1464,6 +1424,8 @@ Password: {password}
 
 This email was generated automatically.',
     users_enable_vote_delegations boolean,
+    users_vote_delegations_max_amount integer
+        CONSTRAINT default_meeting_users_vote_delegations_max_amount DEFAULT 1,
     users_forbid_delegator_in_list_of_speakers boolean,
     users_forbid_delegator_as_submitter boolean,
     users_forbid_delegator_as_supporter boolean,
@@ -1471,38 +1433,22 @@ This email was generated automatically.',
     assignments_export_title varchar(256)
         CONSTRAINT default_meeting_assignments_export_title DEFAULT 'Elections',
     assignments_export_preamble text,
-    assignment_poll_ballot_paper_selection enum_ballot_paper_selection
-        CONSTRAINT default_meeting_assignment_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
-    assignment_poll_ballot_paper_number integer
-        CONSTRAINT default_meeting_assignment_poll_ballot_paper_number DEFAULT 8,
     assignment_poll_add_candidates_to_list_of_speakers boolean
         CONSTRAINT default_meeting_assignment_poll_add_candidates_to_list_od04213d DEFAULT False,
-    assignment_poll_enable_max_votes_per_option boolean
-        CONSTRAINT default_meeting_assignment_poll_enable_max_votes_per_option DEFAULT False,
-    assignment_poll_sort_poll_result_by_votes boolean
-        CONSTRAINT default_meeting_assignment_poll_sort_poll_result_by_votes DEFAULT True,
-    assignment_poll_default_type varchar(256)
-        CONSTRAINT default_meeting_assignment_poll_default_type DEFAULT 'pseudoanonymous',
-    assignment_poll_default_method varchar(256)
-        CONSTRAINT default_meeting_assignment_poll_default_method DEFAULT 'Y',
-    assignment_poll_default_onehundred_percent_base enum_onehundred_percent_bases
-        CONSTRAINT default_meeting_assignment_poll_default_onehundred_percent_base DEFAULT 'valid',
-    assignment_poll_default_backend enum_poll_backends
-        CONSTRAINT default_meeting_assignment_poll_default_backend DEFAULT 'fast',
-    poll_ballot_paper_selection enum_ballot_paper_selection,
-    poll_ballot_paper_number integer,
-    poll_sort_poll_result_by_votes boolean,
-    poll_default_type varchar(256)
-        CONSTRAINT default_meeting_poll_default_type DEFAULT 'analog',
-    poll_default_method varchar(256),
-    poll_default_onehundred_percent_base enum_onehundred_percent_bases
-        CONSTRAINT default_meeting_poll_default_onehundred_percent_base DEFAULT 'YNA',
-    poll_default_backend enum_poll_backends
-        CONSTRAINT default_meeting_poll_default_backend DEFAULT 'fast',
-    poll_default_live_voting_enabled boolean
-        CONSTRAINT default_meeting_poll_default_live_voting_enabled DEFAULT False,
+    assignment_poll_config_id integer
+        CONSTRAINT unique_meeting_assignment_poll_config_id UNIQUE,
+    motion_poll_config_id integer
+        CONSTRAINT unique_meeting_motion_poll_config_id UNIQUE,
+    topic_poll_config_id integer
+        CONSTRAINT unique_meeting_topic_poll_config_id UNIQUE,
     poll_couple_countdown boolean
         CONSTRAINT default_meeting_poll_couple_countdown DEFAULT True,
+    poll_projection_name_order_first enum_meeting_poll_projection_name_order_first
+        CONSTRAINT required_meeting_poll_projection_name_order_first NOT NULL
+        CONSTRAINT default_meeting_poll_projection_name_order_first DEFAULT 'last_name',
+    poll_projection_max_columns integer
+        CONSTRAINT required_meeting_poll_projection_max_columns NOT NULL
+        CONSTRAINT default_meeting_poll_projection_max_columns DEFAULT 6,
     logo_projector_main_id integer
         CONSTRAINT unique_meeting_logo_projector_main_id UNIQUE,
     logo_projector_header_id integer
@@ -1559,7 +1505,6 @@ comment on column meeting_t.is_active_in_organization_id is 'Backrelation and bo
 comment on column meeting_t.is_archived_in_organization_id is 'Backrelation and boolean flag at once';
 comment on column meeting_t.list_of_speakers_default_structure_level_time is '0 disables structure level countdowns.';
 comment on column meeting_t.list_of_speakers_intervention_time is '0 disables intervention speakers.';
-comment on column meeting_t.poll_default_live_voting_enabled is 'Defines default "poll.live_voting_enabled" option suggested to user. Is not used in the validations.';
 
 
 CREATE TABLE meeting_mediafile_t (
@@ -1578,6 +1523,34 @@ CREATE TABLE meeting_mediafile_t (
 comment on column meeting_mediafile_t.is_public is 'Calculated in actions. Used to discern whether the (meeting-)mediafile can be seen by everyone, because, in the case of inherited_access_group_ids == [], it would otherwise not be clear. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)';
 
 
+CREATE TABLE meeting_poll_setting_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    sort_result_by_votes boolean
+        CONSTRAINT default_meeting_poll_setting_sort_result_by_votes DEFAULT True,
+    allow_live_voting boolean
+        CONSTRAINT default_meeting_poll_setting_allow_live_voting DEFAULT False,
+    enable_max_yes_votes boolean
+        CONSTRAINT default_meeting_poll_setting_enable_max_yes_votes DEFAULT False,
+    enable_cumulative_voting boolean
+        CONSTRAINT default_meeting_poll_setting_enable_cumulative_voting DEFAULT False,
+    enable_max_options_limit boolean
+        CONSTRAINT default_meeting_poll_setting_enable_max_options_limit DEFAULT False,
+    method enum_meeting_poll_setting_method,
+    visibility enum_poll_visibility
+        CONSTRAINT default_meeting_poll_setting_visibility DEFAULT 'secret',
+    enable_live_voting boolean
+        CONSTRAINT default_meeting_poll_setting_enable_live_voting DEFAULT False,
+    required_majority varchar(256)
+        CONSTRAINT default_meeting_poll_setting_required_majority DEFAULT 'no_majority',
+    onehundred_percent_base varchar(256)
+        CONSTRAINT default_meeting_poll_setting_onehundred_percent_base DEFAULT 'valid',
+    meeting_id integer
+        CONSTRAINT required_meeting_poll_setting_meeting_id NOT NULL
+);
+
+
+
+
 CREATE TABLE meeting_user_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     comment text,
@@ -1590,7 +1563,6 @@ CREATE TABLE meeting_user_t (
         CONSTRAINT required_meeting_user_user_id NOT NULL,
     meeting_id integer
         CONSTRAINT required_meeting_user_meeting_id NOT NULL,
-    vote_delegated_to_id integer,
     CONSTRAINT unique_meeting_user_meeting_id_user_id UNIQUE (meeting_id, user_id)
 );
 
@@ -1866,32 +1838,6 @@ CREATE TABLE motion_working_group_speaker_t (
 
 
 
-CREATE TABLE option_t (
-    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    weight integer
-        CONSTRAINT default_option_weight DEFAULT 10000,
-    text text,
-    yes decimal(16,6),
-    no decimal(16,6),
-    abstain decimal(16,6),
-    poll_id integer,
-    content_object_id varchar(100),
-    content_object_id_motion_id integer
-        CONSTRAINT generated_always_as_option_content_object_id_motion_id GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'motion' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_user_id integer
-        CONSTRAINT generated_always_as_option_content_object_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'user' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    content_object_id_poll_candidate_list_id integer
-        CONSTRAINT unique_option_content_object_id_poll_candidate_list_id UNIQUE
-        CONSTRAINT generated_always_as_option_content_object_id_poll_candidd7449d9 GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'poll_candidate_list' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    CONSTRAINT valid_option_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','user','poll_candidate_list')),
-    meeting_id integer
-        CONSTRAINT required_option_meeting_id NOT NULL,
-    CONSTRAINT unique_option_content_object_id_poll_id UNIQUE (content_object_id, poll_id)
-);
-
-
-
-
 CREATE TABLE organization_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     name varchar(256),
@@ -2004,39 +1950,39 @@ CREATE TABLE poll_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
     title varchar(256)
         CONSTRAINT required_poll_title NOT NULL,
-    description varchar(256),
-    type enum_poll_type
-        CONSTRAINT required_poll_type NOT NULL,
-    backend enum_poll_backends
-        CONSTRAINT required_poll_backend NOT NULL
-        CONSTRAINT default_poll_backend DEFAULT 'fast',
-    is_pseudoanonymized boolean,
-    pollmethod enum_poll_pollmethod
-        CONSTRAINT required_poll_pollmethod NOT NULL,
+    config_id varchar(100)
+        CONSTRAINT required_poll_config_id NOT NULL,
+    config_id_poll_config_approval_id integer
+        CONSTRAINT unique_poll_config_id_poll_config_approval_id UNIQUE
+        CONSTRAINT generated_always_as_poll_config_id_poll_config_approval_id GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_approval' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    config_id_poll_config_selection_id integer
+        CONSTRAINT unique_poll_config_id_poll_config_selection_id UNIQUE
+        CONSTRAINT generated_always_as_poll_config_id_poll_config_selection_id GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_selection' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    config_id_poll_config_rating_score_id integer
+        CONSTRAINT unique_poll_config_id_poll_config_rating_score_id UNIQUE
+        CONSTRAINT generated_always_as_poll_config_id_poll_config_rating_score_id GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_rating_score' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    config_id_poll_config_rating_approval_id integer
+        CONSTRAINT unique_poll_config_id_poll_config_rating_approval_id UNIQUE
+        CONSTRAINT generated_always_as_poll_config_id_poll_config_rating_ap5cb0e6b GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_rating_approval' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    config_id_poll_config_stv_scottish_id integer
+        CONSTRAINT unique_poll_config_id_poll_config_stv_scottish_id UNIQUE
+        CONSTRAINT generated_always_as_poll_config_id_poll_config_stv_scottish_id GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_stv_scottish' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    CONSTRAINT valid_poll_config_id_part1 CHECK (split_part(config_id, '/', 1) IN ('poll_config_approval','poll_config_selection','poll_config_rating_score','poll_config_rating_approval','poll_config_stv_scottish')),
+    visibility enum_poll_visibility
+        CONSTRAINT required_poll_visibility NOT NULL,
     state enum_poll_state
         CONSTRAINT default_poll_state DEFAULT 'created',
-    min_votes_amount integer
-        CONSTRAINT minimum_poll_min_votes_amount CHECK (min_votes_amount >= 1)
-        CONSTRAINT default_poll_min_votes_amount DEFAULT 1,
-    max_votes_amount integer
-        CONSTRAINT minimum_poll_max_votes_amount CHECK (max_votes_amount >= 1)
-        CONSTRAINT default_poll_max_votes_amount DEFAULT 1,
-    max_votes_per_option integer
-        CONSTRAINT minimum_poll_max_votes_per_option CHECK (max_votes_per_option >= 1)
-        CONSTRAINT default_poll_max_votes_per_option DEFAULT 1,
-    global_yes boolean
-        CONSTRAINT default_poll_global_yes DEFAULT False,
-    global_no boolean
-        CONSTRAINT default_poll_global_no DEFAULT False,
-    global_abstain boolean
-        CONSTRAINT default_poll_global_abstain DEFAULT False,
-    onehundred_percent_base enum_onehundred_percent_bases
-        CONSTRAINT required_poll_onehundred_percent_base NOT NULL
-        CONSTRAINT default_poll_onehundred_percent_base DEFAULT 'disabled',
-    votesvalid decimal(16,6),
-    votesinvalid decimal(16,6),
-    votescast decimal(16,6),
-    entitled_users_at_stop jsonb,
+    result text,
+    published boolean
+        CONSTRAINT default_poll_published DEFAULT False,
+    anonymized boolean
+        CONSTRAINT default_poll_anonymized DEFAULT False,
+    allow_empty boolean
+        CONSTRAINT default_poll_allow_empty DEFAULT False,
+    allow_invalid boolean
+        CONSTRAINT default_poll_allow_invalid DEFAULT False,
+    allow_vote_split boolean
+        CONSTRAINT default_poll_allow_vote_split DEFAULT False,
     live_voting_enabled boolean
         CONSTRAINT default_poll_live_voting_enabled DEFAULT False,
     sequential_number integer
@@ -2051,42 +1997,157 @@ CREATE TABLE poll_t (
     content_object_id_topic_id integer
         CONSTRAINT generated_always_as_poll_content_object_id_topic_id GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'topic' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     CONSTRAINT valid_poll_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('motion','assignment','topic')),
-    global_option_id integer
-        CONSTRAINT unique_poll_global_option_id UNIQUE,
     meeting_id integer
         CONSTRAINT required_poll_meeting_id NOT NULL
 );
 
 
 
-comment on column poll_t.live_voting_enabled is 'If true, the vote service sends the votes of the users to the autoupdate service.';
+comment on column poll_t.result is 'Calculated result. The format depends on the value in poll/method. Can be manually set when visibility is set to manually.';
+comment on column poll_t.published is 'If true, users can see the result.';
+comment on column poll_t.anonymized is 'Set to true, after finished was called with anonymize.';
+comment on column poll_t.allow_empty is 'If true, the vote service accepts empty ballots.';
+comment on column poll_t.allow_invalid is 'If true, the vote service does not validate. This is always the case for secret polls.';
+comment on column poll_t.allow_vote_split is 'If true, users can split there vote.';
+comment on column poll_t.live_voting_enabled is 'If true, on start, publish will be set to true.';
 comment on column poll_t.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table poll
 
-    poll/live_votes: type:JSON is marked as a calculated field and not generated in schema
-
-*/
-
-CREATE TABLE poll_candidate_t (
+CREATE TABLE poll_ballot_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    poll_candidate_list_id integer
-        CONSTRAINT required_poll_candidate_poll_candidate_list_id NOT NULL,
-    user_id integer,
-    weight integer
-        CONSTRAINT required_poll_candidate_weight NOT NULL,
-    meeting_id integer
-        CONSTRAINT required_poll_candidate_meeting_id NOT NULL
+    weight decimal(16,6)
+        CONSTRAINT default_poll_ballot_weight DEFAULT '1.000000',
+    split boolean
+        CONSTRAINT default_poll_ballot_split DEFAULT False,
+    value text,
+    poll_id integer
+        CONSTRAINT required_poll_ballot_poll_id NOT NULL,
+    poll_ballot_user_id integer
+        CONSTRAINT unique_poll_ballot_poll_ballot_user_id UNIQUE
 );
 
 
 
 
-CREATE TABLE poll_candidate_list_t (
+CREATE TABLE poll_ballot_user_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    meeting_id integer
-        CONSTRAINT required_poll_candidate_list_meeting_id NOT NULL
+    poll_id integer
+        CONSTRAINT required_poll_ballot_user_poll_id NOT NULL,
+    acting_meeting_user_id integer,
+    represented_meeting_user_id integer,
+    CONSTRAINT unique_poll_ballot_user_poll_id_represented_meeting_user_id UNIQUE (poll_id, represented_meeting_user_id)
+);
+
+
+
+
+CREATE TABLE poll_config_approval_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    allow_abstain boolean
+        CONSTRAINT default_poll_config_approval_allow_abstain DEFAULT True,
+    onehundred_percent_base enum_poll_config_approval_onehundred_percent_base
+        CONSTRAINT required_poll_config_approval_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority
+        CONSTRAINT default_poll_config_approval_required_majority DEFAULT 'no_majority'
+);
+
+
+
+
+CREATE TABLE poll_config_rating_approval_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    max_options_amount integer
+        CONSTRAINT default_poll_config_rating_approval_max_options_amount DEFAULT 0,
+    min_options_amount integer
+        CONSTRAINT default_poll_config_rating_approval_min_options_amount DEFAULT 0,
+    max_yes_amount integer,
+    allow_abstain boolean
+        CONSTRAINT default_poll_config_rating_approval_allow_abstain DEFAULT True,
+    onehundred_percent_base enum_poll_config_rating_approval_onehundred_percent_base
+        CONSTRAINT required_poll_config_rating_approval_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority
+        CONSTRAINT default_poll_config_rating_approval_required_majority DEFAULT 'no_majority'
+);
+
+
+
+
+CREATE TABLE poll_config_rating_score_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    max_options_amount integer
+        CONSTRAINT default_poll_config_rating_score_max_options_amount DEFAULT 0,
+    min_options_amount integer
+        CONSTRAINT default_poll_config_rating_score_min_options_amount DEFAULT 0,
+    max_votes_per_option integer
+        CONSTRAINT default_poll_config_rating_score_max_votes_per_option DEFAULT 0,
+    max_vote_sum integer
+        CONSTRAINT default_poll_config_rating_score_max_vote_sum DEFAULT 0,
+    min_vote_sum integer
+        CONSTRAINT default_poll_config_rating_score_min_vote_sum DEFAULT 0,
+    onehundred_percent_base enum_poll_config_rating_score_onehundred_percent_base
+        CONSTRAINT required_poll_config_rating_score_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority_selection
+        CONSTRAINT default_poll_config_rating_score_required_majority DEFAULT 'no_majority'
+);
+
+
+
+
+CREATE TABLE poll_config_selection_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    max_options_amount integer
+        CONSTRAINT default_poll_config_selection_max_options_amount DEFAULT 0,
+    min_options_amount integer
+        CONSTRAINT default_poll_config_selection_min_options_amount DEFAULT 0,
+    allow_nota boolean
+        CONSTRAINT default_poll_config_selection_allow_nota DEFAULT False,
+    strike_out boolean
+        CONSTRAINT default_poll_config_selection_strike_out DEFAULT False,
+    onehundred_percent_base enum_poll_config_selection_onehundred_percent_base
+        CONSTRAINT required_poll_config_selection_onehundred_percent_base NOT NULL,
+    required_majority enum_required_majority_selection
+        CONSTRAINT default_poll_config_selection_required_majority DEFAULT 'no_majority',
+    display_chart varchar(256)
+);
+
+
+
+
+CREATE TABLE poll_config_stv_scottish_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    posts integer
+        CONSTRAINT minimum_poll_config_stv_scottish_posts CHECK (posts >= 1)
+        CONSTRAINT default_poll_config_stv_scottish_posts DEFAULT 1
+);
+
+
+
+
+CREATE TABLE poll_entitled_user_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    poll_id integer
+        CONSTRAINT required_poll_entitled_user_poll_id NOT NULL,
+    meeting_user_id integer,
+    present boolean
+        CONSTRAINT required_poll_entitled_user_present NOT NULL,
+    CONSTRAINT unique_poll_entitled_user_poll_id_meeting_user_id UNIQUE (poll_id, meeting_user_id)
+);
+
+
+
+
+CREATE TABLE poll_option_t (
+    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+    poll_id integer
+        CONSTRAINT required_poll_option_poll_id NOT NULL,
+    weight integer,
+    text varchar(256),
+    content_object_id varchar(100),
+    content_object_id_meeting_user_id integer
+        CONSTRAINT generated_always_as_poll_option_content_object_id_meetinab51685 GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'meeting_user' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    content_object_id_user_id integer
+        CONSTRAINT generated_always_as_poll_option_content_object_id_user_id GENERATED ALWAYS AS (CASE WHEN split_part(content_object_id, '/', 1) = 'user' THEN cast(split_part(content_object_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    CONSTRAINT valid_poll_option_content_object_id_part1 CHECK (split_part(content_object_id, '/', 1) IN ('meeting_user','user'))
 );
 
 
@@ -2133,12 +2194,6 @@ CREATE TABLE projection_t (
 
 
 
-/*
- Fields without SQL definition for table projection
-
-    projection/content: type:JSON is marked as a calculated field and not generated in schema
-
-*/
 
 CREATE TABLE projector_t (
     id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
@@ -2211,7 +2266,7 @@ CREATE TABLE projector_t (
     used_as_default_projector_for_countdown_in_meeting_id integer,
     used_as_default_projector_for_assignment_poll_in_meeting_id integer,
     used_as_default_projector_for_motion_poll_in_meeting_id integer,
-    used_as_default_projector_for_poll_in_meeting_id integer,
+    used_as_default_projector_for_topic_poll_in_meeting_id integer,
     meeting_id integer
         CONSTRAINT required_projector_meeting_id NOT NULL
 );
@@ -2500,25 +2555,6 @@ comment on column user_t.saml_id is 'unique-key from IdP for SAML login';
 comment on column user_t.organization_management_level is 'Hierarchical permission level for the whole organization.';
 
 
-CREATE TABLE vote_t (
-    id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-    weight decimal(16,6)
-        CONSTRAINT required_vote_weight NOT NULL,
-    value varchar(256)
-        CONSTRAINT required_vote_value NOT NULL,
-    user_token varchar(256)
-        CONSTRAINT required_vote_user_token NOT NULL,
-    option_id integer
-        CONSTRAINT required_vote_option_id NOT NULL,
-    user_id integer,
-    delegated_user_id integer,
-    meeting_id integer
-        CONSTRAINT required_vote_meeting_id NOT NULL
-);
-
-
-
-
 
 -- Intermediate table definitions
 
@@ -2698,6 +2734,22 @@ CREATE TABLE nm_group_poll_ids_poll_t (
 CREATE INDEX idx_nm_group_poll_ids_poll_t_group_id ON nm_group_poll_ids_poll_t (group_id);
 CREATE INDEX idx_nm_group_poll_ids_poll_t_poll_id ON nm_group_poll_ids_poll_t (poll_id);
 
+CREATE TABLE nm_group_uimpsi_meeting_poll_setting_t (
+    group_id integer
+        CONSTRAINT required_nm_group_uimpsi_meeting_poll_setting_t_group_id NOT NULL
+        CONSTRAINT fk_nm_group_uimpsi_meeting_poll_setting_t_group_id_group_t_id REFERENCES group_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    meeting_poll_setting_id integer
+        CONSTRAINT required_nm_group_uimpsi_meeting_poll_setting_t_meeting_734e9b0 NOT NULL
+        CONSTRAINT fk_nm_group_uimpsi_meeting_poll_setting_t_meeting_poll_s90f9112 REFERENCES meeting_poll_setting_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    CONSTRAINT pk_nm_group_uimpsi_meeting_poll_setting_t PRIMARY KEY (group_id, meeting_poll_setting_id)
+);
+CREATE INDEX idx_nm_group_uimpsi_meeting_poll_setting_t_group_id ON nm_group_uimpsi_meeting_poll_setting_t (group_id);
+CREATE INDEX idx_nm_group_uimpsi_meeting_poll_setting_t_meeting_poll_f22a8ca ON nm_group_uimpsi_meeting_poll_setting_t (meeting_poll_setting_id);
+
 CREATE TABLE nm_meeting_present_user_ids_user_t (
     meeting_id integer
         CONSTRAINT required_nm_meeting_present_user_ids_user_t_meeting_id NOT NULL
@@ -2745,6 +2797,22 @@ CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id ON gm_meeti
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id_3c67b77 ON gm_meeting_mediafile_attachment_ids_t (attachment_id_motion_id);
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id_8abf47a ON gm_meeting_mediafile_attachment_ids_t (attachment_id_topic_id);
 CREATE INDEX idx_gm_meeting_mediafile_attachment_ids_t_attachment_id_66fb18e ON gm_meeting_mediafile_attachment_ids_t (attachment_id_assignment_id);
+
+CREATE TABLE nm_meeting_user_vote_delegated_to_ids_meeting_user_t (
+    vote_delegations_from_id integer
+        CONSTRAINT required_nm_meeting_user_vote_delegated_to_ids_meeting_u2c2dede NOT NULL
+        CONSTRAINT fk_nm_meeting_user_vote_delegated_to_ids_meeting_user_t_3faa0ec REFERENCES meeting_user_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    vote_delegated_to_id integer
+        CONSTRAINT required_nm_meeting_user_vote_delegated_to_ids_meeting_ueb04d5e NOT NULL
+        CONSTRAINT fk_nm_meeting_user_vote_delegated_to_ids_meeting_user_t_d8197d4 REFERENCES meeting_user_t (id)
+        ON DELETE CASCADE
+        INITIALLY DEFERRED,
+    CONSTRAINT pk_nm_meeting_user_vote_delegated_to_ids_meeting_user_t PRIMARY KEY (vote_delegations_from_id, vote_delegated_to_id)
+);
+CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_tee86852 ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegations_from_id);
+CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_t54a80eb ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegated_to_id);
 
 CREATE TABLE nm_meeting_user_structure_level_ids_structure_level_t (
     meeting_user_id integer
@@ -2876,22 +2944,6 @@ CREATE INDEX idx_gm_organization_tag_tagged_ids_t_tagged_id ON gm_organization_t
 CREATE INDEX idx_gm_organization_tag_tagged_ids_t_tagged_id_committee_id ON gm_organization_tag_tagged_ids_t (tagged_id_committee_id);
 CREATE INDEX idx_gm_organization_tag_tagged_ids_t_tagged_id_meeting_id ON gm_organization_tag_tagged_ids_t (tagged_id_meeting_id);
 
-CREATE TABLE nm_poll_voted_ids_user_t (
-    poll_id integer
-        CONSTRAINT required_nm_poll_voted_ids_user_t_poll_id NOT NULL
-        CONSTRAINT fk_nm_poll_voted_ids_user_t_poll_id_poll_t_id REFERENCES poll_t (id)
-        ON DELETE CASCADE
-        INITIALLY DEFERRED,
-    user_id integer
-        CONSTRAINT required_nm_poll_voted_ids_user_t_user_id NOT NULL
-        CONSTRAINT fk_nm_poll_voted_ids_user_t_user_id_user_t_id REFERENCES user_t (id)
-        ON DELETE CASCADE
-        INITIALLY DEFERRED,
-    CONSTRAINT pk_nm_poll_voted_ids_user_t PRIMARY KEY (poll_id, user_id)
-);
-CREATE INDEX idx_nm_poll_voted_ids_user_t_poll_id ON nm_poll_voted_ids_user_t (poll_id);
-CREATE INDEX idx_nm_poll_voted_ids_user_t_user_id ON nm_poll_voted_ids_user_t (user_id);
-
 CREATE TABLE gm_tag_tagged_ids_t (
     tag_id integer
         CONSTRAINT required_gm_tag_tagged_ids_t_tag_id NOT NULL
@@ -3017,7 +3069,8 @@ CREATE VIEW "group" AS SELECT *,
 (select array_agg(n.motion_comment_section_id ORDER BY n.motion_comment_section_id) from nm_group_write_comment_section_ids_motion_comment_section_t n where n.group_id = g.id) as write_comment_section_ids,
 (select array_agg(n.chat_group_id ORDER BY n.chat_group_id) from nm_chat_group_read_group_ids_group_t n where n.group_id = g.id) as read_chat_group_ids,
 (select array_agg(n.chat_group_id ORDER BY n.chat_group_id) from nm_chat_group_write_group_ids_group_t n where n.group_id = g.id) as write_chat_group_ids,
-(select array_agg(n.poll_id ORDER BY n.poll_id) from nm_group_poll_ids_poll_t n where n.group_id = g.id) as poll_ids
+(select array_agg(n.poll_id ORDER BY n.poll_id) from nm_group_poll_ids_poll_t n where n.group_id = g.id) as poll_ids,
+(select array_agg(n.meeting_poll_setting_id ORDER BY n.meeting_poll_setting_id) from nm_group_uimpsi_meeting_poll_setting_t n where n.group_id = g.id) as used_in_meeting_poll_setting_ids
 FROM group_t g;
 
 comment on column "group".meeting_mediafile_inherited_access_group_ids is 'Calculated field.';
@@ -3047,13 +3100,7 @@ FROM mediafile_t m;
 
 
 CREATE VIEW "meeting" AS SELECT *,
-(select array_agg(g.id ORDER BY g.id) from group_t g where g.used_as_motion_poll_default_id = m.id) as motion_poll_default_group_ids,
-(select array_agg(p.id ORDER BY p.id) from poll_candidate_list_t p where p.meeting_id = m.id) as poll_candidate_list_ids,
-(select array_agg(p.id ORDER BY p.id) from poll_candidate_t p where p.meeting_id = m.id) as poll_candidate_ids,
 (select array_agg(mu.id ORDER BY mu.id) from meeting_user_t mu where mu.meeting_id = m.id) as meeting_user_ids,
-(select array_agg(g.id ORDER BY g.id) from group_t g where g.used_as_assignment_poll_default_id = m.id) as assignment_poll_default_group_ids,
-(select array_agg(g.id ORDER BY g.id) from group_t g where g.used_as_poll_default_id = m.id) as poll_default_group_ids,
-(select array_agg(g.id ORDER BY g.id) from group_t g where g.used_as_topic_poll_default_id = m.id) as topic_poll_default_group_ids,
 (select array_agg(p.id ORDER BY p.id) from projector_t p where p.meeting_id = m.id) as projector_ids,
 (select array_agg(p.id ORDER BY p.id) from projection_t p where p.meeting_id = m.id) as all_projection_ids,
 (select array_agg(p.id ORDER BY p.id) from projector_message_t p where p.meeting_id = m.id) as projector_message_ids,
@@ -3082,8 +3129,7 @@ CREATE VIEW "meeting" AS SELECT *,
 (select array_agg(mc.id ORDER BY mc.id) from motion_change_recommendation_t mc where mc.meeting_id = m.id) as motion_change_recommendation_ids,
 (select array_agg(ms.id ORDER BY ms.id) from motion_state_t ms where ms.meeting_id = m.id) as motion_state_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_t p where p.meeting_id = m.id) as poll_ids,
-(select array_agg(o.id ORDER BY o.id) from option_t o where o.meeting_id = m.id) as option_ids,
-(select array_agg(v.id ORDER BY v.id) from vote_t v where v.meeting_id = m.id) as vote_ids,
+(select array_agg(mp.id ORDER BY mp.id) from meeting_poll_setting_t mp where mp.meeting_id = m.id) as poll_setting_ids,
 (select array_agg(a.id ORDER BY a.id) from assignment_t a where a.meeting_id = m.id) as assignment_ids,
 (select array_agg(a.id ORDER BY a.id) from assignment_candidate_t a where a.meeting_id = m.id) as assignment_candidate_ids,
 (select array_agg(p.id ORDER BY p.id) from personal_note_t p where p.meeting_id = m.id) as personal_note_ids,
@@ -3113,7 +3159,7 @@ CREATE VIEW "meeting" AS SELECT *,
 (select array_agg(p.id ORDER BY p.id) from projector_t p where p.used_as_default_projector_for_countdown_in_meeting_id = m.id) as default_projector_countdown_ids,
 (select array_agg(p.id ORDER BY p.id) from projector_t p where p.used_as_default_projector_for_assignment_poll_in_meeting_id = m.id) as default_projector_assignment_poll_ids,
 (select array_agg(p.id ORDER BY p.id) from projector_t p where p.used_as_default_projector_for_motion_poll_in_meeting_id = m.id) as default_projector_motion_poll_ids,
-(select array_agg(p.id ORDER BY p.id) from projector_t p where p.used_as_default_projector_for_poll_in_meeting_id = m.id) as default_projector_poll_ids,
+(select array_agg(p.id ORDER BY p.id) from projector_t p where p.used_as_default_projector_for_topic_poll_in_meeting_id = m.id) as default_projector_topic_poll_ids,
 (select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.meeting_id = m.id) as relevant_history_entry_ids
 FROM meeting_t m;
 
@@ -3145,6 +3191,14 @@ FROM meeting_mediafile_t m;
 
 comment on column "meeting_mediafile".inherited_access_group_ids is 'Calculated in actions. Shows what access group permissions are actually relevant. Calculated as the intersection of this meeting_mediafiles access_group_ids and the related mediafiles potential parent mediafiles inherited_access_group_ids. If the parent has no meeting_mediafile for this meeting, its inherited access group is assumed to be the meetings admin group. If there is no parent, the inherited_access_group_ids is equal to the access_group_ids. If the access_group_ids are empty, the interpretations is that every group has access rights, therefore the parent inherited_access_group_ids are used as-is.';
 
+CREATE VIEW "meeting_poll_setting" AS SELECT *,
+(select array_agg(n.group_id ORDER BY n.group_id) from nm_group_uimpsi_meeting_poll_setting_t n where n.meeting_poll_setting_id = m.id) as group_ids,
+(select m1.id from meeting_t m1 where m1.assignment_poll_config_id = m.id) as used_as_assignment_poll_config_in_meeting_id,
+(select m1.id from meeting_t m1 where m1.motion_poll_config_id = m.id) as used_as_motion_poll_config_in_meeting_id,
+(select m1.id from meeting_t m1 where m1.topic_poll_config_id = m.id) as used_as_topic_poll_config_in_meeting_id
+FROM meeting_poll_setting_t m;
+
+
 CREATE VIEW "meeting_user" AS SELECT *,
 (select array_agg(p.id ORDER BY p.id) from personal_note_t p where p.meeting_user_id = m.id) as personal_note_ids,
 (select array_agg(s.id ORDER BY s.id) from speaker_t s where s.meeting_user_id = m.id) as speaker_ids,
@@ -3153,7 +3207,12 @@ CREATE VIEW "meeting_user" AS SELECT *,
 (select array_agg(mw.id ORDER BY mw.id) from motion_working_group_speaker_t mw where mw.meeting_user_id = m.id) as motion_working_group_speaker_ids,
 (select array_agg(ms.id ORDER BY ms.id) from motion_submitter_t ms where ms.meeting_user_id = m.id) as motion_submitter_ids,
 (select array_agg(a.id ORDER BY a.id) from assignment_candidate_t a where a.meeting_user_id = m.id) as assignment_candidate_ids,
-(select array_agg(mu.id ORDER BY mu.id) from meeting_user_t mu where mu.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
+(select array_agg(n.vote_delegated_to_id ORDER BY n.vote_delegated_to_id) from nm_meeting_user_vote_delegated_to_ids_meeting_user_t n where n.vote_delegations_from_id = m.id) as vote_delegated_to_ids,
+(select array_agg(n.vote_delegations_from_id ORDER BY n.vote_delegations_from_id) from nm_meeting_user_vote_delegated_to_ids_meeting_user_t n where n.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
+(select array_agg(p.id ORDER BY p.id) from poll_option_t p where p.content_object_id_meeting_user_id = m.id) as poll_option_ids,
+(select array_agg(p.id ORDER BY p.id) from poll_ballot_user_t p where p.acting_meeting_user_id = m.id) as acting_ballot_ids,
+(select array_agg(p.id ORDER BY p.id) from poll_ballot_user_t p where p.represented_meeting_user_id = m.id) as represented_ballot_ids,
+(select array_agg(p.id ORDER BY p.id) from poll_entitled_user_t p where p.meeting_user_id = m.id) as poll_entitled_user_ids,
 (select array_agg(c.id ORDER BY c.id) from chat_message_t c where c.meeting_user_id = m.id) as chat_message_ids,
 (select array_agg(n.group_id ORDER BY n.group_id) from nm_group_meeting_user_ids_meeting_user_t n where n.meeting_user_id = m.id) as group_ids,
 (select array_agg(n.structure_level_id ORDER BY n.structure_level_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.meeting_user_id = m.id) as structure_level_ids
@@ -3176,7 +3235,6 @@ CREATE VIEW "motion" AS SELECT *,
 (select array_agg(me.id ORDER BY me.id) from motion_editor_t me where me.motion_id = m.id) as editor_ids,
 (select array_agg(mw.id ORDER BY mw.id) from motion_working_group_speaker_t mw where mw.motion_id = m.id) as working_group_speaker_ids,
 (select array_agg(p.id ORDER BY p.id) from poll_t p where p.content_object_id_motion_id = m.id) as poll_ids,
-(select array_agg(o.id ORDER BY o.id) from option_t o where o.content_object_id_motion_id = m.id) as option_ids,
 (select array_agg(mc.id ORDER BY mc.id) from motion_change_recommendation_t mc where mc.motion_id = m.id) as change_recommendation_ids,
 (select array_agg(mc.id ORDER BY mc.id) from motion_comment_t mc where mc.motion_id = m.id) as comment_ids,
 (select a.id from agenda_item_t a where a.content_object_id_motion_id = m.id) as agenda_item_id,
@@ -3245,12 +3303,6 @@ FROM motion_workflow_t m;
 CREATE VIEW "motion_working_group_speaker" AS SELECT * FROM motion_working_group_speaker_t m;
 
 
-CREATE VIEW "option" AS SELECT *,
-(select p.id from poll_t p where p.global_option_id = o.id) as used_as_global_option_in_poll_id,
-(select array_agg(v.id ORDER BY v.id) from vote_t v where v.option_id = o.id) as vote_ids
-FROM option_t o;
-
-
 CREATE VIEW "organization" AS SELECT *,
 (select array_agg(g.id ORDER BY g.id) from gender_t g where g.organization_id = o.id) as gender_ids,
 (select array_agg(c.id ORDER BY c.id) from committee_t c where c.organization_id = o.id) as committee_ids,
@@ -3279,20 +3331,52 @@ FROM point_of_order_category_t p;
 
 
 CREATE VIEW "poll" AS SELECT *,
-(select array_agg(o.id ORDER BY o.id) from option_t o where o.poll_id = p.id) as option_ids,
-(select array_agg(n.user_id ORDER BY n.user_id) from nm_poll_voted_ids_user_t n where n.poll_id = p.id) as voted_ids,
+(select array_agg(po.id ORDER BY po.id) from poll_option_t po where po.poll_id = p.id) as option_ids,
+(select array_agg(pb.id ORDER BY pb.id) from poll_ballot_t pb where pb.poll_id = p.id) as ballot_ids,
+(select array_agg(pb.id ORDER BY pb.id) from poll_ballot_user_t pb where pb.poll_id = p.id) as ballot_user_ids,
 (select array_agg(n.group_id ORDER BY n.group_id) from nm_group_poll_ids_poll_t n where n.poll_id = p.id) as entitled_group_ids,
+(select array_agg(pe.id ORDER BY pe.id) from poll_entitled_user_t pe where pe.poll_id = p.id) as entitled_user_ids,
 (select array_agg(pt.id ORDER BY pt.id) from projection_t pt where pt.content_object_id_poll_id = p.id) as projection_ids
 FROM poll_t p;
 
 
-CREATE VIEW "poll_candidate" AS SELECT * FROM poll_candidate_t p;
+CREATE VIEW "poll_ballot" AS SELECT * FROM poll_ballot_t p;
 
 
-CREATE VIEW "poll_candidate_list" AS SELECT *,
-(select array_agg(pc.id ORDER BY pc.id) from poll_candidate_t pc where pc.poll_candidate_list_id = p.id) as poll_candidate_ids,
-(select o.id from option_t o where o.content_object_id_poll_candidate_list_id = p.id) as option_id
-FROM poll_candidate_list_t p;
+CREATE VIEW "poll_ballot_user" AS SELECT *,
+(select pb.id from poll_ballot_t pb where pb.poll_ballot_user_id = p.id) as poll_ballot_id
+FROM poll_ballot_user_t p;
+
+
+CREATE VIEW "poll_config_approval" AS SELECT *,
+(select p1.id from poll_t p1 where p1.config_id_poll_config_approval_id = p.id) as poll_id
+FROM poll_config_approval_t p;
+
+
+CREATE VIEW "poll_config_rating_approval" AS SELECT *,
+(select p1.id from poll_t p1 where p1.config_id_poll_config_rating_approval_id = p.id) as poll_id
+FROM poll_config_rating_approval_t p;
+
+
+CREATE VIEW "poll_config_rating_score" AS SELECT *,
+(select p1.id from poll_t p1 where p1.config_id_poll_config_rating_score_id = p.id) as poll_id
+FROM poll_config_rating_score_t p;
+
+
+CREATE VIEW "poll_config_selection" AS SELECT *,
+(select p1.id from poll_t p1 where p1.config_id_poll_config_selection_id = p.id) as poll_id
+FROM poll_config_selection_t p;
+
+
+CREATE VIEW "poll_config_stv_scottish" AS SELECT *,
+(select p1.id from poll_t p1 where p1.config_id_poll_config_stv_scottish_id = p.id) as poll_id
+FROM poll_config_stv_scottish_t p;
+
+
+CREATE VIEW "poll_entitled_user" AS SELECT * FROM poll_entitled_user_t p;
+
+
+CREATE VIEW "poll_option" AS SELECT * FROM poll_option_t p;
 
 
 CREATE VIEW "projection" AS SELECT * FROM projection_t p;
@@ -3347,7 +3431,8 @@ CREATE VIEW "topic" AS SELECT *,
 (select a.id from agenda_item_t a where a.content_object_id_topic_id = t.id) as agenda_item_id,
 (select l.id from list_of_speakers_t l where l.content_object_id_topic_id = t.id) as list_of_speakers_id,
 (select array_agg(p.id ORDER BY p.id) from poll_t p where p.content_object_id_topic_id = t.id) as poll_ids,
-(select array_agg(p.id ORDER BY p.id) from projection_t p where p.content_object_id_topic_id = t.id) as projection_ids
+(select array_agg(p.id ORDER BY p.id) from projection_t p where p.content_object_id_topic_id = t.id) as projection_ids,
+(select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_topic_id = t.id) as history_entry_ids
 FROM topic_t t;
 
 
@@ -3380,11 +3465,7 @@ CREATE VIEW "user" AS SELECT *,
 ,
 (select array_agg(n.committee_id ORDER BY n.committee_id) from nm_committee_manager_ids_user_t n where n.user_id = u.id) as committee_management_ids,
 (select array_agg(m.id ORDER BY m.id) from meeting_user_t m where m.user_id = u.id) as meeting_user_ids,
-(select array_agg(n.poll_id ORDER BY n.poll_id) from nm_poll_voted_ids_user_t n where n.user_id = u.id) as poll_voted_ids,
-(select array_agg(o.id ORDER BY o.id) from option_t o where o.content_object_id_user_id = u.id) as option_ids,
-(select array_agg(v.id ORDER BY v.id) from vote_t v where v.user_id = u.id) as vote_ids,
-(select array_agg(v.id ORDER BY v.id) from vote_t v where v.delegated_user_id = u.id) as delegated_vote_ids,
-(select array_agg(p.id ORDER BY p.id) from poll_candidate_t p where p.user_id = u.id) as poll_candidate_ids,
+(select array_agg(p.id ORDER BY p.id) from poll_option_t p where p.content_object_id_user_id = u.id) as poll_option_ids,
 (select array_agg(h.id ORDER BY h.id) from history_position_t h where h.user_id = u.id) as history_position_ids,
 (select array_agg(h.id ORDER BY h.id) from history_entry_t h where h.model_id_user_id = u.id) as history_entry_ids,
 (
@@ -3397,9 +3478,6 @@ FROM user_t u;
 
 comment on column "user".committee_ids is 'Calculated field: Returns committee_ids, where the user is manager or member in a meeting';
 comment on column "user".meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user.';
-
-CREATE VIEW "vote" AS SELECT * FROM vote_t v;
-
 
 
 -- Alter table relations
@@ -3446,23 +3524,17 @@ CREATE INDEX idx_committee_t_organization_id ON committee_t (organization_id);
 ALTER TABLE gender_t ADD CONSTRAINT fk_gender_t_organization_id_organization_t_id FOREIGN KEY(organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_gender_t_organization_id ON gender_t (organization_id);
 
-ALTER TABLE group_t ADD CONSTRAINT fk_group_t_used_as_motion_poll_default_id_meeting_t_id FOREIGN KEY(used_as_motion_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_group_t_used_as_motion_poll_default_id ON group_t (used_as_motion_poll_default_id);
-ALTER TABLE group_t ADD CONSTRAINT fk_group_t_used_as_assignment_poll_default_id_meeting_t_id FOREIGN KEY(used_as_assignment_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_group_t_used_as_assignment_poll_default_id ON group_t (used_as_assignment_poll_default_id);
-ALTER TABLE group_t ADD CONSTRAINT fk_group_t_used_as_topic_poll_default_id_meeting_t_id FOREIGN KEY(used_as_topic_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_group_t_used_as_topic_poll_default_id ON group_t (used_as_topic_poll_default_id);
-ALTER TABLE group_t ADD CONSTRAINT fk_group_t_used_as_poll_default_id_meeting_t_id FOREIGN KEY(used_as_poll_default_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_group_t_used_as_poll_default_id ON group_t (used_as_poll_default_id);
 ALTER TABLE group_t ADD CONSTRAINT fk_group_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_group_t_meeting_id ON group_t (meeting_id);
 
-ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_user_id_user_t_id FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_history_entry_t_model_id_user_id ON history_entry_t (model_id_user_id);
-ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_motion_id_motion_t_id FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_history_entry_t_model_id_motion_id ON history_entry_t (model_id_motion_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_assignment_id_assignment_t_id FOREIGN KEY(model_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_model_id_assignment_id ON history_entry_t (model_id_assignment_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_motion_id_motion_t_id FOREIGN KEY(model_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_motion_id ON history_entry_t (model_id_motion_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_topic_id_topic_t_id FOREIGN KEY(model_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_topic_id ON history_entry_t (model_id_topic_id);
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_user_id_user_t_id FOREIGN KEY(model_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_user_id ON history_entry_t (model_id_user_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_position_id_history_position_t_id FOREIGN KEY(position_id) REFERENCES history_position_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_history_entry_t_position_id ON history_entry_t (position_id);
 ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
@@ -3503,6 +3575,12 @@ ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_motions_default_workflow_id_mo
 CREATE INDEX idx_meeting_t_motions_default_workflow_id ON meeting_t (motions_default_workflow_id);
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_motions_default_amendment_workflow_id_motio34ae2bf FOREIGN KEY(motions_default_amendment_workflow_id) REFERENCES motion_workflow_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_t_motions_default_amendment_workflow_id ON meeting_t (motions_default_amendment_workflow_id);
+ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_assignment_poll_config_id_meeting_poll_sett903ddfc FOREIGN KEY(assignment_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_meeting_t_assignment_poll_config_id ON meeting_t (assignment_poll_config_id);
+ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_motion_poll_config_id_meeting_poll_setting_t_id FOREIGN KEY(motion_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_meeting_t_motion_poll_config_id ON meeting_t (motion_poll_config_id);
+ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_topic_poll_config_id_meeting_poll_setting_t_id FOREIGN KEY(topic_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_meeting_t_topic_poll_config_id ON meeting_t (topic_poll_config_id);
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_logo_projector_main_id_meeting_mediafile_t_id FOREIGN KEY(logo_projector_main_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_t_logo_projector_main_id ON meeting_t (logo_projector_main_id);
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_logo_projector_header_id_meeting_mediafile_t_id FOREIGN KEY(logo_projector_header_id) REFERENCES meeting_mediafile_t(id) INITIALLY DEFERRED;
@@ -3555,12 +3633,13 @@ CREATE INDEX idx_meeting_mediafile_t_mediafile_id ON meeting_mediafile_t (mediaf
 ALTER TABLE meeting_mediafile_t ADD CONSTRAINT fk_meeting_mediafile_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_mediafile_t_meeting_id ON meeting_mediafile_t (meeting_id);
 
+ALTER TABLE meeting_poll_setting_t ADD CONSTRAINT fk_meeting_poll_setting_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_meeting_poll_setting_t_meeting_id ON meeting_poll_setting_t (meeting_id);
+
 ALTER TABLE meeting_user_t ADD CONSTRAINT fk_meeting_user_t_user_id_user_t_id FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_user_t_user_id ON meeting_user_t (user_id);
 ALTER TABLE meeting_user_t ADD CONSTRAINT fk_meeting_user_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_user_t_meeting_id ON meeting_user_t (meeting_id);
-ALTER TABLE meeting_user_t ADD CONSTRAINT fk_meeting_user_t_vote_delegated_to_id_meeting_user_t_id FOREIGN KEY(vote_delegated_to_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_meeting_user_t_vote_delegated_to_id ON meeting_user_t (vote_delegated_to_id);
 
 ALTER TABLE motion_t ADD CONSTRAINT fk_motion_t_lead_motion_id_motion_t_id FOREIGN KEY(lead_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_motion_t_lead_motion_id ON motion_t (lead_motion_id);
@@ -3644,17 +3723,6 @@ CREATE INDEX idx_motion_working_group_speaker_t_motion_id ON motion_working_grou
 ALTER TABLE motion_working_group_speaker_t ADD CONSTRAINT fk_motion_working_group_speaker_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_motion_working_group_speaker_t_meeting_id ON motion_working_group_speaker_t (meeting_id);
 
-ALTER TABLE option_t ADD CONSTRAINT fk_option_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_option_t_poll_id ON option_t (poll_id);
-ALTER TABLE option_t ADD CONSTRAINT fk_option_t_content_object_id_motion_id_motion_t_id FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_option_t_content_object_id_motion_id ON option_t (content_object_id_motion_id);
-ALTER TABLE option_t ADD CONSTRAINT fk_option_t_content_object_id_user_id_user_t_id FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_option_t_content_object_id_user_id ON option_t (content_object_id_user_id);
-ALTER TABLE option_t ADD CONSTRAINT fk_option_t_content_object_id_poll_candidate_list_id_pold428251 FOREIGN KEY(content_object_id_poll_candidate_list_id) REFERENCES poll_candidate_list_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_option_t_content_object_id_poll_candidate_list_id ON option_t (content_object_id_poll_candidate_list_id);
-ALTER TABLE option_t ADD CONSTRAINT fk_option_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_option_t_meeting_id ON option_t (meeting_id);
-
 ALTER TABLE organization_t ADD CONSTRAINT fk_organization_t_theme_id_theme_t_id FOREIGN KEY(theme_id) REFERENCES theme_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_organization_t_theme_id ON organization_t (theme_id);
 
@@ -3671,26 +3739,48 @@ CREATE INDEX idx_personal_note_t_meeting_id ON personal_note_t (meeting_id);
 ALTER TABLE point_of_order_category_t ADD CONSTRAINT fk_point_of_order_category_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_point_of_order_category_t_meeting_id ON point_of_order_category_t (meeting_id);
 
+ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_approval_id_poll_config_f74c82e FOREIGN KEY(config_id_poll_config_approval_id) REFERENCES poll_config_approval_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_t_config_id_poll_config_approval_id ON poll_t (config_id_poll_config_approval_id);
+ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_selection_id_poll_config65f401f FOREIGN KEY(config_id_poll_config_selection_id) REFERENCES poll_config_selection_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_t_config_id_poll_config_selection_id ON poll_t (config_id_poll_config_selection_id);
+ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_rating_score_id_poll_conff3b6f0 FOREIGN KEY(config_id_poll_config_rating_score_id) REFERENCES poll_config_rating_score_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_t_config_id_poll_config_rating_score_id ON poll_t (config_id_poll_config_rating_score_id);
+ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_rating_approval_id_poll_6ff58a7 FOREIGN KEY(config_id_poll_config_rating_approval_id) REFERENCES poll_config_rating_approval_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_t_config_id_poll_config_rating_approval_id ON poll_t (config_id_poll_config_rating_approval_id);
+ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_stv_scottish_id_poll_con0ff7fb4 FOREIGN KEY(config_id_poll_config_stv_scottish_id) REFERENCES poll_config_stv_scottish_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_t_config_id_poll_config_stv_scottish_id ON poll_t (config_id_poll_config_stv_scottish_id);
 ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_content_object_id_motion_id_motion_t_id FOREIGN KEY(content_object_id_motion_id) REFERENCES motion_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_t_content_object_id_motion_id ON poll_t (content_object_id_motion_id);
 ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_content_object_id_assignment_id_assignment_t_id FOREIGN KEY(content_object_id_assignment_id) REFERENCES assignment_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_t_content_object_id_assignment_id ON poll_t (content_object_id_assignment_id);
 ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_content_object_id_topic_id_topic_t_id FOREIGN KEY(content_object_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_t_content_object_id_topic_id ON poll_t (content_object_id_topic_id);
-ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_global_option_id_option_t_id FOREIGN KEY(global_option_id) REFERENCES option_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_t_global_option_id ON poll_t (global_option_id);
 ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_t_meeting_id ON poll_t (meeting_id);
 
-ALTER TABLE poll_candidate_t ADD CONSTRAINT fk_poll_candidate_t_poll_candidate_list_id_poll_candidat7fec070 FOREIGN KEY(poll_candidate_list_id) REFERENCES poll_candidate_list_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_candidate_t_poll_candidate_list_id ON poll_candidate_t (poll_candidate_list_id);
-ALTER TABLE poll_candidate_t ADD CONSTRAINT fk_poll_candidate_t_user_id_user_t_id FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_candidate_t_user_id ON poll_candidate_t (user_id);
-ALTER TABLE poll_candidate_t ADD CONSTRAINT fk_poll_candidate_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_candidate_t_meeting_id ON poll_candidate_t (meeting_id);
+ALTER TABLE poll_ballot_t ADD CONSTRAINT fk_poll_ballot_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_t_poll_id ON poll_ballot_t (poll_id);
+ALTER TABLE poll_ballot_t ADD CONSTRAINT fk_poll_ballot_t_poll_ballot_user_id_poll_ballot_user_t_id FOREIGN KEY(poll_ballot_user_id) REFERENCES poll_ballot_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_t_poll_ballot_user_id ON poll_ballot_t (poll_ballot_user_id);
 
-ALTER TABLE poll_candidate_list_t ADD CONSTRAINT fk_poll_candidate_list_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_candidate_list_t_meeting_id ON poll_candidate_list_t (meeting_id);
+ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_user_t_poll_id ON poll_ballot_user_t (poll_id);
+ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_acting_meeting_user_id_meeting_user_t_id FOREIGN KEY(acting_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_user_t_acting_meeting_user_id ON poll_ballot_user_t (acting_meeting_user_id);
+ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_represented_meeting_user_id_meetin7f0c82a FOREIGN KEY(represented_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_user_t_represented_meeting_user_id ON poll_ballot_user_t (represented_meeting_user_id);
+
+ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_entitled_user_t_poll_id ON poll_entitled_user_t (poll_id);
+ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_meeting_user_id_meeting_user_t_id FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_entitled_user_t_meeting_user_id ON poll_entitled_user_t (meeting_user_id);
+
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_poll_id ON poll_option_t (poll_id);
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_meeting_user_id_meeti29ea351 FOREIGN KEY(content_object_id_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_content_object_id_meeting_user_id ON poll_option_t (content_object_id_meeting_user_id);
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_user_id_user_t_id FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_content_object_id_user_id ON poll_option_t (content_object_id_user_id);
 
 ALTER TABLE projection_t ADD CONSTRAINT fk_projection_t_current_projector_id_projector_t_id FOREIGN KEY(current_projector_id) REFERENCES projector_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_projection_t_current_projector_id ON projection_t (current_projector_id);
@@ -3749,8 +3839,8 @@ ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_used_as_default_projector_
 CREATE INDEX idx_projector_t_used_as_default_projector_for_assignment5a08584 ON projector_t (used_as_default_projector_for_assignment_poll_in_meeting_id);
 ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_used_as_default_projector_for_motion_poll5bff78e FOREIGN KEY(used_as_default_projector_for_motion_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_projector_t_used_as_default_projector_for_motion_pol0605aa8 ON projector_t (used_as_default_projector_for_motion_poll_in_meeting_id);
-ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_used_as_default_projector_for_poll_in_mee417a148 FOREIGN KEY(used_as_default_projector_for_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_projector_t_used_as_default_projector_for_poll_in_me446bdba ON projector_t (used_as_default_projector_for_poll_in_meeting_id);
+ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_used_as_default_projector_for_topic_poll_b2f5888 FOREIGN KEY(used_as_default_projector_for_topic_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_projector_t_used_as_default_projector_for_topic_pollb4f5002 ON projector_t (used_as_default_projector_for_topic_poll_in_meeting_id);
 ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_projector_t_meeting_id ON projector_t (meeting_id);
 
@@ -3796,15 +3886,6 @@ ALTER TABLE user_t ADD CONSTRAINT fk_user_t_home_committee_id_committee_t_id FOR
 CREATE INDEX idx_user_t_home_committee_id ON user_t (home_committee_id);
 ALTER TABLE user_t ADD CONSTRAINT fk_user_t_organization_id_organization_t_id FOREIGN KEY(organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_user_t_organization_id ON user_t (organization_id);
-
-ALTER TABLE vote_t ADD CONSTRAINT fk_vote_t_option_id_option_t_id FOREIGN KEY(option_id) REFERENCES option_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_vote_t_option_id ON vote_t (option_id);
-ALTER TABLE vote_t ADD CONSTRAINT fk_vote_t_user_id_user_t_id FOREIGN KEY(user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_vote_t_user_id ON vote_t (user_id);
-ALTER TABLE vote_t ADD CONSTRAINT fk_vote_t_delegated_user_id_user_t_id FOREIGN KEY(delegated_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_vote_t_delegated_user_id ON vote_t (delegated_user_id);
-ALTER TABLE vote_t ADD CONSTRAINT fk_vote_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_vote_t_meeting_id ON vote_t (meeting_id);
 
 
 
@@ -3887,12 +3968,44 @@ CREATE CONSTRAINT TRIGGER tr_ud_not_null_motion_block_list_of_speakers_id AFTER 
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('motion_block', 'list_of_speakers_id', 'list_of_speakers', 'content_object_id_motion_block_id');
 
 
--- definition trigger not null for poll_candidate_list.option_id against option.content_object_id_poll_candidate_list_id
-CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_candidate_list_option_id AFTER INSERT ON poll_candidate_list_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_candidate_list', 'option_id');
+-- definition trigger not null for poll_config_approval.poll_id against poll.config_id_poll_config_approval_id
+CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_config_approval_poll_id AFTER INSERT ON poll_config_approval_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_approval', 'poll_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_candidate_list_option_id AFTER UPDATE OF content_object_id_poll_candidate_list_id OR DELETE ON option_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_candidate_list', 'option_id', 'option', 'content_object_id_poll_candidate_list_id');
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_approval_poll_id AFTER UPDATE OF config_id_poll_config_approval_id OR DELETE ON poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_approval', 'poll_id', 'poll', 'config_id_poll_config_approval_id');
+
+
+-- definition trigger not null for poll_config_rating_approval.poll_id against poll.config_id_poll_config_rating_approval_id
+CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_config_rating_approval_poll_id AFTER INSERT ON poll_config_rating_approval_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_approval', 'poll_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_rating_approval_poll_id AFTER UPDATE OF config_id_poll_config_rating_approval_id OR DELETE ON poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_approval', 'poll_id', 'poll', 'config_id_poll_config_rating_approval_id');
+
+
+-- definition trigger not null for poll_config_rating_score.poll_id against poll.config_id_poll_config_rating_score_id
+CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_config_rating_score_poll_id AFTER INSERT ON poll_config_rating_score_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_score', 'poll_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_rating_score_poll_id AFTER UPDATE OF config_id_poll_config_rating_score_id OR DELETE ON poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_score', 'poll_id', 'poll', 'config_id_poll_config_rating_score_id');
+
+
+-- definition trigger not null for poll_config_selection.poll_id against poll.config_id_poll_config_selection_id
+CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_config_selection_poll_id AFTER INSERT ON poll_config_selection_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_selection', 'poll_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_selection_poll_id AFTER UPDATE OF config_id_poll_config_selection_id OR DELETE ON poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_selection', 'poll_id', 'poll', 'config_id_poll_config_selection_id');
+
+
+-- definition trigger not null for poll_config_stv_scottish.poll_id against poll.config_id_poll_config_stv_scottish_id
+CREATE CONSTRAINT TRIGGER tr_i_not_null_poll_config_stv_scottish_poll_id AFTER INSERT ON poll_config_stv_scottish_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_stv_scottish', 'poll_id');
+
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_stv_scottish_poll_id AFTER UPDATE OF config_id_poll_config_stv_scottish_id OR DELETE ON poll_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_stv_scottish', 'poll_id', 'poll', 'config_id_poll_config_stv_scottish_id');
 
 
 -- definition trigger not null for topic.agenda_item_id against agenda_item.content_object_id_topic_id
@@ -4017,12 +4130,12 @@ CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_motion_poll_i
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_motion_poll_ids', 'projector_t', 'used_as_default_projector_for_motion_poll_in_meeting_id');
 
 
--- definition trigger not null for meeting.default_projector_poll_ids against projector.used_as_default_projector_for_poll_in_meeting_id
-CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_poll_ids', 'projector_t', 'used_as_default_projector_for_poll_in_meeting_id');
+-- definition trigger not null for meeting.default_projector_topic_poll_ids against projector.used_as_default_projector_for_topic_poll_in_meeting_id
+CREATE CONSTRAINT TRIGGER tr_i_not_null_meeting_default_projector_topic_poll_ids AFTER INSERT ON meeting_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_topic_poll_ids', 'projector_t', 'used_as_default_projector_for_topic_poll_in_meeting_id');
 
-CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_poll_ids AFTER UPDATE OF used_as_default_projector_for_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_poll_ids', 'projector_t', 'used_as_default_projector_for_poll_in_meeting_id');
+CREATE CONSTRAINT TRIGGER tr_ud_not_null_meeting_default_projector_topic_poll_ids AFTER UPDATE OF used_as_default_projector_for_topic_poll_in_meeting_id OR DELETE ON projector_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_n('meeting_t', 'default_projector_topic_poll_ids', 'projector_t', 'used_as_default_projector_for_topic_poll_in_meeting_id');
 
 
 
@@ -4148,6 +4261,11 @@ CREATE TRIGGER tr_constant_meeting_mediafile_meeting_id BEFORE UPDATE OF meeting
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('meeting_mediafile', 'meeting_id');
 
 
+-- definition trigger prevent_updates for meeting_poll_setting.meeting_id
+CREATE TRIGGER tr_constant_meeting_poll_setting_meeting_id BEFORE UPDATE OF meeting_id ON meeting_poll_setting_t
+FOR EACH ROW EXECUTE FUNCTION prevent_updates('meeting_poll_setting', 'meeting_id');
+
+
 -- definition trigger prevent_updates for meeting_user.user_id
 CREATE TRIGGER tr_constant_meeting_user_user_id BEFORE UPDATE OF user_id ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('meeting_user', 'user_id');
@@ -4265,15 +4383,6 @@ CREATE TRIGGER tr_constant_motion_working_group_speaker_meeting_id BEFORE UPDATE
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('motion_working_group_speaker', 'meeting_id');
 
 
--- definition trigger prevent_updates for option.poll_id
-CREATE TRIGGER tr_constant_option_poll_id BEFORE UPDATE OF poll_id ON option_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('option', 'poll_id');
-
--- definition trigger prevent_updates for option.meeting_id
-CREATE TRIGGER tr_constant_option_meeting_id BEFORE UPDATE OF meeting_id ON option_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('option', 'meeting_id');
-
-
 -- definition trigger prevent_updates for organization_tag.organization_id
 CREATE TRIGGER tr_constant_organization_tag_organization_id BEFORE UPDATE OF organization_id ON organization_tag_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('organization_tag', 'organization_id');
@@ -4310,18 +4419,18 @@ CREATE TRIGGER tr_constant_poll_meeting_id BEFORE UPDATE OF meeting_id ON poll_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll', 'meeting_id');
 
 
--- definition trigger prevent_updates for poll_candidate.poll_candidate_list_id
-CREATE TRIGGER tr_constant_poll_candidate_poll_candidate_list_id BEFORE UPDATE OF poll_candidate_list_id ON poll_candidate_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_candidate', 'poll_candidate_list_id');
+-- definition trigger prevent_updates for poll_ballot.weight
+CREATE TRIGGER tr_constant_poll_ballot_weight BEFORE UPDATE OF weight ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'weight');
 
--- definition trigger prevent_updates for poll_candidate.meeting_id
-CREATE TRIGGER tr_constant_poll_candidate_meeting_id BEFORE UPDATE OF meeting_id ON poll_candidate_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_candidate', 'meeting_id');
+-- definition trigger prevent_updates for poll_ballot.poll_id
+CREATE TRIGGER tr_constant_poll_ballot_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'poll_id');
 
 
--- definition trigger prevent_updates for poll_candidate_list.meeting_id
-CREATE TRIGGER tr_constant_poll_candidate_list_meeting_id BEFORE UPDATE OF meeting_id ON poll_candidate_list_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_candidate_list', 'meeting_id');
+-- definition trigger prevent_updates for poll_ballot_user.poll_id
+CREATE TRIGGER tr_constant_poll_ballot_user_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_user_t
+FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot_user', 'poll_id');
 
 
 -- definition trigger prevent_updates for projection.content_object_id
@@ -4395,23 +4504,6 @@ CREATE TRIGGER tr_constant_user_organization_id BEFORE UPDATE OF organization_id
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('user', 'organization_id');
 
 
--- definition trigger prevent_updates for vote.value
-CREATE TRIGGER tr_constant_vote_value BEFORE UPDATE OF value ON vote_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('vote', 'value');
-
--- definition trigger prevent_updates for vote.user_token
-CREATE TRIGGER tr_constant_vote_user_token BEFORE UPDATE OF user_token ON vote_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('vote', 'user_token');
-
--- definition trigger prevent_updates for vote.option_id
-CREATE TRIGGER tr_constant_vote_option_id BEFORE UPDATE OF option_id ON vote_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('vote', 'option_id');
-
--- definition trigger prevent_updates for vote.meeting_id
-CREATE TRIGGER tr_constant_vote_meeting_id BEFORE UPDATE OF meeting_id ON vote_t
-FOR EACH ROW EXECUTE FUNCTION prevent_updates('vote', 'meeting_id');
-
-
 
 -- Create triggers preventing mirrored duplicates in fields referencing themselves
 
@@ -4423,1698 +4515,1457 @@ FOR EACH ROW EXECUTE FUNCTION check_unique_ids_pair('identical_motion_id');
 
 
 -- Create triggers for notify
--- notify triggers for action_worker_t fields
 CREATE TRIGGER tr_log_action_worker AFTER INSERT OR UPDATE OR DELETE ON action_worker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('action_worker');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON action_worker_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for agenda_item_t fields
 CREATE TRIGGER tr_log_agenda_item AFTER INSERT OR UPDATE OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('agenda_item');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON agenda_item_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify trigger for agenda_item_t.content_object_id_motion_id
 CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id','agenda_item_id');
 
--- notify trigger for agenda_item_t.content_object_id_motion_block_id
 CREATE TRIGGER tr_log_motion_block_content_object_id_motion_block_id AFTER INSERT OR UPDATE OF content_object_id_motion_block_id OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_block','content_object_id_motion_block_id','agenda_item_id');
 
--- notify trigger for agenda_item_t.content_object_id_assignment_id
 CREATE TRIGGER tr_log_assignment_content_object_id_assignment_id AFTER INSERT OR UPDATE OF content_object_id_assignment_id OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','content_object_id_assignment_id','agenda_item_id');
 
--- notify trigger for agenda_item_t.content_object_id_topic_id
 CREATE TRIGGER tr_log_topic_content_object_id_topic_id AFTER INSERT OR UPDATE OF content_object_id_topic_id OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','content_object_id_topic_id','agenda_item_id');
--- notify trigger for agenda_item_t.parent_id
-CREATE TRIGGER tr_log_agenda_item_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON agenda_item_t
+CREATE TRIGGER tr_log_agenda_item_t_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('agenda_item', 'parent_id', 'child_ids');
--- notify trigger for agenda_item_t.meeting_id
-CREATE TRIGGER tr_log_agenda_item_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON agenda_item_t
+CREATE TRIGGER tr_log_agenda_item_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON agenda_item_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'agenda_item_ids');
 
--- notify triggers for assignment_t fields
 CREATE TRIGGER tr_log_assignment AFTER INSERT OR UPDATE OR DELETE ON assignment_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('assignment');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON assignment_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for assignment_t.meeting_id
-CREATE TRIGGER tr_log_assignment_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON assignment_t
+CREATE TRIGGER tr_log_assignment_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON assignment_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'assignment_ids');
 
--- notify triggers for assignment_candidate_t fields
 CREATE TRIGGER tr_log_assignment_candidate AFTER INSERT OR UPDATE OR DELETE ON assignment_candidate_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('assignment_candidate');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON assignment_candidate_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for assignment_candidate_t.assignment_id
-CREATE TRIGGER tr_log_assignment_candidate_assignment_id AFTER INSERT OR UPDATE OF assignment_id OR DELETE ON assignment_candidate_t
+CREATE TRIGGER tr_log_assignment_candidate_t_assignment_id AFTER INSERT OR UPDATE OF assignment_id OR DELETE ON assignment_candidate_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment', 'assignment_id', 'candidate_ids');
--- notify trigger for assignment_candidate_t.meeting_user_id
-CREATE TRIGGER tr_log_assignment_candidate_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON assignment_candidate_t
+CREATE TRIGGER tr_log_assignment_candidate_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON assignment_candidate_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'assignment_candidate_ids');
--- notify trigger for assignment_candidate_t.meeting_id
-CREATE TRIGGER tr_log_assignment_candidate_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON assignment_candidate_t
+CREATE TRIGGER tr_log_assignment_candidate_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON assignment_candidate_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'assignment_candidate_ids');
 
--- notify triggers for chat_group_t fields
 CREATE TRIGGER tr_log_chat_group AFTER INSERT OR UPDATE OR DELETE ON chat_group_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('chat_group');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON chat_group_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify triggers for chat_group.read_group_ids and group.read_chat_group_ids
-CREATE TRIGGER tr_log_nm_chat_group_read_group_ids_group AFTER INSERT OR UPDATE OR DELETE ON nm_chat_group_read_group_ids_group_t
+CREATE TRIGGER tr_log_nm_chat_group_read_group_ids_group_t AFTER INSERT OR UPDATE OR DELETE ON nm_chat_group_read_group_ids_group_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('chat_group','chat_group_id','read_group_ids','group','group_id','read_chat_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_chat_group_read_group_ids_group_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for chat_group.write_group_ids and group.write_chat_group_ids
-CREATE TRIGGER tr_log_nm_chat_group_write_group_ids_group AFTER INSERT OR UPDATE OR DELETE ON nm_chat_group_write_group_ids_group_t
+CREATE TRIGGER tr_log_nm_chat_group_write_group_ids_group_t AFTER INSERT OR UPDATE OR DELETE ON nm_chat_group_write_group_ids_group_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('chat_group','chat_group_id','write_group_ids','group','group_id','write_chat_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_chat_group_write_group_ids_group_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for chat_group_t.meeting_id
-CREATE TRIGGER tr_log_chat_group_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON chat_group_t
+CREATE TRIGGER tr_log_chat_group_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON chat_group_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'chat_group_ids');
 
--- notify triggers for chat_message_t fields
 CREATE TRIGGER tr_log_chat_message AFTER INSERT OR UPDATE OR DELETE ON chat_message_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('chat_message');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON chat_message_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for chat_message_t.meeting_user_id
-CREATE TRIGGER tr_log_chat_message_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON chat_message_t
+CREATE TRIGGER tr_log_chat_message_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON chat_message_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'chat_message_ids');
--- notify trigger for chat_message_t.chat_group_id
-CREATE TRIGGER tr_log_chat_message_chat_group_id AFTER INSERT OR UPDATE OF chat_group_id OR DELETE ON chat_message_t
+CREATE TRIGGER tr_log_chat_message_t_chat_group_id AFTER INSERT OR UPDATE OF chat_group_id OR DELETE ON chat_message_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('chat_group', 'chat_group_id', 'chat_message_ids');
--- notify trigger for chat_message_t.meeting_id
-CREATE TRIGGER tr_log_chat_message_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON chat_message_t
+CREATE TRIGGER tr_log_chat_message_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON chat_message_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'chat_message_ids');
 
--- notify triggers for committee_t fields
 CREATE TRIGGER tr_log_committee AFTER INSERT OR UPDATE OR DELETE ON committee_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('committee');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON committee_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for committee_t.default_meeting_id
-CREATE TRIGGER tr_log_committee_default_meeting_id AFTER INSERT OR UPDATE OF default_meeting_id OR DELETE ON committee_t
+CREATE TRIGGER tr_log_committee_t_default_meeting_id AFTER INSERT OR UPDATE OF default_meeting_id OR DELETE ON committee_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'default_meeting_id', 'default_meeting_for_committee_id');
 
-CREATE TRIGGER tr_log_i_committee_user_ids_from_meeting_user BEFORE INSERT ON meeting_user_t
-FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('committee', '', 'SELECT committee_id AS id FROM meeting_t WHERE id = ($1).meeting_id', 'user_ids', 'user_id', '');
-CREATE TRIGGER tr_log_d_committee_user_ids_from_meeting_user AFTER DELETE ON meeting_user_t
-FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('committee', '', 'SELECT committee_id AS id FROM meeting_t WHERE id = ($1).meeting_id', 'user_ids', 'user_id', '');
-CREATE TRIGGER tr_log_i_committee_user_ids_from_meeting BEFORE INSERT ON meeting_t
-FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('committee', 'committee_id', '', 'user_ids', '', 'SELECT user_id AS id FROM meeting_user_t WHERE meeting_id = ($1).id');
-CREATE TRIGGER tr_log_d_committee_user_ids_from_meeting AFTER DELETE ON meeting_t
-FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('committee', 'committee_id', '', 'user_ids', '', 'SELECT user_id AS id FROM meeting_user_t WHERE meeting_id = ($1).id');
-CREATE TRIGGER tr_log_i_committee_user_ids_from_nm_committee_manager_ids_user BEFORE INSERT ON nm_committee_manager_ids_user_t
+CREATE TRIGGER tr_log_i_committee_user_ids_from_meeting_user_t BEFORE INSERT ON meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('committee', '', 'SELECT committee_id FROM meeting_t WHERE id = ($1).meeting_id', 'user_ids', 'user_id', '');
+CREATE TRIGGER tr_log_d_committee_user_ids_from_meeting_user_t AFTER DELETE ON meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('committee', '', 'SELECT committee_id FROM meeting_t WHERE id = ($1).meeting_id', 'user_ids', 'user_id', '');
+CREATE TRIGGER tr_log_i_committee_user_ids_from_nm_committee_manager_idd4a2a53 BEFORE INSERT ON nm_committee_manager_ids_user_t
 FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('committee', 'committee_id', '', 'user_ids', 'user_id', '');
-CREATE TRIGGER tr_log_d_committee_user_ids_from_nm_committee_manager_ids_user AFTER DELETE ON nm_committee_manager_ids_user_t
+CREATE TRIGGER tr_log_d_committee_user_ids_from_nm_committee_manager_id82dfd00 AFTER DELETE ON nm_committee_manager_ids_user_t
 FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('committee', 'committee_id', '', 'user_ids', 'user_id', '');
-CREATE TRIGGER tr_log_iu_committee_user_ids_from_user BEFORE INSERT OR UPDATE OF home_committee_id ON user_t
+CREATE TRIGGER tr_log_iu_committee_user_ids_from_user_t BEFORE INSERT OR UPDATE OF home_committee_id ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('committee', 'home_committee_id', '', 'user_ids', 'id', '');
-CREATE TRIGGER tr_log_ud_committee_user_ids_from_user AFTER UPDATE OF home_committee_id OR DELETE ON user_t
+CREATE TRIGGER tr_log_ud_committee_user_ids_from_user_t AFTER UPDATE OF home_committee_id OR DELETE ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('committee', 'home_committee_id', '', 'user_ids', 'id', '');
 
 
--- notify triggers for committee.manager_ids and user.committee_management_ids
-CREATE TRIGGER tr_log_nm_committee_manager_ids_user AFTER INSERT OR UPDATE OR DELETE ON nm_committee_manager_ids_user_t
+CREATE TRIGGER tr_log_nm_committee_manager_ids_user_t AFTER INSERT OR UPDATE OR DELETE ON nm_committee_manager_ids_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('committee','committee_id','manager_ids','user','user_id','committee_management_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_committee_manager_ids_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for committee_t.parent_id
-CREATE TRIGGER tr_log_committee_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON committee_t
+CREATE TRIGGER tr_log_committee_t_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON committee_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('committee', 'parent_id', 'child_ids');
 
--- notify triggers for committee.all_child_ids and committee.all_parent_ids
-CREATE TRIGGER tr_log_nm_committee_all_child_ids_committee AFTER INSERT OR UPDATE OR DELETE ON nm_committee_all_child_ids_committee_t
+CREATE TRIGGER tr_log_nm_committee_all_child_ids_committee_t AFTER INSERT OR UPDATE OR DELETE ON nm_committee_all_child_ids_committee_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('committee','all_parent_id','all_child_ids','committee','all_child_id','all_parent_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_committee_all_child_ids_committee_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for committee.forward_to_committee_ids and committee.receive_forwardings_from_committee_ids
-CREATE TRIGGER tr_log_nm_committee_forward_to_committee_ids_committee AFTER INSERT OR UPDATE OR DELETE ON nm_committee_forward_to_committee_ids_committee_t
+CREATE TRIGGER tr_log_nm_committee_forward_to_committee_ids_committee_t AFTER INSERT OR UPDATE OR DELETE ON nm_committee_forward_to_committee_ids_committee_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('committee','receive_forwardings_from_committee_id','forward_to_committee_ids','committee','forward_to_committee_id','receive_forwardings_from_committee_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_committee_forward_to_committee_ids_committee_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for committee_t.organization_id
-CREATE TRIGGER tr_log_committee_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON committee_t
+CREATE TRIGGER tr_log_committee_t_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON committee_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'organization_id', 'committee_ids');
 
--- notify triggers for gender_t fields
 CREATE TRIGGER tr_log_gender AFTER INSERT OR UPDATE OR DELETE ON gender_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('gender');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gender_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for gender_t.organization_id
-CREATE TRIGGER tr_log_gender_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON gender_t
+CREATE TRIGGER tr_log_gender_t_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON gender_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'organization_id', 'gender_ids');
 
--- notify triggers for group_t fields
 CREATE TRIGGER tr_log_group AFTER INSERT OR UPDATE OR DELETE ON group_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('group');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON group_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify triggers for group.meeting_user_ids and meeting_user.group_ids
-CREATE TRIGGER tr_log_nm_group_meeting_user_ids_meeting_user AFTER INSERT OR UPDATE OR DELETE ON nm_group_meeting_user_ids_meeting_user_t
+CREATE TRIGGER tr_log_nm_group_meeting_user_ids_meeting_user_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_meeting_user_ids_meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','meeting_user_ids','meeting_user','meeting_user_id','group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_meeting_user_ids_meeting_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for group.meeting_mediafile_access_group_ids and meeting_mediafile.access_group_ids
-CREATE TRIGGER tr_log_nm_group_mmagi_meeting_mediafile AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmagi_meeting_mediafile_t
+CREATE TRIGGER tr_log_nm_group_mmagi_meeting_mediafile_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmagi_meeting_mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','meeting_mediafile_access_group_ids','meeting_mediafile','meeting_mediafile_id','access_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmagi_meeting_mediafile_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for group.meeting_mediafile_inherited_access_group_ids and meeting_mediafile.inherited_access_group_ids
-CREATE TRIGGER tr_log_nm_group_mmiagi_meeting_mediafile AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmiagi_meeting_mediafile_t
+CREATE TRIGGER tr_log_nm_group_mmiagi_meeting_mediafile_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmiagi_meeting_mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','meeting_mediafile_inherited_access_group_ids','meeting_mediafile','meeting_mediafile_id','inherited_access_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_mmiagi_meeting_mediafile_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for group.read_comment_section_ids and motion_comment_section.read_group_ids
-CREATE TRIGGER tr_log_nm_group_read_comment_section_ids_motion_comment_section AFTER INSERT OR UPDATE OR DELETE ON nm_group_read_comment_section_ids_motion_comment_section_t
+CREATE TRIGGER tr_log_nm_group_read_comment_section_ids_motion_comment_6e42c77 AFTER INSERT OR UPDATE OR DELETE ON nm_group_read_comment_section_ids_motion_comment_section_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','read_comment_section_ids','motion_comment_section','motion_comment_section_id','read_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_read_comment_section_ids_motion_comment_section_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for group.write_comment_section_ids and motion_comment_section.write_group_ids
-CREATE TRIGGER tr_log_nm_group_write_comment_section_ids_motion_commentdcf31ae AFTER INSERT OR UPDATE OR DELETE ON nm_group_write_comment_section_ids_motion_comment_section_t
+CREATE TRIGGER tr_log_nm_group_write_comment_section_ids_motion_commentb627a2e AFTER INSERT OR UPDATE OR DELETE ON nm_group_write_comment_section_ids_motion_comment_section_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','write_comment_section_ids','motion_comment_section','motion_comment_section_id','write_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_write_comment_section_ids_motion_comment_section_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for group.poll_ids and poll.entitled_group_ids
-CREATE TRIGGER tr_log_nm_group_poll_ids_poll AFTER INSERT OR UPDATE OR DELETE ON nm_group_poll_ids_poll_t
+CREATE TRIGGER tr_log_nm_group_poll_ids_poll_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_poll_ids_poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','poll_ids','poll','poll_id','entitled_group_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_poll_ids_poll_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for group_t.used_as_motion_poll_default_id
-CREATE TRIGGER tr_log_group_used_as_motion_poll_default_id AFTER INSERT OR UPDATE OF used_as_motion_poll_default_id OR DELETE ON group_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_motion_poll_default_id', 'motion_poll_default_group_ids');
--- notify trigger for group_t.used_as_assignment_poll_default_id
-CREATE TRIGGER tr_log_group_used_as_assignment_poll_default_id AFTER INSERT OR UPDATE OF used_as_assignment_poll_default_id OR DELETE ON group_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_assignment_poll_default_id', 'assignment_poll_default_group_ids');
--- notify trigger for group_t.used_as_topic_poll_default_id
-CREATE TRIGGER tr_log_group_used_as_topic_poll_default_id AFTER INSERT OR UPDATE OF used_as_topic_poll_default_id OR DELETE ON group_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_topic_poll_default_id', 'topic_poll_default_group_ids');
--- notify trigger for group_t.used_as_poll_default_id
-CREATE TRIGGER tr_log_group_used_as_poll_default_id AFTER INSERT OR UPDATE OF used_as_poll_default_id OR DELETE ON group_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_poll_default_id', 'poll_default_group_ids');
--- notify trigger for group_t.meeting_id
-CREATE TRIGGER tr_log_group_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON group_t
+
+CREATE TRIGGER tr_log_nm_group_uimpsi_meeting_poll_setting_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_uimpsi_meeting_poll_setting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','used_in_meeting_poll_setting_ids','meeting_poll_setting','meeting_poll_setting_id','group_ids');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_uimpsi_meeting_poll_setting_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+CREATE TRIGGER tr_log_group_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON group_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'group_ids');
 
--- notify triggers for history_entry_t fields
 CREATE TRIGGER tr_log_history_entry AFTER INSERT OR UPDATE OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('history_entry');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON history_entry_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify trigger for history_entry_t.model_id_user_id
-CREATE TRIGGER tr_log_user_model_id_user_id AFTER INSERT OR UPDATE OF model_id_user_id OR DELETE ON history_entry_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_id','history_entry_ids');
+CREATE TRIGGER tr_log_assignment_model_id_assignment_id AFTER INSERT OR UPDATE OF model_id_assignment_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','model_id_assignment_id','history_entry_ids');
 
--- notify trigger for history_entry_t.model_id_motion_id
 CREATE TRIGGER tr_log_motion_model_id_motion_id AFTER INSERT OR UPDATE OF model_id_motion_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','model_id_motion_id','history_entry_ids');
 
--- notify trigger for history_entry_t.model_id_assignment_id
-CREATE TRIGGER tr_log_assignment_model_id_assignment_id AFTER INSERT OR UPDATE OF model_id_assignment_id OR DELETE ON history_entry_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','model_id_assignment_id','history_entry_ids');
--- notify trigger for history_entry_t.position_id
-CREATE TRIGGER tr_log_history_entry_position_id AFTER INSERT OR UPDATE OF position_id OR DELETE ON history_entry_t
+CREATE TRIGGER tr_log_topic_model_id_topic_id AFTER INSERT OR UPDATE OF model_id_topic_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','model_id_topic_id','history_entry_ids');
+
+CREATE TRIGGER tr_log_user_model_id_user_id AFTER INSERT OR UPDATE OF model_id_user_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_id','history_entry_ids');
+CREATE TRIGGER tr_log_history_entry_t_position_id AFTER INSERT OR UPDATE OF position_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('history_position', 'position_id', 'entry_ids');
--- notify trigger for history_entry_t.meeting_id
-CREATE TRIGGER tr_log_history_entry_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON history_entry_t
+CREATE TRIGGER tr_log_history_entry_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON history_entry_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'relevant_history_entry_ids');
 
--- notify triggers for history_position_t fields
 CREATE TRIGGER tr_log_history_position AFTER INSERT OR UPDATE OR DELETE ON history_position_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('history_position');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON history_position_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for history_position_t.user_id
-CREATE TRIGGER tr_log_history_position_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON history_position_t
+CREATE TRIGGER tr_log_history_position_t_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON history_position_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'user_id', 'history_position_ids');
 
--- notify triggers for import_preview_t fields
 CREATE TRIGGER tr_log_import_preview AFTER INSERT OR UPDATE OR DELETE ON import_preview_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('import_preview');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON import_preview_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for list_of_speakers_t fields
 CREATE TRIGGER tr_log_list_of_speakers AFTER INSERT OR UPDATE OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('list_of_speakers');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON list_of_speakers_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify trigger for list_of_speakers_t.content_object_id_motion_id
 CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id','list_of_speakers_id');
 
--- notify trigger for list_of_speakers_t.content_object_id_motion_block_id
 CREATE TRIGGER tr_log_motion_block_content_object_id_motion_block_id AFTER INSERT OR UPDATE OF content_object_id_motion_block_id OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_block','content_object_id_motion_block_id','list_of_speakers_id');
 
--- notify trigger for list_of_speakers_t.content_object_id_assignment_id
 CREATE TRIGGER tr_log_assignment_content_object_id_assignment_id AFTER INSERT OR UPDATE OF content_object_id_assignment_id OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','content_object_id_assignment_id','list_of_speakers_id');
 
--- notify trigger for list_of_speakers_t.content_object_id_topic_id
 CREATE TRIGGER tr_log_topic_content_object_id_topic_id AFTER INSERT OR UPDATE OF content_object_id_topic_id OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','content_object_id_topic_id','list_of_speakers_id');
 
--- notify trigger for list_of_speakers_t.content_object_id_meeting_mediafile_id
 CREATE TRIGGER tr_log_meeting_mediafile_content_object_id_meeting_mediafile_id AFTER INSERT OR UPDATE OF content_object_id_meeting_mediafile_id OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','content_object_id_meeting_mediafile_id','list_of_speakers_id');
--- notify trigger for list_of_speakers_t.meeting_id
-CREATE TRIGGER tr_log_list_of_speakers_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON list_of_speakers_t
+CREATE TRIGGER tr_log_list_of_speakers_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'list_of_speakers_ids');
 
--- notify triggers for mediafile_t fields
 CREATE TRIGGER tr_log_mediafile AFTER INSERT OR UPDATE OR DELETE ON mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('mediafile');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON mediafile_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for mediafile_t.published_to_meetings_in_organization_id
-CREATE TRIGGER tr_log_mediafile_published_to_meetings_in_organization_id AFTER INSERT OR UPDATE OF published_to_meetings_in_organization_id OR DELETE ON mediafile_t
+CREATE TRIGGER tr_log_mediafile_t_published_to_meetings_in_organization_id AFTER INSERT OR UPDATE OF published_to_meetings_in_organization_id OR DELETE ON mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'published_to_meetings_in_organization_id', 'published_mediafile_ids');
--- notify trigger for mediafile_t.parent_id
-CREATE TRIGGER tr_log_mediafile_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON mediafile_t
+CREATE TRIGGER tr_log_mediafile_t_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('mediafile', 'parent_id', 'child_ids');
 
--- notify trigger for mediafile_t.owner_id_meeting_id
 CREATE TRIGGER tr_log_meeting_owner_id_meeting_id AFTER INSERT OR UPDATE OF owner_id_meeting_id OR DELETE ON mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting','owner_id_meeting_id','mediafile_ids');
 
--- notify trigger for mediafile_t.owner_id_organization_id
 CREATE TRIGGER tr_log_organization_owner_id_organization_id AFTER INSERT OR UPDATE OF owner_id_organization_id OR DELETE ON mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization','owner_id_organization_id','mediafile_ids');
 
--- notify triggers for meeting_t fields
 CREATE TRIGGER tr_log_meeting AFTER INSERT OR UPDATE OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('meeting');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON meeting_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for meeting_t.is_active_in_organization_id
-CREATE TRIGGER tr_log_meeting_is_active_in_organization_id AFTER INSERT OR UPDATE OF is_active_in_organization_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_is_active_in_organization_id AFTER INSERT OR UPDATE OF is_active_in_organization_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'is_active_in_organization_id', 'active_meeting_ids');
--- notify trigger for meeting_t.is_archived_in_organization_id
-CREATE TRIGGER tr_log_meeting_is_archived_in_organization_id AFTER INSERT OR UPDATE OF is_archived_in_organization_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_is_archived_in_organization_id AFTER INSERT OR UPDATE OF is_archived_in_organization_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'is_archived_in_organization_id', 'archived_meeting_ids');
--- notify trigger for meeting_t.template_for_organization_id
-CREATE TRIGGER tr_log_meeting_template_for_organization_id AFTER INSERT OR UPDATE OF template_for_organization_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_template_for_organization_id AFTER INSERT OR UPDATE OF template_for_organization_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'template_for_organization_id', 'template_meeting_ids');
--- notify trigger for meeting_t.motions_default_workflow_id
-CREATE TRIGGER tr_log_meeting_motions_default_workflow_id AFTER INSERT OR UPDATE OF motions_default_workflow_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_motions_default_workflow_id AFTER INSERT OR UPDATE OF motions_default_workflow_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_workflow', 'motions_default_workflow_id', 'default_workflow_meeting_id');
--- notify trigger for meeting_t.motions_default_amendment_workflow_id
-CREATE TRIGGER tr_log_meeting_motions_default_amendment_workflow_id AFTER INSERT OR UPDATE OF motions_default_amendment_workflow_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_motions_default_amendment_workflow_id AFTER INSERT OR UPDATE OF motions_default_amendment_workflow_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_workflow', 'motions_default_amendment_workflow_id', 'default_amendment_workflow_meeting_id');
--- notify trigger for meeting_t.logo_projector_main_id
-CREATE TRIGGER tr_log_meeting_logo_projector_main_id AFTER INSERT OR UPDATE OF logo_projector_main_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_assignment_poll_config_id AFTER INSERT OR UPDATE OF assignment_poll_config_id OR DELETE ON meeting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_poll_setting', 'assignment_poll_config_id', 'used_as_assignment_poll_config_in_meeting_id');
+CREATE TRIGGER tr_log_meeting_t_motion_poll_config_id AFTER INSERT OR UPDATE OF motion_poll_config_id OR DELETE ON meeting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_poll_setting', 'motion_poll_config_id', 'used_as_motion_poll_config_in_meeting_id');
+CREATE TRIGGER tr_log_meeting_t_topic_poll_config_id AFTER INSERT OR UPDATE OF topic_poll_config_id OR DELETE ON meeting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_poll_setting', 'topic_poll_config_id', 'used_as_topic_poll_config_in_meeting_id');
+CREATE TRIGGER tr_log_meeting_t_logo_projector_main_id AFTER INSERT OR UPDATE OF logo_projector_main_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_projector_main_id', 'used_as_logo_projector_main_in_meeting_id');
--- notify trigger for meeting_t.logo_projector_header_id
-CREATE TRIGGER tr_log_meeting_logo_projector_header_id AFTER INSERT OR UPDATE OF logo_projector_header_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_projector_header_id AFTER INSERT OR UPDATE OF logo_projector_header_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_projector_header_id', 'used_as_logo_projector_header_in_meeting_id');
--- notify trigger for meeting_t.logo_web_header_id
-CREATE TRIGGER tr_log_meeting_logo_web_header_id AFTER INSERT OR UPDATE OF logo_web_header_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_web_header_id AFTER INSERT OR UPDATE OF logo_web_header_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_web_header_id', 'used_as_logo_web_header_in_meeting_id');
--- notify trigger for meeting_t.logo_pdf_header_l_id
-CREATE TRIGGER tr_log_meeting_logo_pdf_header_l_id AFTER INSERT OR UPDATE OF logo_pdf_header_l_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_pdf_header_l_id AFTER INSERT OR UPDATE OF logo_pdf_header_l_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_pdf_header_l_id', 'used_as_logo_pdf_header_l_in_meeting_id');
--- notify trigger for meeting_t.logo_pdf_header_r_id
-CREATE TRIGGER tr_log_meeting_logo_pdf_header_r_id AFTER INSERT OR UPDATE OF logo_pdf_header_r_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_pdf_header_r_id AFTER INSERT OR UPDATE OF logo_pdf_header_r_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_pdf_header_r_id', 'used_as_logo_pdf_header_r_in_meeting_id');
--- notify trigger for meeting_t.logo_pdf_footer_l_id
-CREATE TRIGGER tr_log_meeting_logo_pdf_footer_l_id AFTER INSERT OR UPDATE OF logo_pdf_footer_l_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_pdf_footer_l_id AFTER INSERT OR UPDATE OF logo_pdf_footer_l_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_pdf_footer_l_id', 'used_as_logo_pdf_footer_l_in_meeting_id');
--- notify trigger for meeting_t.logo_pdf_footer_r_id
-CREATE TRIGGER tr_log_meeting_logo_pdf_footer_r_id AFTER INSERT OR UPDATE OF logo_pdf_footer_r_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_pdf_footer_r_id AFTER INSERT OR UPDATE OF logo_pdf_footer_r_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_pdf_footer_r_id', 'used_as_logo_pdf_footer_r_in_meeting_id');
--- notify trigger for meeting_t.logo_pdf_ballot_paper_id
-CREATE TRIGGER tr_log_meeting_logo_pdf_ballot_paper_id AFTER INSERT OR UPDATE OF logo_pdf_ballot_paper_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_logo_pdf_ballot_paper_id AFTER INSERT OR UPDATE OF logo_pdf_ballot_paper_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'logo_pdf_ballot_paper_id', 'used_as_logo_pdf_ballot_paper_in_meeting_id');
--- notify trigger for meeting_t.font_regular_id
-CREATE TRIGGER tr_log_meeting_font_regular_id AFTER INSERT OR UPDATE OF font_regular_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_regular_id AFTER INSERT OR UPDATE OF font_regular_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_regular_id', 'used_as_font_regular_in_meeting_id');
--- notify trigger for meeting_t.font_italic_id
-CREATE TRIGGER tr_log_meeting_font_italic_id AFTER INSERT OR UPDATE OF font_italic_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_italic_id AFTER INSERT OR UPDATE OF font_italic_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_italic_id', 'used_as_font_italic_in_meeting_id');
--- notify trigger for meeting_t.font_bold_id
-CREATE TRIGGER tr_log_meeting_font_bold_id AFTER INSERT OR UPDATE OF font_bold_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_bold_id AFTER INSERT OR UPDATE OF font_bold_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_bold_id', 'used_as_font_bold_in_meeting_id');
--- notify trigger for meeting_t.font_bold_italic_id
-CREATE TRIGGER tr_log_meeting_font_bold_italic_id AFTER INSERT OR UPDATE OF font_bold_italic_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_bold_italic_id AFTER INSERT OR UPDATE OF font_bold_italic_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_bold_italic_id', 'used_as_font_bold_italic_in_meeting_id');
--- notify trigger for meeting_t.font_monospace_id
-CREATE TRIGGER tr_log_meeting_font_monospace_id AFTER INSERT OR UPDATE OF font_monospace_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_monospace_id AFTER INSERT OR UPDATE OF font_monospace_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_monospace_id', 'used_as_font_monospace_in_meeting_id');
--- notify trigger for meeting_t.font_chyron_speaker_name_id
-CREATE TRIGGER tr_log_meeting_font_chyron_speaker_name_id AFTER INSERT OR UPDATE OF font_chyron_speaker_name_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_chyron_speaker_name_id AFTER INSERT OR UPDATE OF font_chyron_speaker_name_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_chyron_speaker_name_id', 'used_as_font_chyron_speaker_name_in_meeting_id');
--- notify trigger for meeting_t.font_projector_h1_id
-CREATE TRIGGER tr_log_meeting_font_projector_h1_id AFTER INSERT OR UPDATE OF font_projector_h1_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_projector_h1_id AFTER INSERT OR UPDATE OF font_projector_h1_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_projector_h1_id', 'used_as_font_projector_h1_in_meeting_id');
--- notify trigger for meeting_t.font_projector_h2_id
-CREATE TRIGGER tr_log_meeting_font_projector_h2_id AFTER INSERT OR UPDATE OF font_projector_h2_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_font_projector_h2_id AFTER INSERT OR UPDATE OF font_projector_h2_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile', 'font_projector_h2_id', 'used_as_font_projector_h2_in_meeting_id');
--- notify trigger for meeting_t.committee_id
-CREATE TRIGGER tr_log_meeting_committee_id AFTER INSERT OR UPDATE OF committee_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_committee_id AFTER INSERT OR UPDATE OF committee_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('committee', 'committee_id', 'meeting_ids');
 
--- notify triggers for meeting.present_user_ids and user.is_present_in_meeting_ids
-CREATE TRIGGER tr_log_nm_meeting_present_user_ids_user AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_present_user_ids_user_t
+CREATE TRIGGER tr_log_nm_meeting_present_user_ids_user_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_present_user_ids_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting','meeting_id','present_user_ids','user','user_id','is_present_in_meeting_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_present_user_ids_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
-CREATE TRIGGER tr_log_i_meeting_user_ids_from_meeting_user BEFORE INSERT ON meeting_user_t
+CREATE TRIGGER tr_log_i_meeting_user_ids_from_meeting_user_t BEFORE INSERT ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('meeting', 'meeting_id', '', 'user_ids', 'user_id', '');
-CREATE TRIGGER tr_log_d_meeting_user_ids_from_meeting_user AFTER DELETE ON meeting_user_t
+CREATE TRIGGER tr_log_d_meeting_user_ids_from_meeting_user_t AFTER DELETE ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('meeting', 'meeting_id', '', 'user_ids', 'user_id', '');
 
--- notify trigger for meeting_t.reference_projector_id
-CREATE TRIGGER tr_log_meeting_reference_projector_id AFTER INSERT OR UPDATE OF reference_projector_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_reference_projector_id AFTER INSERT OR UPDATE OF reference_projector_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector', 'reference_projector_id', 'used_as_reference_projector_meeting_id');
--- notify trigger for meeting_t.list_of_speakers_countdown_id
-CREATE TRIGGER tr_log_meeting_list_of_speakers_countdown_id AFTER INSERT OR UPDATE OF list_of_speakers_countdown_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_list_of_speakers_countdown_id AFTER INSERT OR UPDATE OF list_of_speakers_countdown_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector_countdown', 'list_of_speakers_countdown_id', 'used_as_list_of_speakers_countdown_meeting_id');
--- notify trigger for meeting_t.poll_countdown_id
-CREATE TRIGGER tr_log_meeting_poll_countdown_id AFTER INSERT OR UPDATE OF poll_countdown_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_poll_countdown_id AFTER INSERT OR UPDATE OF poll_countdown_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector_countdown', 'poll_countdown_id', 'used_as_poll_countdown_meeting_id');
--- notify trigger for meeting_t.default_group_id
-CREATE TRIGGER tr_log_meeting_default_group_id AFTER INSERT OR UPDATE OF default_group_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_default_group_id AFTER INSERT OR UPDATE OF default_group_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group', 'default_group_id', 'default_group_for_meeting_id');
--- notify trigger for meeting_t.admin_group_id
-CREATE TRIGGER tr_log_meeting_admin_group_id AFTER INSERT OR UPDATE OF admin_group_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_admin_group_id AFTER INSERT OR UPDATE OF admin_group_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group', 'admin_group_id', 'admin_group_for_meeting_id');
--- notify trigger for meeting_t.anonymous_group_id
-CREATE TRIGGER tr_log_meeting_anonymous_group_id AFTER INSERT OR UPDATE OF anonymous_group_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_t_anonymous_group_id AFTER INSERT OR UPDATE OF anonymous_group_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group', 'anonymous_group_id', 'anonymous_group_for_meeting_id');
 
--- notify triggers for meeting_mediafile_t fields
 CREATE TRIGGER tr_log_meeting_mediafile AFTER INSERT OR UPDATE OR DELETE ON meeting_mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('meeting_mediafile');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON meeting_mediafile_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for meeting_mediafile_t.mediafile_id
-CREATE TRIGGER tr_log_meeting_mediafile_mediafile_id AFTER INSERT OR UPDATE OF mediafile_id OR DELETE ON meeting_mediafile_t
+CREATE TRIGGER tr_log_meeting_mediafile_t_mediafile_id AFTER INSERT OR UPDATE OF mediafile_id OR DELETE ON meeting_mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('mediafile', 'mediafile_id', 'meeting_mediafile_ids');
--- notify trigger for meeting_mediafile_t.meeting_id
-CREATE TRIGGER tr_log_meeting_mediafile_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_mediafile_t
+CREATE TRIGGER tr_log_meeting_mediafile_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_mediafile_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'meeting_mediafile_ids');
 
--- notify triggers for meeting_mediafile.attachment_ids fields
-CREATE TRIGGER tr_log_attachment_id_motion_id_gm_meeting_mediafile_attaa8f9299 AFTER INSERT OR UPDATE OF attachment_id_motion_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
+CREATE TRIGGER tr_log_attachment_id_motion_id_gm_meeting_mediafile_atta25df47a AFTER INSERT OR UPDATE OF attachment_id_motion_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','meeting_mediafile_id','attachment_ids','motion','attachment_id_motion_id','attachment_meeting_mediafile_ids');
 
--- notify triggers for meeting_mediafile.attachment_ids fields
-CREATE TRIGGER tr_log_attachment_id_topic_id_gm_meeting_mediafile_attac1ca79c1 AFTER INSERT OR UPDATE OF attachment_id_topic_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
+CREATE TRIGGER tr_log_attachment_id_topic_id_gm_meeting_mediafile_attac4e93703 AFTER INSERT OR UPDATE OF attachment_id_topic_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','meeting_mediafile_id','attachment_ids','topic','attachment_id_topic_id','attachment_meeting_mediafile_ids');
 
--- notify triggers for meeting_mediafile.attachment_ids fields
-CREATE TRIGGER tr_log_attachment_id_assignment_id_gm_meeting_mediafile_1ce3a19 AFTER INSERT OR UPDATE OF attachment_id_assignment_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
+CREATE TRIGGER tr_log_attachment_id_assignment_id_gm_meeting_mediafile_2f214fd AFTER INSERT OR UPDATE OF attachment_id_assignment_id OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','meeting_mediafile_id','attachment_ids','assignment','attachment_id_assignment_id','attachment_meeting_mediafile_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_meeting_mediafile_attachment_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for meeting_user_t fields
+CREATE TRIGGER tr_log_meeting_poll_setting AFTER INSERT OR UPDATE OR DELETE ON meeting_poll_setting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('meeting_poll_setting');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON meeting_poll_setting_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_meeting_poll_setting_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_poll_setting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_setting_ids');
+
 CREATE TRIGGER tr_log_meeting_user AFTER INSERT OR UPDATE OR DELETE ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('meeting_user');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON meeting_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for meeting_user_t.user_id
-CREATE TRIGGER tr_log_meeting_user_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON meeting_user_t
+CREATE TRIGGER tr_log_meeting_user_t_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'user_id', 'meeting_user_ids');
--- notify trigger for meeting_user_t.meeting_id
-CREATE TRIGGER tr_log_meeting_user_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_user_t
+CREATE TRIGGER tr_log_meeting_user_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'meeting_user_ids');
--- notify trigger for meeting_user_t.vote_delegated_to_id
-CREATE TRIGGER tr_log_meeting_user_vote_delegated_to_id AFTER INSERT OR UPDATE OF vote_delegated_to_id OR DELETE ON meeting_user_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'vote_delegated_to_id', 'vote_delegations_from_ids');
 
--- notify triggers for meeting_user.structure_level_ids and structure_level.meeting_user_ids
-CREATE TRIGGER tr_log_nm_meeting_user_structure_level_ids_structure_level AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_structure_level_ids_structure_level_t
+CREATE TRIGGER tr_log_nm_meeting_user_vote_delegated_to_ids_meeting_user_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','vote_delegations_from_id','vote_delegated_to_ids','meeting_user','vote_delegated_to_id','vote_delegations_from_ids');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_nm_meeting_user_structure_level_ids_structure_level_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_structure_level_ids_structure_level_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','meeting_user_id','structure_level_ids','structure_level','structure_level_id','meeting_user_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_structure_level_ids_structure_level_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for motion_t fields
 CREATE TRIGGER tr_log_motion AFTER INSERT OR UPDATE OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_t.lead_motion_id
-CREATE TRIGGER tr_log_motion_lead_motion_id AFTER INSERT OR UPDATE OF lead_motion_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_lead_motion_id AFTER INSERT OR UPDATE OF lead_motion_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'lead_motion_id', 'amendment_ids');
--- notify trigger for motion_t.sort_parent_id
-CREATE TRIGGER tr_log_motion_sort_parent_id AFTER INSERT OR UPDATE OF sort_parent_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_sort_parent_id AFTER INSERT OR UPDATE OF sort_parent_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'sort_parent_id', 'sort_child_ids');
--- notify trigger for motion_t.origin_id
-CREATE TRIGGER tr_log_motion_origin_id AFTER INSERT OR UPDATE OF origin_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_origin_id AFTER INSERT OR UPDATE OF origin_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'origin_id', 'derived_motion_ids');
--- notify trigger for motion_t.origin_meeting_id
-CREATE TRIGGER tr_log_motion_origin_meeting_id AFTER INSERT OR UPDATE OF origin_meeting_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_origin_meeting_id AFTER INSERT OR UPDATE OF origin_meeting_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'origin_meeting_id', 'forwarded_motion_ids');
 
--- notify triggers for motion.all_derived_motion_ids and motion.all_origin_ids
-CREATE TRIGGER tr_log_nm_motion_all_derived_motion_ids_motion AFTER INSERT OR UPDATE OR DELETE ON nm_motion_all_derived_motion_ids_motion_t
+CREATE TRIGGER tr_log_nm_motion_all_derived_motion_ids_motion_t AFTER INSERT OR UPDATE OR DELETE ON nm_motion_all_derived_motion_ids_motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','all_origin_id','all_derived_motion_ids','motion','all_derived_motion_id','all_origin_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_motion_all_derived_motion_ids_motion_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for motion.identical_motion_ids and motion.identical_motion_ids
-CREATE TRIGGER tr_log_nm_motion_identical_motion_ids_motion AFTER INSERT OR UPDATE OR DELETE ON nm_motion_identical_motion_ids_motion_t
+CREATE TRIGGER tr_log_nm_motion_identical_motion_ids_motion_t AFTER INSERT OR UPDATE OR DELETE ON nm_motion_identical_motion_ids_motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','identical_motion_id_1','identical_motion_ids','motion','identical_motion_id_2','identical_motion_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_motion_identical_motion_ids_motion_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for motion_t.state_id
-CREATE TRIGGER tr_log_motion_state_id AFTER INSERT OR UPDATE OF state_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_state_id AFTER INSERT OR UPDATE OF state_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state', 'state_id', 'motion_ids');
--- notify trigger for motion_t.recommendation_id
-CREATE TRIGGER tr_log_motion_recommendation_id AFTER INSERT OR UPDATE OF recommendation_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_recommendation_id AFTER INSERT OR UPDATE OF recommendation_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state', 'recommendation_id', 'motion_recommendation_ids');
 
--- notify triggers for motion.state_extension_reference_ids fields
-CREATE TRIGGER tr_log_state_extension_reference_id_motion_id_gm_motion_fce7e87 AFTER INSERT OR UPDATE OF state_extension_reference_id_motion_id OR DELETE ON gm_motion_state_extension_reference_ids_t
+CREATE TRIGGER tr_log_state_extension_reference_id_motion_id_gm_motion_2720cdc AFTER INSERT OR UPDATE OF state_extension_reference_id_motion_id OR DELETE ON gm_motion_state_extension_reference_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','motion_id','state_extension_reference_ids','motion','state_extension_reference_id_motion_id','referenced_in_motion_state_extension_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_motion_state_extension_reference_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for motion.recommendation_extension_reference_ids fields
-CREATE TRIGGER tr_log_recommendation_extension_reference_id_motion_id_g94b886e AFTER INSERT OR UPDATE OF recommendation_extension_reference_id_motion_id OR DELETE ON gm_motion_recommendation_extension_reference_ids_t
+CREATE TRIGGER tr_log_recommendation_extension_reference_id_motion_id_g047b2db AFTER INSERT OR UPDATE OF recommendation_extension_reference_id_motion_id OR DELETE ON gm_motion_recommendation_extension_reference_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','motion_id','recommendation_extension_reference_ids','motion','recommendation_extension_reference_id_motion_id','referenced_in_motion_recommendation_extension_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_motion_recommendation_extension_reference_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for motion_t.category_id
-CREATE TRIGGER tr_log_motion_category_id AFTER INSERT OR UPDATE OF category_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_category_id AFTER INSERT OR UPDATE OF category_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_category', 'category_id', 'motion_ids');
--- notify trigger for motion_t.block_id
-CREATE TRIGGER tr_log_motion_block_id AFTER INSERT OR UPDATE OF block_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_block_id AFTER INSERT OR UPDATE OF block_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_block', 'block_id', 'motion_ids');
--- notify trigger for motion_t.meeting_id
-CREATE TRIGGER tr_log_motion_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_t
+CREATE TRIGGER tr_log_motion_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_ids');
 
--- notify triggers for motion_block_t fields
 CREATE TRIGGER tr_log_motion_block AFTER INSERT OR UPDATE OR DELETE ON motion_block_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_block');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_block_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_block_t.meeting_id
-CREATE TRIGGER tr_log_motion_block_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_block_t
+CREATE TRIGGER tr_log_motion_block_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_block_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_block_ids');
 
--- notify triggers for motion_category_t fields
 CREATE TRIGGER tr_log_motion_category AFTER INSERT OR UPDATE OR DELETE ON motion_category_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_category');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_category_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_category_t.parent_id
-CREATE TRIGGER tr_log_motion_category_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON motion_category_t
+CREATE TRIGGER tr_log_motion_category_t_parent_id AFTER INSERT OR UPDATE OF parent_id OR DELETE ON motion_category_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_category', 'parent_id', 'child_ids');
--- notify trigger for motion_category_t.meeting_id
-CREATE TRIGGER tr_log_motion_category_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_category_t
+CREATE TRIGGER tr_log_motion_category_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_category_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_category_ids');
 
--- notify triggers for motion_change_recommendation_t fields
 CREATE TRIGGER tr_log_motion_change_recommendation AFTER INSERT OR UPDATE OR DELETE ON motion_change_recommendation_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_change_recommendation');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_change_recommendation_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_change_recommendation_t.motion_id
-CREATE TRIGGER tr_log_motion_change_recommendation_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_change_recommendation_t
+CREATE TRIGGER tr_log_motion_change_recommendation_t_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_change_recommendation_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'motion_id', 'change_recommendation_ids');
--- notify trigger for motion_change_recommendation_t.meeting_id
-CREATE TRIGGER tr_log_motion_change_recommendation_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_change_recommendation_t
+CREATE TRIGGER tr_log_motion_change_recommendation_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_change_recommendation_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_change_recommendation_ids');
 
--- notify triggers for motion_comment_t fields
 CREATE TRIGGER tr_log_motion_comment AFTER INSERT OR UPDATE OR DELETE ON motion_comment_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_comment');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_comment_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_comment_t.motion_id
-CREATE TRIGGER tr_log_motion_comment_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_comment_t
+CREATE TRIGGER tr_log_motion_comment_t_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_comment_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'motion_id', 'comment_ids');
--- notify trigger for motion_comment_t.section_id
-CREATE TRIGGER tr_log_motion_comment_section_id AFTER INSERT OR UPDATE OF section_id OR DELETE ON motion_comment_t
+CREATE TRIGGER tr_log_motion_comment_t_section_id AFTER INSERT OR UPDATE OF section_id OR DELETE ON motion_comment_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_comment_section', 'section_id', 'comment_ids');
--- notify trigger for motion_comment_t.meeting_id
-CREATE TRIGGER tr_log_motion_comment_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_comment_t
+CREATE TRIGGER tr_log_motion_comment_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_comment_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_comment_ids');
 
--- notify triggers for motion_comment_section_t fields
 CREATE TRIGGER tr_log_motion_comment_section AFTER INSERT OR UPDATE OR DELETE ON motion_comment_section_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_comment_section');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_comment_section_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_comment_section_t.meeting_id
-CREATE TRIGGER tr_log_motion_comment_section_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_comment_section_t
+CREATE TRIGGER tr_log_motion_comment_section_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_comment_section_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_comment_section_ids');
 
--- notify triggers for motion_editor_t fields
 CREATE TRIGGER tr_log_motion_editor AFTER INSERT OR UPDATE OR DELETE ON motion_editor_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_editor');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_editor_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_editor_t.meeting_user_id
-CREATE TRIGGER tr_log_motion_editor_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_editor_t
+CREATE TRIGGER tr_log_motion_editor_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_editor_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'motion_editor_ids');
--- notify trigger for motion_editor_t.motion_id
-CREATE TRIGGER tr_log_motion_editor_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_editor_t
+CREATE TRIGGER tr_log_motion_editor_t_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_editor_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'motion_id', 'editor_ids');
--- notify trigger for motion_editor_t.meeting_id
-CREATE TRIGGER tr_log_motion_editor_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_editor_t
+CREATE TRIGGER tr_log_motion_editor_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_editor_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_editor_ids');
 
--- notify triggers for motion_state_t fields
 CREATE TRIGGER tr_log_motion_state AFTER INSERT OR UPDATE OR DELETE ON motion_state_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_state');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_state_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_state_t.submitter_withdraw_state_id
-CREATE TRIGGER tr_log_motion_state_submitter_withdraw_state_id AFTER INSERT OR UPDATE OF submitter_withdraw_state_id OR DELETE ON motion_state_t
+CREATE TRIGGER tr_log_motion_state_t_submitter_withdraw_state_id AFTER INSERT OR UPDATE OF submitter_withdraw_state_id OR DELETE ON motion_state_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state', 'submitter_withdraw_state_id', 'submitter_withdraw_back_ids');
 
--- notify triggers for motion_state.next_state_ids and motion_state.previous_state_ids
-CREATE TRIGGER tr_log_nm_motion_state_next_state_ids_motion_state AFTER INSERT OR UPDATE OR DELETE ON nm_motion_state_next_state_ids_motion_state_t
+CREATE TRIGGER tr_log_nm_motion_state_next_state_ids_motion_state_t AFTER INSERT OR UPDATE OR DELETE ON nm_motion_state_next_state_ids_motion_state_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state','previous_state_id','next_state_ids','motion_state','next_state_id','previous_state_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_motion_state_next_state_ids_motion_state_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for motion_state_t.workflow_id
-CREATE TRIGGER tr_log_motion_state_workflow_id AFTER INSERT OR UPDATE OF workflow_id OR DELETE ON motion_state_t
+CREATE TRIGGER tr_log_motion_state_t_workflow_id AFTER INSERT OR UPDATE OF workflow_id OR DELETE ON motion_state_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_workflow', 'workflow_id', 'state_ids');
--- notify trigger for motion_state_t.meeting_id
-CREATE TRIGGER tr_log_motion_state_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_state_t
+CREATE TRIGGER tr_log_motion_state_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_state_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_state_ids');
 
--- notify triggers for motion_submitter_t fields
 CREATE TRIGGER tr_log_motion_submitter AFTER INSERT OR UPDATE OR DELETE ON motion_submitter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_submitter');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_submitter_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_submitter_t.meeting_user_id
-CREATE TRIGGER tr_log_motion_submitter_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_submitter_t
+CREATE TRIGGER tr_log_motion_submitter_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_submitter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'motion_submitter_ids');
--- notify trigger for motion_submitter_t.motion_id
-CREATE TRIGGER tr_log_motion_submitter_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_submitter_t
+CREATE TRIGGER tr_log_motion_submitter_t_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_submitter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'motion_id', 'submitter_ids');
--- notify trigger for motion_submitter_t.meeting_id
-CREATE TRIGGER tr_log_motion_submitter_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_submitter_t
+CREATE TRIGGER tr_log_motion_submitter_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_submitter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_submitter_ids');
 
--- notify triggers for motion_supporter_t fields
 CREATE TRIGGER tr_log_motion_supporter AFTER INSERT OR UPDATE OR DELETE ON motion_supporter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_supporter');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_supporter_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_supporter_t.meeting_user_id
-CREATE TRIGGER tr_log_motion_supporter_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_supporter_t
+CREATE TRIGGER tr_log_motion_supporter_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_supporter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'motion_supporter_ids');
--- notify trigger for motion_supporter_t.motion_id
-CREATE TRIGGER tr_log_motion_supporter_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_supporter_t
+CREATE TRIGGER tr_log_motion_supporter_t_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_supporter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'motion_id', 'supporter_ids');
--- notify trigger for motion_supporter_t.meeting_id
-CREATE TRIGGER tr_log_motion_supporter_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_supporter_t
+CREATE TRIGGER tr_log_motion_supporter_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_supporter_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_supporter_ids');
 
--- notify triggers for motion_workflow_t fields
 CREATE TRIGGER tr_log_motion_workflow AFTER INSERT OR UPDATE OR DELETE ON motion_workflow_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_workflow');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_workflow_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_workflow_t.first_state_id
-CREATE TRIGGER tr_log_motion_workflow_first_state_id AFTER INSERT OR UPDATE OF first_state_id OR DELETE ON motion_workflow_t
+CREATE TRIGGER tr_log_motion_workflow_t_first_state_id AFTER INSERT OR UPDATE OF first_state_id OR DELETE ON motion_workflow_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_state', 'first_state_id', 'first_state_of_workflow_id');
--- notify trigger for motion_workflow_t.meeting_id
-CREATE TRIGGER tr_log_motion_workflow_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_workflow_t
+CREATE TRIGGER tr_log_motion_workflow_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_workflow_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_workflow_ids');
 
--- notify triggers for motion_working_group_speaker_t fields
 CREATE TRIGGER tr_log_motion_working_group_speaker AFTER INSERT OR UPDATE OR DELETE ON motion_working_group_speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('motion_working_group_speaker');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON motion_working_group_speaker_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for motion_working_group_speaker_t.meeting_user_id
-CREATE TRIGGER tr_log_motion_working_group_speaker_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_working_group_speaker_t
+CREATE TRIGGER tr_log_motion_working_group_speaker_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON motion_working_group_speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'motion_working_group_speaker_ids');
--- notify trigger for motion_working_group_speaker_t.motion_id
-CREATE TRIGGER tr_log_motion_working_group_speaker_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_working_group_speaker_t
+CREATE TRIGGER tr_log_motion_working_group_speaker_t_motion_id AFTER INSERT OR UPDATE OF motion_id OR DELETE ON motion_working_group_speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion', 'motion_id', 'working_group_speaker_ids');
--- notify trigger for motion_working_group_speaker_t.meeting_id
-CREATE TRIGGER tr_log_motion_working_group_speaker_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_working_group_speaker_t
+CREATE TRIGGER tr_log_motion_working_group_speaker_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON motion_working_group_speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'motion_working_group_speaker_ids');
 
--- notify triggers for option_t fields
-CREATE TRIGGER tr_log_option AFTER INSERT OR UPDATE OR DELETE ON option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_models('option');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON option_t
-DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
-
--- notify trigger for option_t.poll_id
-CREATE TRIGGER tr_log_option_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'option_ids');
-
--- notify trigger for option_t.content_object_id_motion_id
-CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id','option_ids');
-
--- notify trigger for option_t.content_object_id_user_id
-CREATE TRIGGER tr_log_user_content_object_id_user_id AFTER INSERT OR UPDATE OF content_object_id_user_id OR DELETE ON option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','content_object_id_user_id','option_ids');
-
--- notify trigger for option_t.content_object_id_poll_candidate_list_id
-CREATE TRIGGER tr_log_poll_candidate_list_content_object_id_poll_candidc235209 AFTER INSERT OR UPDATE OF content_object_id_poll_candidate_list_id OR DELETE ON option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_candidate_list','content_object_id_poll_candidate_list_id','option_id');
--- notify trigger for option_t.meeting_id
-CREATE TRIGGER tr_log_option_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'option_ids');
-
--- notify triggers for organization_t fields
 CREATE TRIGGER tr_log_organization AFTER INSERT OR UPDATE OR DELETE ON organization_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('organization');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON organization_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for organization_t.theme_id
-CREATE TRIGGER tr_log_organization_theme_id AFTER INSERT OR UPDATE OF theme_id OR DELETE ON organization_t
+CREATE TRIGGER tr_log_organization_t_theme_id AFTER INSERT OR UPDATE OF theme_id OR DELETE ON organization_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('theme', 'theme_id', 'theme_for_organization_id');
 
--- notify triggers for organization_tag_t fields
 CREATE TRIGGER tr_log_organization_tag AFTER INSERT OR UPDATE OR DELETE ON organization_tag_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('organization_tag');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON organization_tag_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify triggers for organization_tag.tagged_ids fields
-CREATE TRIGGER tr_log_tagged_id_committee_id_gm_organization_tag_tagged_ids AFTER INSERT OR UPDATE OF tagged_id_committee_id OR DELETE ON gm_organization_tag_tagged_ids_t
+CREATE TRIGGER tr_log_tagged_id_committee_id_gm_organization_tag_tagged_ids_t AFTER INSERT OR UPDATE OF tagged_id_committee_id OR DELETE ON gm_organization_tag_tagged_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization_tag','organization_tag_id','tagged_ids','committee','tagged_id_committee_id','organization_tag_ids');
 
--- notify triggers for organization_tag.tagged_ids fields
-CREATE TRIGGER tr_log_tagged_id_meeting_id_gm_organization_tag_tagged_ids AFTER INSERT OR UPDATE OF tagged_id_meeting_id OR DELETE ON gm_organization_tag_tagged_ids_t
+CREATE TRIGGER tr_log_tagged_id_meeting_id_gm_organization_tag_tagged_ids_t AFTER INSERT OR UPDATE OF tagged_id_meeting_id OR DELETE ON gm_organization_tag_tagged_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization_tag','organization_tag_id','tagged_ids','meeting','tagged_id_meeting_id','organization_tag_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_organization_tag_tagged_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for organization_tag_t.organization_id
-CREATE TRIGGER tr_log_organization_tag_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON organization_tag_t
+CREATE TRIGGER tr_log_organization_tag_t_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON organization_tag_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'organization_id', 'organization_tag_ids');
 
--- notify triggers for personal_note_t fields
 CREATE TRIGGER tr_log_personal_note AFTER INSERT OR UPDATE OR DELETE ON personal_note_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('personal_note');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON personal_note_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for personal_note_t.meeting_user_id
-CREATE TRIGGER tr_log_personal_note_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON personal_note_t
+CREATE TRIGGER tr_log_personal_note_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON personal_note_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'personal_note_ids');
 
--- notify trigger for personal_note_t.content_object_id_motion_id
 CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON personal_note_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id','personal_note_ids');
--- notify trigger for personal_note_t.meeting_id
-CREATE TRIGGER tr_log_personal_note_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON personal_note_t
+CREATE TRIGGER tr_log_personal_note_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON personal_note_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'personal_note_ids');
 
--- notify triggers for point_of_order_category_t fields
 CREATE TRIGGER tr_log_point_of_order_category AFTER INSERT OR UPDATE OR DELETE ON point_of_order_category_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('point_of_order_category');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON point_of_order_category_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for point_of_order_category_t.meeting_id
-CREATE TRIGGER tr_log_point_of_order_category_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON point_of_order_category_t
+CREATE TRIGGER tr_log_point_of_order_category_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON point_of_order_category_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'point_of_order_category_ids');
 
--- notify triggers for poll_t fields
 CREATE TRIGGER tr_log_poll AFTER INSERT OR UPDATE OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify trigger for poll_t.content_object_id_motion_id
+CREATE TRIGGER tr_log_poll_config_approval_config_id_poll_config_approval_id AFTER INSERT OR UPDATE OF config_id_poll_config_approval_id OR DELETE ON poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_approval','config_id_poll_config_approval_id','poll_id');
+
+CREATE TRIGGER tr_log_poll_config_selection_config_id_poll_config_selection_id AFTER INSERT OR UPDATE OF config_id_poll_config_selection_id OR DELETE ON poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_selection','config_id_poll_config_selection_id','poll_id');
+
+CREATE TRIGGER tr_log_poll_config_rating_score_config_id_poll_config_raf40fad3 AFTER INSERT OR UPDATE OF config_id_poll_config_rating_score_id OR DELETE ON poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_rating_score','config_id_poll_config_rating_score_id','poll_id');
+
+CREATE TRIGGER tr_log_poll_config_rating_approval_config_id_poll_config405bbee AFTER INSERT OR UPDATE OF config_id_poll_config_rating_approval_id OR DELETE ON poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_rating_approval','config_id_poll_config_rating_approval_id','poll_id');
+
+CREATE TRIGGER tr_log_poll_config_stv_scottish_config_id_poll_config_st0701463 AFTER INSERT OR UPDATE OF config_id_poll_config_stv_scottish_id OR DELETE ON poll_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_stv_scottish','config_id_poll_config_stv_scottish_id','poll_id');
+
 CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id','poll_ids');
 
--- notify trigger for poll_t.content_object_id_assignment_id
 CREATE TRIGGER tr_log_assignment_content_object_id_assignment_id AFTER INSERT OR UPDATE OF content_object_id_assignment_id OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','content_object_id_assignment_id','poll_ids');
 
--- notify trigger for poll_t.content_object_id_topic_id
 CREATE TRIGGER tr_log_topic_content_object_id_topic_id AFTER INSERT OR UPDATE OF content_object_id_topic_id OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','content_object_id_topic_id','poll_ids');
--- notify trigger for poll_t.global_option_id
-CREATE TRIGGER tr_log_poll_global_option_id AFTER INSERT OR UPDATE OF global_option_id OR DELETE ON poll_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('option', 'global_option_id', 'used_as_global_option_in_poll_id');
-
--- notify triggers for poll.voted_ids and user.poll_voted_ids
-CREATE TRIGGER tr_log_nm_poll_voted_ids_user AFTER INSERT OR UPDATE OR DELETE ON nm_poll_voted_ids_user_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll','poll_id','voted_ids','user','user_id','poll_voted_ids');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_poll_voted_ids_user_t
-DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for poll_t.meeting_id
-CREATE TRIGGER tr_log_poll_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON poll_t
+CREATE TRIGGER tr_log_poll_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON poll_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_ids');
 
--- notify triggers for poll_candidate_t fields
-CREATE TRIGGER tr_log_poll_candidate AFTER INSERT OR UPDATE OR DELETE ON poll_candidate_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_candidate');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_candidate_t
+CREATE TRIGGER tr_log_poll_ballot AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_ballot');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for poll_candidate_t.poll_candidate_list_id
-CREATE TRIGGER tr_log_poll_candidate_poll_candidate_list_id AFTER INSERT OR UPDATE OF poll_candidate_list_id OR DELETE ON poll_candidate_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_candidate_list', 'poll_candidate_list_id', 'poll_candidate_ids');
--- notify trigger for poll_candidate_t.user_id
-CREATE TRIGGER tr_log_poll_candidate_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON poll_candidate_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'user_id', 'poll_candidate_ids');
--- notify trigger for poll_candidate_t.meeting_id
-CREATE TRIGGER tr_log_poll_candidate_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON poll_candidate_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_candidate_ids');
+CREATE TRIGGER tr_log_poll_ballot_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_ids');
+CREATE TRIGGER tr_log_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id OR DELETE ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_ballot_user', 'poll_ballot_user_id', 'poll_ballot_id');
 
--- notify triggers for poll_candidate_list_t fields
-CREATE TRIGGER tr_log_poll_candidate_list AFTER INSERT OR UPDATE OR DELETE ON poll_candidate_list_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_candidate_list');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_candidate_list_t
+CREATE TRIGGER tr_log_poll_ballot_user AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_ballot_user');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for poll_candidate_list_t.meeting_id
-CREATE TRIGGER tr_log_poll_candidate_list_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON poll_candidate_list_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_candidate_list_ids');
+CREATE TRIGGER tr_log_poll_ballot_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_user_ids');
+CREATE TRIGGER tr_log_poll_ballot_user_t_acting_meeting_user_id AFTER INSERT OR UPDATE OF acting_meeting_user_id OR DELETE ON poll_ballot_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'acting_meeting_user_id', 'acting_ballot_ids');
+CREATE TRIGGER tr_log_poll_ballot_user_t_represented_meeting_user_id AFTER INSERT OR UPDATE OF represented_meeting_user_id OR DELETE ON poll_ballot_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'represented_meeting_user_id', 'represented_ballot_ids');
 
--- notify triggers for projection_t fields
+CREATE TRIGGER tr_log_poll_config_approval AFTER INSERT OR UPDATE OR DELETE ON poll_config_approval_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_approval');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_approval_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_config_rating_approval AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_approval_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_rating_approval');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_approval_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_config_rating_score AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_score_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_rating_score');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_score_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_config_selection AFTER INSERT OR UPDATE OR DELETE ON poll_config_selection_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_selection');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_selection_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_config_stv_scottish AFTER INSERT OR UPDATE OR DELETE ON poll_config_stv_scottish_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_stv_scottish');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_stv_scottish_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_entitled_user AFTER INSERT OR UPDATE OR DELETE ON poll_entitled_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_entitled_user');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_entitled_user_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_entitled_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_entitled_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'entitled_user_ids');
+CREATE TRIGGER tr_log_poll_entitled_user_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_entitled_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'poll_entitled_user_ids');
+
+CREATE TRIGGER tr_log_poll_option AFTER INSERT OR UPDATE OR DELETE ON poll_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_option');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_option_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
+CREATE TRIGGER tr_log_poll_option_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'option_ids');
+
+CREATE TRIGGER tr_log_meeting_user_content_object_id_meeting_user_id AFTER INSERT OR UPDATE OF content_object_id_meeting_user_id OR DELETE ON poll_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','content_object_id_meeting_user_id','poll_option_ids');
+
+CREATE TRIGGER tr_log_user_content_object_id_user_id AFTER INSERT OR UPDATE OF content_object_id_user_id OR DELETE ON poll_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','content_object_id_user_id','poll_option_ids');
+
 CREATE TRIGGER tr_log_projection AFTER INSERT OR UPDATE OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('projection');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON projection_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for projection_t.current_projector_id
-CREATE TRIGGER tr_log_projection_current_projector_id AFTER INSERT OR UPDATE OF current_projector_id OR DELETE ON projection_t
+CREATE TRIGGER tr_log_projection_t_current_projector_id AFTER INSERT OR UPDATE OF current_projector_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector', 'current_projector_id', 'current_projection_ids');
--- notify trigger for projection_t.preview_projector_id
-CREATE TRIGGER tr_log_projection_preview_projector_id AFTER INSERT OR UPDATE OF preview_projector_id OR DELETE ON projection_t
+CREATE TRIGGER tr_log_projection_t_preview_projector_id AFTER INSERT OR UPDATE OF preview_projector_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector', 'preview_projector_id', 'preview_projection_ids');
--- notify trigger for projection_t.history_projector_id
-CREATE TRIGGER tr_log_projection_history_projector_id AFTER INSERT OR UPDATE OF history_projector_id OR DELETE ON projection_t
+CREATE TRIGGER tr_log_projection_t_history_projector_id AFTER INSERT OR UPDATE OF history_projector_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector', 'history_projector_id', 'history_projection_ids');
 
--- notify trigger for projection_t.content_object_id_meeting_id
 CREATE TRIGGER tr_log_meeting_content_object_id_meeting_id AFTER INSERT OR UPDATE OF content_object_id_meeting_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting','content_object_id_meeting_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_motion_id
 CREATE TRIGGER tr_log_motion_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id_motion_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion','content_object_id_motion_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_meeting_mediafile_id
 CREATE TRIGGER tr_log_meeting_mediafile_content_object_id_meeting_mediafile_id AFTER INSERT OR UPDATE OF content_object_id_meeting_mediafile_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_mediafile','content_object_id_meeting_mediafile_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_list_of_speakers_id
 CREATE TRIGGER tr_log_list_of_speakers_content_object_id_list_of_speakers_id AFTER INSERT OR UPDATE OF content_object_id_list_of_speakers_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('list_of_speakers','content_object_id_list_of_speakers_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_motion_block_id
 CREATE TRIGGER tr_log_motion_block_content_object_id_motion_block_id AFTER INSERT OR UPDATE OF content_object_id_motion_block_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('motion_block','content_object_id_motion_block_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_assignment_id
 CREATE TRIGGER tr_log_assignment_content_object_id_assignment_id AFTER INSERT OR UPDATE OF content_object_id_assignment_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('assignment','content_object_id_assignment_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_agenda_item_id
 CREATE TRIGGER tr_log_agenda_item_content_object_id_agenda_item_id AFTER INSERT OR UPDATE OF content_object_id_agenda_item_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('agenda_item','content_object_id_agenda_item_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_topic_id
 CREATE TRIGGER tr_log_topic_content_object_id_topic_id AFTER INSERT OR UPDATE OF content_object_id_topic_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','content_object_id_topic_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_poll_id
 CREATE TRIGGER tr_log_poll_content_object_id_poll_id AFTER INSERT OR UPDATE OF content_object_id_poll_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll','content_object_id_poll_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_projector_message_id
 CREATE TRIGGER tr_log_projector_message_content_object_id_projector_message_id AFTER INSERT OR UPDATE OF content_object_id_projector_message_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector_message','content_object_id_projector_message_id','projection_ids');
 
--- notify trigger for projection_t.content_object_id_projector_countdown_id
 CREATE TRIGGER tr_log_projector_countdown_content_object_id_projector_c35fae82 AFTER INSERT OR UPDATE OF content_object_id_projector_countdown_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('projector_countdown','content_object_id_projector_countdown_id','projection_ids');
--- notify trigger for projection_t.meeting_id
-CREATE TRIGGER tr_log_projection_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projection_t
+CREATE TRIGGER tr_log_projection_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'all_projection_ids');
 
--- notify triggers for projector_t fields
 CREATE TRIGGER tr_log_projector AFTER INSERT OR UPDATE OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('projector');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON projector_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for projector_t.used_as_default_projector_for_agenda_item_list_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_agenda_ite349e09 AFTER INSERT OR UPDATE OF used_as_default_projector_for_agenda_item_list_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_agenda_a3418fd AFTER INSERT OR UPDATE OF used_as_default_projector_for_agenda_item_list_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_agenda_item_list_in_meeting_id', 'default_projector_agenda_item_list_ids');
--- notify trigger for projector_t.used_as_default_projector_for_topic_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_topic_in_19bdbd5 AFTER INSERT OR UPDATE OF used_as_default_projector_for_topic_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_topic_iccc9ca7 AFTER INSERT OR UPDATE OF used_as_default_projector_for_topic_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_topic_in_meeting_id', 'default_projector_topic_ids');
--- notify trigger for projector_t.used_as_default_projector_for_list_of_speakers_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_list_of_s21d6635 AFTER INSERT OR UPDATE OF used_as_default_projector_for_list_of_speakers_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_list_offcea2e3 AFTER INSERT OR UPDATE OF used_as_default_projector_for_list_of_speakers_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_list_of_speakers_in_meeting_id', 'default_projector_list_of_speakers_ids');
--- notify trigger for projector_t.used_as_default_projector_for_current_los_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_current_la258916 AFTER INSERT OR UPDATE OF used_as_default_projector_for_current_los_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_current897012e AFTER INSERT OR UPDATE OF used_as_default_projector_for_current_los_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_current_los_in_meeting_id', 'default_projector_current_los_ids');
--- notify trigger for projector_t.used_as_default_projector_for_motion_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_motion_in064b4fb AFTER INSERT OR UPDATE OF used_as_default_projector_for_motion_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_motion_9cf3618 AFTER INSERT OR UPDATE OF used_as_default_projector_for_motion_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_motion_in_meeting_id', 'default_projector_motion_ids');
--- notify trigger for projector_t.used_as_default_projector_for_amendment_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_amendment8d0f571 AFTER INSERT OR UPDATE OF used_as_default_projector_for_amendment_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_amendme4ebfd41 AFTER INSERT OR UPDATE OF used_as_default_projector_for_amendment_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_amendment_in_meeting_id', 'default_projector_amendment_ids');
--- notify trigger for projector_t.used_as_default_projector_for_motion_block_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_motion_ble6fe438 AFTER INSERT OR UPDATE OF used_as_default_projector_for_motion_block_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_motion_1b9d3a7 AFTER INSERT OR UPDATE OF used_as_default_projector_for_motion_block_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_motion_block_in_meeting_id', 'default_projector_motion_block_ids');
--- notify trigger for projector_t.used_as_default_projector_for_assignment_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_assignmen289aa41 AFTER INSERT OR UPDATE OF used_as_default_projector_for_assignment_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_assignm9e3b0b3 AFTER INSERT OR UPDATE OF used_as_default_projector_for_assignment_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_assignment_in_meeting_id', 'default_projector_assignment_ids');
--- notify trigger for projector_t.used_as_default_projector_for_mediafile_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_mediafilecb72137 AFTER INSERT OR UPDATE OF used_as_default_projector_for_mediafile_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_mediafib4f0da8 AFTER INSERT OR UPDATE OF used_as_default_projector_for_mediafile_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_mediafile_in_meeting_id', 'default_projector_mediafile_ids');
--- notify trigger for projector_t.used_as_default_projector_for_message_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_message_i0d06d53 AFTER INSERT OR UPDATE OF used_as_default_projector_for_message_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_message28c0ca6 AFTER INSERT OR UPDATE OF used_as_default_projector_for_message_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_message_in_meeting_id', 'default_projector_message_ids');
--- notify trigger for projector_t.used_as_default_projector_for_countdown_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_countdownc138890 AFTER INSERT OR UPDATE OF used_as_default_projector_for_countdown_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_countdoe67f735 AFTER INSERT OR UPDATE OF used_as_default_projector_for_countdown_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_countdown_in_meeting_id', 'default_projector_countdown_ids');
--- notify trigger for projector_t.used_as_default_projector_for_assignment_poll_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_assignmenf956214 AFTER INSERT OR UPDATE OF used_as_default_projector_for_assignment_poll_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_assignmf3a7b0f AFTER INSERT OR UPDATE OF used_as_default_projector_for_assignment_poll_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_assignment_poll_in_meeting_id', 'default_projector_assignment_poll_ids');
--- notify trigger for projector_t.used_as_default_projector_for_motion_poll_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_motion_poc2dbcdd AFTER INSERT OR UPDATE OF used_as_default_projector_for_motion_poll_in_meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_motion_c48d3bb AFTER INSERT OR UPDATE OF used_as_default_projector_for_motion_poll_in_meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_motion_poll_in_meeting_id', 'default_projector_motion_poll_ids');
--- notify trigger for projector_t.used_as_default_projector_for_poll_in_meeting_id
-CREATE TRIGGER tr_log_projector_used_as_default_projector_for_poll_in_m4a22220 AFTER INSERT OR UPDATE OF used_as_default_projector_for_poll_in_meeting_id OR DELETE ON projector_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_poll_in_meeting_id', 'default_projector_poll_ids');
--- notify trigger for projector_t.meeting_id
-CREATE TRIGGER tr_log_projector_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projector_t
+CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_topic_p9aaf88b AFTER INSERT OR UPDATE OF used_as_default_projector_for_topic_poll_in_meeting_id OR DELETE ON projector_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_topic_poll_in_meeting_id', 'default_projector_topic_poll_ids');
+CREATE TRIGGER tr_log_projector_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projector_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'projector_ids');
 
--- notify triggers for projector_countdown_t fields
 CREATE TRIGGER tr_log_projector_countdown AFTER INSERT OR UPDATE OR DELETE ON projector_countdown_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('projector_countdown');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON projector_countdown_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for projector_countdown_t.meeting_id
-CREATE TRIGGER tr_log_projector_countdown_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projector_countdown_t
+CREATE TRIGGER tr_log_projector_countdown_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projector_countdown_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'projector_countdown_ids');
 
--- notify triggers for projector_message_t fields
 CREATE TRIGGER tr_log_projector_message AFTER INSERT OR UPDATE OR DELETE ON projector_message_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('projector_message');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON projector_message_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for projector_message_t.meeting_id
-CREATE TRIGGER tr_log_projector_message_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projector_message_t
+CREATE TRIGGER tr_log_projector_message_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON projector_message_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'projector_message_ids');
 
--- notify triggers for speaker_t fields
 CREATE TRIGGER tr_log_speaker AFTER INSERT OR UPDATE OR DELETE ON speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('speaker');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON speaker_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for speaker_t.list_of_speakers_id
-CREATE TRIGGER tr_log_speaker_list_of_speakers_id AFTER INSERT OR UPDATE OF list_of_speakers_id OR DELETE ON speaker_t
+CREATE TRIGGER tr_log_speaker_t_list_of_speakers_id AFTER INSERT OR UPDATE OF list_of_speakers_id OR DELETE ON speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('list_of_speakers', 'list_of_speakers_id', 'speaker_ids');
--- notify trigger for speaker_t.structure_level_list_of_speakers_id
-CREATE TRIGGER tr_log_speaker_structure_level_list_of_speakers_id AFTER INSERT OR UPDATE OF structure_level_list_of_speakers_id OR DELETE ON speaker_t
+CREATE TRIGGER tr_log_speaker_t_structure_level_list_of_speakers_id AFTER INSERT OR UPDATE OF structure_level_list_of_speakers_id OR DELETE ON speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('structure_level_list_of_speakers', 'structure_level_list_of_speakers_id', 'speaker_ids');
--- notify trigger for speaker_t.meeting_user_id
-CREATE TRIGGER tr_log_speaker_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON speaker_t
+CREATE TRIGGER tr_log_speaker_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'speaker_ids');
--- notify trigger for speaker_t.point_of_order_category_id
-CREATE TRIGGER tr_log_speaker_point_of_order_category_id AFTER INSERT OR UPDATE OF point_of_order_category_id OR DELETE ON speaker_t
+CREATE TRIGGER tr_log_speaker_t_point_of_order_category_id AFTER INSERT OR UPDATE OF point_of_order_category_id OR DELETE ON speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('point_of_order_category', 'point_of_order_category_id', 'speaker_ids');
--- notify trigger for speaker_t.meeting_id
-CREATE TRIGGER tr_log_speaker_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON speaker_t
+CREATE TRIGGER tr_log_speaker_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON speaker_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'speaker_ids');
 
--- notify triggers for structure_level_t fields
 CREATE TRIGGER tr_log_structure_level AFTER INSERT OR UPDATE OR DELETE ON structure_level_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('structure_level');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON structure_level_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for structure_level_t.meeting_id
-CREATE TRIGGER tr_log_structure_level_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON structure_level_t
+CREATE TRIGGER tr_log_structure_level_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON structure_level_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'structure_level_ids');
 
--- notify triggers for structure_level_list_of_speakers_t fields
 CREATE TRIGGER tr_log_structure_level_list_of_speakers AFTER INSERT OR UPDATE OR DELETE ON structure_level_list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('structure_level_list_of_speakers');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON structure_level_list_of_speakers_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for structure_level_list_of_speakers_t.structure_level_id
-CREATE TRIGGER tr_log_structure_level_list_of_speakers_structure_level_id AFTER INSERT OR UPDATE OF structure_level_id OR DELETE ON structure_level_list_of_speakers_t
+CREATE TRIGGER tr_log_structure_level_list_of_speakers_t_structure_level_id AFTER INSERT OR UPDATE OF structure_level_id OR DELETE ON structure_level_list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('structure_level', 'structure_level_id', 'structure_level_list_of_speakers_ids');
--- notify trigger for structure_level_list_of_speakers_t.list_of_speakers_id
-CREATE TRIGGER tr_log_structure_level_list_of_speakers_list_of_speakers_id AFTER INSERT OR UPDATE OF list_of_speakers_id OR DELETE ON structure_level_list_of_speakers_t
+CREATE TRIGGER tr_log_structure_level_list_of_speakers_t_list_of_speakers_id AFTER INSERT OR UPDATE OF list_of_speakers_id OR DELETE ON structure_level_list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('list_of_speakers', 'list_of_speakers_id', 'structure_level_list_of_speakers_ids');
--- notify trigger for structure_level_list_of_speakers_t.meeting_id
-CREATE TRIGGER tr_log_structure_level_list_of_speakers_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON structure_level_list_of_speakers_t
+CREATE TRIGGER tr_log_structure_level_list_of_speakers_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON structure_level_list_of_speakers_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'structure_level_list_of_speakers_ids');
 
--- notify triggers for tag_t fields
 CREATE TRIGGER tr_log_tag AFTER INSERT OR UPDATE OR DELETE ON tag_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('tag');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON tag_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
--- notify triggers for tag.tagged_ids fields
-CREATE TRIGGER tr_log_tagged_id_agenda_item_id_gm_tag_tagged_ids AFTER INSERT OR UPDATE OF tagged_id_agenda_item_id OR DELETE ON gm_tag_tagged_ids_t
+CREATE TRIGGER tr_log_tagged_id_agenda_item_id_gm_tag_tagged_ids_t AFTER INSERT OR UPDATE OF tagged_id_agenda_item_id OR DELETE ON gm_tag_tagged_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('tag','tag_id','tagged_ids','agenda_item','tagged_id_agenda_item_id','tag_ids');
 
--- notify triggers for tag.tagged_ids fields
-CREATE TRIGGER tr_log_tagged_id_assignment_id_gm_tag_tagged_ids AFTER INSERT OR UPDATE OF tagged_id_assignment_id OR DELETE ON gm_tag_tagged_ids_t
+CREATE TRIGGER tr_log_tagged_id_assignment_id_gm_tag_tagged_ids_t AFTER INSERT OR UPDATE OF tagged_id_assignment_id OR DELETE ON gm_tag_tagged_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('tag','tag_id','tagged_ids','assignment','tagged_id_assignment_id','tag_ids');
 
--- notify triggers for tag.tagged_ids fields
-CREATE TRIGGER tr_log_tagged_id_motion_id_gm_tag_tagged_ids AFTER INSERT OR UPDATE OF tagged_id_motion_id OR DELETE ON gm_tag_tagged_ids_t
+CREATE TRIGGER tr_log_tagged_id_motion_id_gm_tag_tagged_ids_t AFTER INSERT OR UPDATE OF tagged_id_motion_id OR DELETE ON gm_tag_tagged_ids_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('tag','tag_id','tagged_ids','motion','tagged_id_motion_id','tag_ids');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON gm_tag_tagged_ids_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
--- notify trigger for tag_t.meeting_id
-CREATE TRIGGER tr_log_tag_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON tag_t
+CREATE TRIGGER tr_log_tag_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON tag_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'tag_ids');
 
--- notify triggers for theme_t fields
 CREATE TRIGGER tr_log_theme AFTER INSERT OR UPDATE OR DELETE ON theme_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('theme');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON theme_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for theme_t.organization_id
-CREATE TRIGGER tr_log_theme_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON theme_t
+CREATE TRIGGER tr_log_theme_t_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON theme_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'organization_id', 'theme_ids');
 
--- notify triggers for topic_t fields
 CREATE TRIGGER tr_log_topic AFTER INSERT OR UPDATE OR DELETE ON topic_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('topic');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON topic_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for topic_t.meeting_id
-CREATE TRIGGER tr_log_topic_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON topic_t
+CREATE TRIGGER tr_log_topic_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON topic_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'topic_ids');
 
--- notify triggers for user_t fields
 CREATE TRIGGER tr_log_user AFTER INSERT OR UPDATE OR DELETE ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('user');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for user_t.gender_id
-CREATE TRIGGER tr_log_user_gender_id AFTER INSERT OR UPDATE OF gender_id OR DELETE ON user_t
+CREATE TRIGGER tr_log_user_t_gender_id AFTER INSERT OR UPDATE OF gender_id OR DELETE ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('gender', 'gender_id', 'user_ids');
 
-CREATE TRIGGER tr_log_i_user_committee_ids_from_meeting_user BEFORE INSERT ON meeting_user_t
-FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('user', 'user_id', '', 'committee_ids', '', 'SELECT committee_id AS id FROM meeting_t WHERE id = ($1).meeting_id');
-CREATE TRIGGER tr_log_d_user_committee_ids_from_meeting_user AFTER DELETE ON meeting_user_t
-FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('user', 'user_id', '', 'committee_ids', '', 'SELECT committee_id AS id FROM meeting_t WHERE id = ($1).meeting_id');
-CREATE TRIGGER tr_log_i_user_committee_ids_from_meeting BEFORE INSERT ON meeting_t
-FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('user', '', 'SELECT user_id AS id FROM meeting_user_t WHERE meeting_id = ($1).id', 'committee_ids', 'committee_id', '');
-CREATE TRIGGER tr_log_d_user_committee_ids_from_meeting AFTER DELETE ON meeting_t
-FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('user', '', 'SELECT user_id AS id FROM meeting_user_t WHERE meeting_id = ($1).id', 'committee_ids', 'committee_id', '');
-CREATE TRIGGER tr_log_i_user_committee_ids_from_nm_committee_manager_ids_user BEFORE INSERT ON nm_committee_manager_ids_user_t
+CREATE TRIGGER tr_log_i_user_committee_ids_from_meeting_user_t BEFORE INSERT ON meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('user', 'user_id', '', 'committee_ids', '', 'SELECT committee_id FROM meeting_t WHERE id = ($1).meeting_id');
+CREATE TRIGGER tr_log_d_user_committee_ids_from_meeting_user_t AFTER DELETE ON meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('user', 'user_id', '', 'committee_ids', '', 'SELECT committee_id FROM meeting_t WHERE id = ($1).meeting_id');
+CREATE TRIGGER tr_log_i_user_committee_ids_from_nm_committee_manager_id3c34791 BEFORE INSERT ON nm_committee_manager_ids_user_t
 FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('user', 'user_id', '', 'committee_ids', 'committee_id', '');
-CREATE TRIGGER tr_log_d_user_committee_ids_from_nm_committee_manager_ids_user AFTER DELETE ON nm_committee_manager_ids_user_t
+CREATE TRIGGER tr_log_d_user_committee_ids_from_nm_committee_manager_id8cfd923 AFTER DELETE ON nm_committee_manager_ids_user_t
 FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('user', 'user_id', '', 'committee_ids', 'committee_id', '');
-CREATE TRIGGER tr_log_iu_user_committee_ids_from_user BEFORE INSERT OR UPDATE OF home_committee_id ON user_t
+CREATE TRIGGER tr_log_iu_user_committee_ids_from_user_t BEFORE INSERT OR UPDATE OF home_committee_id ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('user', 'id', '', 'committee_ids', 'home_committee_id', '');
-CREATE TRIGGER tr_log_ud_user_committee_ids_from_user AFTER UPDATE OF home_committee_id OR DELETE ON user_t
+CREATE TRIGGER tr_log_ud_user_committee_ids_from_user_t AFTER UPDATE OF home_committee_id OR DELETE ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('user', 'id', '', 'committee_ids', 'home_committee_id', '');
 
--- notify trigger for user_t.home_committee_id
-CREATE TRIGGER tr_log_user_home_committee_id AFTER INSERT OR UPDATE OF home_committee_id OR DELETE ON user_t
+CREATE TRIGGER tr_log_user_t_home_committee_id AFTER INSERT OR UPDATE OF home_committee_id OR DELETE ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('committee', 'home_committee_id', 'native_user_ids');
 
-CREATE TRIGGER tr_log_i_user_meeting_ids_from_meeting_user BEFORE INSERT ON meeting_user_t
+CREATE TRIGGER tr_log_i_user_meeting_ids_from_meeting_user_t BEFORE INSERT ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_iu_modified_calculated_id_array_field('user', 'user_id', '', 'meeting_ids', 'meeting_id', '');
-CREATE TRIGGER tr_log_d_user_meeting_ids_from_meeting_user AFTER DELETE ON meeting_user_t
+CREATE TRIGGER tr_log_d_user_meeting_ids_from_meeting_user_t AFTER DELETE ON meeting_user_t
 FOR EACH ROW EXECUTE FUNCTION log_ud_modified_calculated_id_array_field('user', 'user_id', '', 'meeting_ids', 'meeting_id', '');
 
--- notify trigger for user_t.organization_id
-CREATE TRIGGER tr_log_user_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON user_t
+CREATE TRIGGER tr_log_user_t_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'organization_id', 'user_ids');
-
--- notify triggers for vote_t fields
-CREATE TRIGGER tr_log_vote AFTER INSERT OR UPDATE OR DELETE ON vote_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_models('vote');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON vote_t
-DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
-
--- notify trigger for vote_t.option_id
-CREATE TRIGGER tr_log_vote_option_id AFTER INSERT OR UPDATE OF option_id OR DELETE ON vote_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('option', 'option_id', 'vote_ids');
--- notify trigger for vote_t.user_id
-CREATE TRIGGER tr_log_vote_user_id AFTER INSERT OR UPDATE OF user_id OR DELETE ON vote_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'user_id', 'vote_ids');
--- notify trigger for vote_t.delegated_user_id
-CREATE TRIGGER tr_log_vote_delegated_user_id AFTER INSERT OR UPDATE OF delegated_user_id OR DELETE ON vote_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user', 'delegated_user_id', 'delegated_vote_ids');
--- notify trigger for vote_t.meeting_id
-CREATE TRIGGER tr_log_vote_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON vote_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'vote_ids');
 
 
 
 -- Create triggers checking equal_fields settings in relations
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_content_object_id_motion_id AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_motion_id AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'motion', 'content_object_id_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_agenda_item_id AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_agenda_item_id AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'motion', 'content_object_id_motion_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_content_object_id_motion4a21c2d AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_moti4dd35ce AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'motion_block', 'content_object_id_motion_block_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_agenda_item_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_t_agenda_item_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'motion_block', 'content_object_id_motion_block_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_content_object_id_assignment_id AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_assieb89ee8 AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'assignment', 'content_object_id_assignment_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_agenda_item_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_agenda_item_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'assignment', 'content_object_id_assignment_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_content_object_id_topic_id AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_topic_id AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'topic', 'content_object_id_topic_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_agenda_item_id AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_t_agenda_item_id AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'topic', 'content_object_id_topic_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_parent_id AFTER INSERT OR UPDATE OF parent_id ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_parent_id AFTER INSERT OR UPDATE OF parent_id ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'agenda_item', 'parent_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_child_ids AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_child_ids AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('agenda_item', 'agenda_item', 'parent_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_candidate_assignment_id AFTER INSERT ON assignment_candidate_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_candidate_t_assignment_id AFTER INSERT ON assignment_candidate_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('assignment_candidate', 'assignment', 'assignment_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_candidate_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_candidate_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('assignment_candidate', 'assignment', 'assignment_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_candidate_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON assignment_candidate_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_candidate_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON assignment_candidate_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('assignment_candidate', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_assignment_candidate_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_assignment_candidate_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('assignment_candidate', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_read_group_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_t_read_group_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_chat_group_read_group_ids_group_t', 'chat_group_id', 'chat_group', 'group_id', 'group', 'meeting_id', 'read_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_read_chat_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_read_chat_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_chat_group_read_group_ids_group_t', 'group_id', 'group', 'chat_group_id', 'chat_group', 'meeting_id', 'read_chat_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_read_group_ids_intermediate AFTER INSERT ON nm_chat_group_read_group_ids_group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_t_read_group_ids_intermediate AFTER INSERT ON nm_chat_group_read_group_ids_group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('chat_group_id', 'chat_group', 'group_id', 'group', 'meeting_id', 'read_group_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_write_group_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_t_write_group_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_chat_group_write_group_ids_group_t', 'chat_group_id', 'chat_group', 'group_id', 'group', 'meeting_id', 'write_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_write_chat_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_write_chat_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_chat_group_write_group_ids_group_t', 'group_id', 'group', 'chat_group_id', 'chat_group', 'meeting_id', 'write_chat_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_write_group_ids_intermediate AFTER INSERT ON nm_chat_group_write_group_ids_group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_t_write_group_ids_intermediate AFTER INSERT ON nm_chat_group_write_group_ids_group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('chat_group_id', 'chat_group', 'group_id', 'group', 'meeting_id', 'write_group_ids');
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_message_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON chat_message_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_message_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON chat_message_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('chat_message', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_chat_message_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_chat_message_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('chat_message', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_message_chat_group_id AFTER INSERT ON chat_message_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_message_t_chat_group_id AFTER INSERT ON chat_message_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('chat_message', 'chat_group', 'chat_group_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_chat_message_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_chat_group_t_chat_message_ids AFTER INSERT ON chat_group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('chat_message', 'chat_group', 'chat_group_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_meeting_user_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_meeting_user_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_meeting_user_ids_meeting_user_t', 'group_id', 'group', 'meeting_user_id', 'meeting_user', 'meeting_id', 'meeting_user_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_group_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_group_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_meeting_user_ids_meeting_user_t', 'meeting_user_id', 'meeting_user', 'group_id', 'group', 'meeting_id', 'group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_meeting_user_ids_intermediate AFTER INSERT ON nm_group_meeting_user_ids_meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_meeting_user_ids_intermediate AFTER INSERT ON nm_group_meeting_user_ids_meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'meeting_user_id', 'meeting_user', 'meeting_id', 'meeting_user_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_meeting_mediafile_access_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_meeting_mediafile_access_group_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_mmagi_meeting_mediafile_t', 'group_id', 'group', 'meeting_mediafile_id', 'meeting_mediafile', 'meeting_id', 'meeting_mediafile_access_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_access_group_ids AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_access_group_ids AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_mmagi_meeting_mediafile_t', 'meeting_mediafile_id', 'meeting_mediafile', 'group_id', 'group', 'meeting_id', 'access_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_meeting_mediafile_access_group7443306 AFTER INSERT ON nm_group_mmagi_meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_meeting_mediafile_access_gro550f457 AFTER INSERT ON nm_group_mmagi_meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'meeting_mediafile_id', 'meeting_mediafile', 'meeting_id', 'meeting_mediafile_access_group_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_read_comment_section_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_read_comment_section_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_read_comment_section_ids_motion_comment_section_t', 'group_id', 'group', 'motion_comment_section_id', 'motion_comment_section', 'meeting_id', 'read_comment_section_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_read_group_ids AFTER INSERT ON motion_comment_section_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_t_read_group_ids AFTER INSERT ON motion_comment_section_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_read_comment_section_ids_motion_comment_section_t', 'motion_comment_section_id', 'motion_comment_section', 'group_id', 'group', 'meeting_id', 'read_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_read_comment_section_ids_intermediate AFTER INSERT ON nm_group_read_comment_section_ids_motion_comment_section_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_read_comment_section_ids_intee20888 AFTER INSERT ON nm_group_read_comment_section_ids_motion_comment_section_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'motion_comment_section_id', 'motion_comment_section', 'meeting_id', 'read_comment_section_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_write_comment_section_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_write_comment_section_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_write_comment_section_ids_motion_comment_section_t', 'group_id', 'group', 'motion_comment_section_id', 'motion_comment_section', 'meeting_id', 'write_comment_section_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_write_group_ids AFTER INSERT ON motion_comment_section_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_t_write_group_ids AFTER INSERT ON motion_comment_section_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_write_comment_section_ids_motion_comment_section_t', 'motion_comment_section_id', 'motion_comment_section', 'group_id', 'group', 'meeting_id', 'write_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_write_comment_section_ids_inte198f32e AFTER INSERT ON nm_group_write_comment_section_ids_motion_comment_section_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_write_comment_section_ids_in069881a AFTER INSERT ON nm_group_write_comment_section_ids_motion_comment_section_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'motion_comment_section_id', 'motion_comment_section', 'meeting_id', 'write_comment_section_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_poll_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_poll_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_poll_ids_poll_t', 'group_id', 'group', 'poll_id', 'poll', 'meeting_id', 'poll_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_entitled_group_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_entitled_group_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_poll_ids_poll_t', 'poll_id', 'poll', 'group_id', 'group', 'meeting_id', 'entitled_group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_poll_ids_intermediate AFTER INSERT ON nm_group_poll_ids_poll_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_poll_ids_intermediate AFTER INSERT ON nm_group_poll_ids_poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'poll_id', 'poll', 'meeting_id', 'poll_ids');
 
 
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_used_in_meeting_poll_setting_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_uimpsi_meeting_poll_setting_t', 'group_id', 'group', 'meeting_poll_setting_id', 'meeting_poll_setting', 'meeting_id', 'used_in_meeting_poll_setting_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_poll_setting_t_group_ids AFTER INSERT ON meeting_poll_setting_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_uimpsi_meeting_poll_setting_t', 'meeting_poll_setting_id', 'meeting_poll_setting', 'group_id', 'group', 'meeting_id', 'group_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_used_in_meeting_poll_setting07fe571 AFTER INSERT ON nm_group_uimpsi_meeting_poll_setting_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'meeting_poll_setting_id', 'meeting_poll_setting', 'meeting_id', 'used_in_meeting_poll_setting_ids');
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_content_object_id_m7fa84e4 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+
+
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_content_object_id15e708c AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'motion', 'content_object_id_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_list_of_speakers_id AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_list_of_speakers_id AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'motion', 'content_object_id_motion_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_content_object_id_m252d2c4 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_content_object_id76189b9 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'motion_block', 'content_object_id_motion_block_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_list_of_speakers_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_t_list_of_speakers_id AFTER INSERT ON motion_block_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'motion_block', 'content_object_id_motion_block_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_content_object_id_af62a7c4 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_content_object_id8e13f04 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'assignment', 'content_object_id_assignment_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_list_of_speakers_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_list_of_speakers_id AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'assignment', 'content_object_id_assignment_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_content_object_id_topic_id AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_content_object_id06f0c1e AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'topic', 'content_object_id_topic_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_list_of_speakers_id AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_t_list_of_speakers_id AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'topic', 'content_object_id_topic_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_content_object_id_md184c12 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_content_object_ide897434 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'meeting_mediafile', 'content_object_id_meeting_mediafile_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_list_of_speakers_id AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_list_of_speakers_id AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('list_of_speakers', 'meeting_mediafile', 'content_object_id_meeting_mediafile_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_owner_id_on_mediafile_parent_id AFTER INSERT OR UPDATE OF parent_id ON mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_owner_id_on_mediafile_t_parent_id AFTER INSERT OR UPDATE OF parent_id ON mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('mediafile', 'mediafile', 'parent_id', 'owner_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_owner_id_on_mediafile_child_ids AFTER INSERT ON mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_owner_id_on_mediafile_t_child_ids AFTER INSERT ON mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('mediafile', 'mediafile', 'parent_id', 'owner_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_attachment_ids_motion AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_motion_t AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_meeting_mediafile_attachment_ids_t', 'meeting_mediafile_id', 'meeting_mediafile', 'attachment_id_motion_id', 'motion', 'meeting_id', 'attachment_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_attachment_meeting_mediafile_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_attachment_meeting_mediafile_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_meeting_mediafile_attachment_ids_t', 'attachment_id_motion_id', 'motion', 'meeting_mediafile_id', 'meeting_mediafile', 'meeting_id', 'attachment_meeting_mediafile_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_attachment_ids_mot902474d AFTER INSERT ON gm_meeting_mediafile_attachment_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_m4e89aaf AFTER INSERT ON gm_meeting_mediafile_attachment_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('meeting_mediafile_id', 'meeting_mediafile', 'attachment_id_motion_id', 'motion', 'meeting_id', 'attachment_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_attachment_ids_topic AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_topic_t AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_meeting_mediafile_attachment_ids_t', 'meeting_mediafile_id', 'meeting_mediafile', 'attachment_id_topic_id', 'topic', 'meeting_id', 'attachment_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_attachment_meeting_mediafile_ids AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_t_attachment_meeting_mediafile_ids AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_meeting_mediafile_attachment_ids_t', 'attachment_id_topic_id', 'topic', 'meeting_mediafile_id', 'meeting_mediafile', 'meeting_id', 'attachment_meeting_mediafile_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_attachment_ids_top81dddfa AFTER INSERT ON gm_meeting_mediafile_attachment_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_t3e058c9 AFTER INSERT ON gm_meeting_mediafile_attachment_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('meeting_mediafile_id', 'meeting_mediafile', 'attachment_id_topic_id', 'topic', 'meeting_id', 'attachment_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_attachment_ids_assignment AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_a02016b9 AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_meeting_mediafile_attachment_ids_t', 'meeting_mediafile_id', 'meeting_mediafile', 'attachment_id_assignment_id', 'assignment', 'meeting_id', 'attachment_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_attachment_meeting_mediafile_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_attachment_meeting_media9bbdf7 AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_meeting_mediafile_attachment_ids_t', 'attachment_id_assignment_id', 'assignment', 'meeting_mediafile_id', 'meeting_mediafile', 'meeting_id', 'attachment_meeting_mediafile_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_attachment_ids_asse8eae7c AFTER INSERT ON gm_meeting_mediafile_attachment_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_a29e0815 AFTER INSERT ON gm_meeting_mediafile_attachment_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('meeting_mediafile_id', 'meeting_mediafile', 'attachment_id_assignment_id', 'assignment', 'meeting_id', 'attachment_ids');
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_vote_delegated_to_id AFTER INSERT OR UPDATE OF vote_delegated_to_id ON meeting_user_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('meeting_user', 'meeting_user', 'vote_delegated_to_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_vote_delegations_from_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('meeting_user', 'meeting_user', 'vote_delegated_to_id', 'meeting_id', TRUE);
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegations_from_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegated_to_id', 'meeting_user', 'vote_delegations_from_id', 'meeting_user', 'meeting_id', 'vote_delegations_from_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids68aada4 AFTER INSERT ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_structure_level_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_structure_level_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_structure_level_ids_structure_level_t', 'meeting_user_id', 'meeting_user', 'structure_level_id', 'structure_level', 'meeting_id', 'structure_level_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_meeting_user_ids AFTER INSERT ON structure_level_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_t_meeting_user_ids AFTER INSERT ON structure_level_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_structure_level_ids_structure_level_t', 'structure_level_id', 'structure_level', 'meeting_user_id', 'meeting_user', 'meeting_id', 'meeting_user_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_structure_level_ids_int8abba9d AFTER INSERT ON nm_meeting_user_structure_level_ids_structure_level_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_structure_level_ids_i91a9439 AFTER INSERT ON nm_meeting_user_structure_level_ids_structure_level_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('meeting_user_id', 'meeting_user', 'structure_level_id', 'structure_level', 'meeting_id', 'structure_level_ids');
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_lead_motion_id AFTER INSERT OR UPDATE OF lead_motion_id ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_lead_motion_id AFTER INSERT OR UPDATE OF lead_motion_id ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion', 'lead_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_amendment_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_amendment_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion', 'lead_motion_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_sort_parent_id AFTER INSERT OR UPDATE OF sort_parent_id ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_sort_parent_id AFTER INSERT OR UPDATE OF sort_parent_id ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion', 'sort_parent_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_sort_child_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_sort_child_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion', 'sort_parent_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_id AFTER INSERT OR UPDATE OF state_id ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_state_id AFTER INSERT OR UPDATE OF state_id ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_state', 'state_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_motion_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_motion_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_state', 'state_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_recommendation_id AFTER INSERT OR UPDATE OF recommendation_id ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_recommendation_id AFTER INSERT OR UPDATE OF recommendation_id ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_state', 'recommendation_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_motion_recommendation_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_motion_recommendation_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_state', 'recommendation_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_extension_reference_ids_motion AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_state_extension_reference_ia334c80 AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_motion_state_extension_reference_ids_t', 'motion_id', 'motion', 'state_extension_reference_id_motion_id', 'motion', 'meeting_id', 'state_extension_reference_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_referenced_in_motion_state_exd455db1 AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_referenced_in_motion_state_cb2bfc0 AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_motion_state_extension_reference_ids_t', 'state_extension_reference_id_motion_id', 'motion', 'motion_id', 'motion', 'meeting_id', 'referenced_in_motion_state_extension_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_extension_reference_ids96c1b01 AFTER INSERT ON gm_motion_state_extension_reference_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_state_extension_reference_i05b20ae AFTER INSERT ON gm_motion_state_extension_reference_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('motion_id', 'motion', 'state_extension_reference_id_motion_id', 'motion', 'meeting_id', 'state_extension_reference_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_recommendation_extension_refee51cb64 AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_recommendation_extension_re94d51da AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_motion_recommendation_extension_reference_ids_t', 'motion_id', 'motion', 'recommendation_extension_reference_id_motion_id', 'motion', 'meeting_id', 'recommendation_extension_reference_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_referenced_in_motion_recommena01566f AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_referenced_in_motion_recomm09d2a9c AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_motion_recommendation_extension_reference_ids_t', 'recommendation_extension_reference_id_motion_id', 'motion', 'motion_id', 'motion', 'meeting_id', 'referenced_in_motion_recommendation_extension_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_recommendation_extension_refe85b428c AFTER INSERT ON gm_motion_recommendation_extension_reference_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_recommendation_extension_rebcec849 AFTER INSERT ON gm_motion_recommendation_extension_reference_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('motion_id', 'motion', 'recommendation_extension_reference_id_motion_id', 'motion', 'meeting_id', 'recommendation_extension_reference_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_id AFTER INSERT OR UPDATE OF category_id ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_category_id AFTER INSERT OR UPDATE OF category_id ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_category', 'category_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_motion_ids AFTER INSERT ON motion_category_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_t_motion_ids AFTER INSERT ON motion_category_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_category', 'category_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_id AFTER INSERT OR UPDATE OF block_id ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_block_id AFTER INSERT OR UPDATE OF block_id ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_block', 'block_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_motion_ids AFTER INSERT ON motion_block_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_t_motion_ids AFTER INSERT ON motion_block_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion', 'motion_block', 'block_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_parent_id AFTER INSERT OR UPDATE OF parent_id ON motion_category_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_t_parent_id AFTER INSERT OR UPDATE OF parent_id ON motion_category_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_category', 'motion_category', 'parent_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_child_ids AFTER INSERT ON motion_category_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_category_t_child_ids AFTER INSERT ON motion_category_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_category', 'motion_category', 'parent_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_change_recommendation_motion_id AFTER INSERT ON motion_change_recommendation_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_change_recommendation_t_motion_id AFTER INSERT ON motion_change_recommendation_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_change_recommendation', 'motion', 'motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_change_recommendation_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_change_recommendation_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_change_recommendation', 'motion', 'motion_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_motion_id AFTER INSERT ON motion_comment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_t_motion_id AFTER INSERT ON motion_comment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_comment', 'motion', 'motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_comment_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_comment', 'motion', 'motion_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_id AFTER INSERT ON motion_comment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_t_section_id AFTER INSERT ON motion_comment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_comment', 'motion_comment_section', 'section_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_comment_ids AFTER INSERT ON motion_comment_section_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_comment_section_t_comment_ids AFTER INSERT ON motion_comment_section_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_comment', 'motion_comment_section', 'section_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_editor_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON motion_editor_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_editor_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON motion_editor_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_editor', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_motion_editor_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_motion_editor_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_editor', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_editor_motion_id AFTER INSERT ON motion_editor_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_editor_t_motion_id AFTER INSERT ON motion_editor_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_editor', 'motion', 'motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_editor_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_editor_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_editor', 'motion', 'motion_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_submitter_withdraw_state_id AFTER INSERT OR UPDATE OF submitter_withdraw_state_id ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_submitter_withdraw_state_id AFTER INSERT OR UPDATE OF submitter_withdraw_state_id ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_state', 'motion_state', 'submitter_withdraw_state_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_submitter_withdraw_back_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_submitter_withdraw_back_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_state', 'motion_state', 'submitter_withdraw_state_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_submitter_withdraw_state_id AFTER INSERT OR UPDATE OF submitter_withdraw_state_id, workflow_id ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_t_submitter_withdraw_state_id AFTER INSERT OR UPDATE OF submitter_withdraw_state_id, workflow_id ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_state', 'motion_state', 'submitter_withdraw_state_id', 'workflow_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_submitter_withdraw_back_ids AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_t_submitter_withdraw_back_ids AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_state', 'motion_state', 'submitter_withdraw_state_id', 'workflow_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_next_state_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_next_state_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_motion_state_next_state_ids_motion_state_t', 'previous_state_id', 'motion_state', 'next_state_id', 'motion_state', 'meeting_id', 'next_state_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_previous_state_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_previous_state_ids AFTER INSERT ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_motion_state_next_state_ids_motion_state_t', 'next_state_id', 'motion_state', 'previous_state_id', 'motion_state', 'meeting_id', 'previous_state_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_next_state_ids_intermediate AFTER INSERT ON nm_motion_state_next_state_ids_motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_next_state_ids_intermediate AFTER INSERT ON nm_motion_state_next_state_ids_motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('previous_state_id', 'motion_state', 'next_state_id', 'motion_state', 'meeting_id', 'next_state_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_next_state_ids AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_t_next_state_ids AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_motion_state_next_state_ids_motion_state_t', 'previous_state_id', 'motion_state', 'next_state_id', 'motion_state', 'workflow_id', 'next_state_ids');
-CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_previous_state_ids AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_t_previous_state_ids AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_motion_state_next_state_ids_motion_state_t', 'next_state_id', 'motion_state', 'previous_state_id', 'motion_state', 'workflow_id', 'previous_state_ids');
-CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_next_state_ids_intermediate AFTER INSERT ON nm_motion_state_next_state_ids_motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_workflow_id_on_motion_state_t_next_state_ids_intermediate AFTER INSERT ON nm_motion_state_next_state_ids_motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('previous_state_id', 'motion_state', 'next_state_id', 'motion_state', 'workflow_id', 'next_state_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_workflow_id AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_workflow_id AFTER INSERT OR UPDATE OF workflow_id ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_state', 'motion_workflow', 'workflow_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_workflow_state_ids AFTER INSERT ON motion_workflow_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_workflow_t_state_ids AFTER INSERT ON motion_workflow_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_state', 'motion_workflow', 'workflow_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_submitter_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON motion_submitter_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_submitter_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON motion_submitter_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_submitter', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_motion_submitter_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_motion_submitter_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_submitter', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_submitter_motion_id AFTER INSERT ON motion_submitter_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_submitter_t_motion_id AFTER INSERT ON motion_submitter_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_submitter', 'motion', 'motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_submitter_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_submitter_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_submitter', 'motion', 'motion_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_supporter_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON motion_supporter_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_supporter_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON motion_supporter_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_supporter', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_motion_supporter_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_motion_supporter_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_supporter', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_supporter_motion_id AFTER INSERT ON motion_supporter_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_supporter_t_motion_id AFTER INSERT ON motion_supporter_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_supporter', 'motion', 'motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_supporter_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_supporter_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_supporter', 'motion', 'motion_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_workflow_first_state_id AFTER INSERT OR UPDATE OF first_state_id ON motion_workflow_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_workflow_t_first_state_id AFTER INSERT OR UPDATE OF first_state_id ON motion_workflow_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_workflow', 'motion_state', 'first_state_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_first_state_of_workflow_id AFTER INSERT ON motion_state_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_state_t_first_state_of_workflow_id AFTER INSERT ON motion_state_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_workflow', 'motion_state', 'first_state_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_working_group_speaker_meetingf390439 AFTER INSERT OR UPDATE OF meeting_user_id ON motion_working_group_speaker_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_working_group_speaker_t_meeti339019b AFTER INSERT OR UPDATE OF meeting_user_id ON motion_working_group_speaker_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_working_group_speaker', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_motion_working_group_sp9185616 AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_motion_working_group_bf2dd11 AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_working_group_speaker', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_working_group_speaker_motion_id AFTER INSERT ON motion_working_group_speaker_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_working_group_speaker_t_motion_id AFTER INSERT ON motion_working_group_speaker_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_working_group_speaker', 'motion', 'motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_working_group_speaker_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_working_group_speaker_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('motion_working_group_speaker', 'motion', 'motion_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_option_poll_id AFTER INSERT ON option_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('option', 'poll', 'poll_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_option_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('option', 'poll', 'poll_id', 'meeting_id', TRUE);
-
-
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_option_content_object_id_motion_id AFTER INSERT OR UPDATE OF content_object_id ON option_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('option', 'motion', 'content_object_id_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_option_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('option', 'motion', 'content_object_id_motion_id', 'meeting_id', TRUE);
-
-
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_option_content_object_id_poll_candidd4b1f9c AFTER INSERT OR UPDATE OF content_object_id ON option_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('option', 'poll_candidate_list', 'content_object_id_poll_candidate_list_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_candidate_list_option_id AFTER INSERT ON poll_candidate_list_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('option', 'poll_candidate_list', 'content_object_id_poll_candidate_list_id', 'meeting_id', TRUE);
-
-
-
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_personal_note_meeting_user_id AFTER INSERT ON personal_note_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_personal_note_t_meeting_user_id AFTER INSERT ON personal_note_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('personal_note', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_personal_note_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_personal_note_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('personal_note', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_personal_note_content_object_id_motion_id AFTER INSERT ON personal_note_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_personal_note_t_content_object_id_motion_id AFTER INSERT ON personal_note_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('personal_note', 'motion', 'content_object_id_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_personal_note_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_personal_note_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('personal_note', 'motion', 'content_object_id_motion_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_content_object_id_motion_id AFTER INSERT ON poll_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_content_object_id_motion_id AFTER INSERT ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'motion', 'content_object_id_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_poll_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_poll_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'motion', 'content_object_id_motion_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_content_object_id_assignment_id AFTER INSERT ON poll_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_content_object_id_assignment_id AFTER INSERT ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'assignment', 'content_object_id_assignment_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_poll_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_poll_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'assignment', 'content_object_id_assignment_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_content_object_id_topic_id AFTER INSERT ON poll_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_content_object_id_topic_id AFTER INSERT ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'topic', 'content_object_id_topic_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_poll_ids AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_t_poll_ids AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'topic', 'content_object_id_topic_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_global_option_id AFTER INSERT OR UPDATE OF global_option_id ON poll_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'option', 'global_option_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_option_used_as_global_option_in_poll_id AFTER INSERT ON option_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('poll', 'option', 'global_option_id', 'meeting_id', TRUE);
+
+CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id ON poll_ballot_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals('poll_ballot', 'poll_ballot_user', 'poll_ballot_user_id', 'poll_id', FALSE);
+CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_user_t_poll_ballot_id AFTER INSERT ON poll_ballot_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals('poll_ballot', 'poll_ballot_user', 'poll_ballot_user_id', 'poll_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_candidate_poll_candidate_list_id AFTER INSERT ON poll_candidate_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('poll_candidate', 'poll_candidate_list', 'poll_candidate_list_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_candidate_list_poll_candidate_ids AFTER INSERT ON poll_candidate_list_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('poll_candidate', 'poll_candidate_list', 'poll_candidate_list_id', 'meeting_id', TRUE);
-
-
-
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_current_projector_id AFTER INSERT OR UPDATE OF current_projector_id ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_current_projector_id AFTER INSERT OR UPDATE OF current_projector_id ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector', 'current_projector_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_current_projection_ids AFTER INSERT ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_t_current_projection_ids AFTER INSERT ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector', 'current_projector_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_preview_projector_id AFTER INSERT OR UPDATE OF preview_projector_id ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_preview_projector_id AFTER INSERT OR UPDATE OF preview_projector_id ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector', 'preview_projector_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_preview_projection_ids AFTER INSERT ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_t_preview_projection_ids AFTER INSERT ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector', 'preview_projector_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_history_projector_id AFTER INSERT OR UPDATE OF history_projector_id ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_history_projector_id AFTER INSERT OR UPDATE OF history_projector_id ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector', 'history_projector_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_history_projection_ids AFTER INSERT ON projector_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_t_history_projection_ids AFTER INSERT ON projector_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector', 'history_projector_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_meeting_id AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_meeting_id AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_meeting_id_for_meeting('projection', 'content_object_id_meeting_id');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_motion_id AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_motion_id AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'motion', 'content_object_id_motion_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_projection_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_projection_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'motion', 'content_object_id_motion_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_meeting725071c AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_meeti1e00bfd AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'meeting_mediafile', 'content_object_id_meeting_mediafile_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_projection_ids AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_mediafile_t_projection_ids AFTER INSERT ON meeting_mediafile_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'meeting_mediafile', 'content_object_id_meeting_mediafile_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_list_ofcdb7a00 AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_list_b1d0522 AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'list_of_speakers', 'content_object_id_list_of_speakers_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_projection_ids AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_projection_ids AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'list_of_speakers', 'content_object_id_list_of_speakers_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_motion_3bcdf4c AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_motiofc26eda AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'motion_block', 'content_object_id_motion_block_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_projection_ids AFTER INSERT ON motion_block_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_block_t_projection_ids AFTER INSERT ON motion_block_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'motion_block', 'content_object_id_motion_block_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_assignment_id AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_assig83f4402 AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'assignment', 'content_object_id_assignment_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_projection_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_projection_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'assignment', 'content_object_id_assignment_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_agenda_item_id AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_agend9ca4c9d AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'agenda_item', 'content_object_id_agenda_item_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_projection_ids AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_projection_ids AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'agenda_item', 'content_object_id_agenda_item_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_topic_id AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_topic_id AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'topic', 'content_object_id_topic_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_projection_ids AFTER INSERT ON topic_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_topic_t_projection_ids AFTER INSERT ON topic_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'topic', 'content_object_id_topic_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_poll_id AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_poll_id AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'poll', 'content_object_id_poll_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_projection_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_poll_t_projection_ids AFTER INSERT ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'poll', 'content_object_id_poll_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_projecte235c4e AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_proje49e908a AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector_message', 'content_object_id_projector_message_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_message_projection_ids AFTER INSERT ON projector_message_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_message_t_projection_ids AFTER INSERT ON projector_message_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector_message', 'content_object_id_projector_message_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_content_object_id_project397e320 AFTER INSERT ON projection_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projection_t_content_object_id_proje0cc49a1 AFTER INSERT ON projection_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector_countdown', 'content_object_id_projector_countdown_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_countdown_projection_ids AFTER INSERT ON projector_countdown_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_projector_countdown_t_projection_ids AFTER INSERT ON projector_countdown_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('projection', 'projector_countdown', 'content_object_id_projector_countdown_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_list_of_speakers_id AFTER INSERT ON speaker_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_t_list_of_speakers_id AFTER INSERT ON speaker_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'list_of_speakers', 'list_of_speakers_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_speaker_ids AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_speaker_ids AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'list_of_speakers', 'list_of_speakers_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_structure_level_list_of_speakers_id AFTER INSERT OR UPDATE OF structure_level_list_of_speakers_id ON speaker_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_t_structure_level_list_of_sp9ebc874 AFTER INSERT OR UPDATE OF structure_level_list_of_speakers_id ON speaker_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'structure_level_list_of_speakers', 'structure_level_list_of_speakers_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_list_of_speakers_spe2bd32fa AFTER INSERT ON structure_level_list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_list_of_speakers_t_s3419e66 AFTER INSERT ON structure_level_list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'structure_level_list_of_speakers', 'structure_level_list_of_speakers_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON speaker_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id ON speaker_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'meeting_user', 'meeting_user_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_speaker_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_speaker_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'meeting_user', 'meeting_user_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_point_of_order_category_id AFTER INSERT OR UPDATE OF point_of_order_category_id ON speaker_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_speaker_t_point_of_order_category_id AFTER INSERT OR UPDATE OF point_of_order_category_id ON speaker_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'point_of_order_category', 'point_of_order_category_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_point_of_order_category_speaker_ids AFTER INSERT ON point_of_order_category_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_point_of_order_category_t_speaker_ids AFTER INSERT ON point_of_order_category_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('speaker', 'point_of_order_category', 'point_of_order_category_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_list_of_speakers_str168b90c AFTER INSERT OR UPDATE OF structure_level_id ON structure_level_list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_list_of_speakers_t_s9bddf8d AFTER INSERT OR UPDATE OF structure_level_id ON structure_level_list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('structure_level_list_of_speakers', 'structure_level', 'structure_level_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_structure_level_listb19efab AFTER INSERT ON structure_level_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_t_structure_level_lice7955c AFTER INSERT ON structure_level_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('structure_level_list_of_speakers', 'structure_level', 'structure_level_id', 'meeting_id', TRUE);
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_list_of_speakers_lis9ee93ba AFTER INSERT OR UPDATE OF list_of_speakers_id ON structure_level_list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_structure_level_list_of_speakers_t_lf3ea816 AFTER INSERT OR UPDATE OF list_of_speakers_id ON structure_level_list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('structure_level_list_of_speakers', 'list_of_speakers', 'list_of_speakers_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_structure_level_lisfa84d2b AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_list_of_speakers_t_structure_level_lb63ec40 AFTER INSERT ON list_of_speakers_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('structure_level_list_of_speakers', 'list_of_speakers', 'list_of_speakers_id', 'meeting_id', TRUE);
 
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_tagged_ids_agenda_item AFTER INSERT ON tag_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_t_tagged_ids_agenda_item_t AFTER INSERT ON tag_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_tag_tagged_ids_t', 'tag_id', 'tag', 'tagged_id_agenda_item_id', 'agenda_item', 'meeting_id', 'tagged_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_tag_ids AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_agenda_item_t_tag_ids AFTER INSERT ON agenda_item_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_tag_tagged_ids_t', 'tagged_id_agenda_item_id', 'agenda_item', 'tag_id', 'tag', 'meeting_id', 'tag_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_tagged_ids_agenda_item_intermediate AFTER INSERT ON gm_tag_tagged_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_t_tagged_ids_agenda_item_t_intermediate AFTER INSERT ON gm_tag_tagged_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('tag_id', 'tag', 'tagged_id_agenda_item_id', 'agenda_item', 'meeting_id', 'tagged_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_tagged_ids_assignment AFTER INSERT ON tag_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_t_tagged_ids_assignment_t AFTER INSERT ON tag_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_tag_tagged_ids_t', 'tag_id', 'tag', 'tagged_id_assignment_id', 'assignment', 'meeting_id', 'tagged_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_tag_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_assignment_t_tag_ids AFTER INSERT ON assignment_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_tag_tagged_ids_t', 'tagged_id_assignment_id', 'assignment', 'tag_id', 'tag', 'meeting_id', 'tag_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_tagged_ids_assignment_intermediate AFTER INSERT ON gm_tag_tagged_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_t_tagged_ids_assignment_t_intermediate AFTER INSERT ON gm_tag_tagged_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('tag_id', 'tag', 'tagged_id_assignment_id', 'assignment', 'meeting_id', 'tagged_ids');
 
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_tagged_ids_motion AFTER INSERT ON tag_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_t_tagged_ids_motion_t AFTER INSERT ON tag_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_tag_tagged_ids_t', 'tag_id', 'tag', 'tagged_id_motion_id', 'motion', 'meeting_id', 'tagged_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_tag_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_motion_t_tag_ids AFTER INSERT ON motion_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('gm_tag_tagged_ids_t', 'tagged_id_motion_id', 'motion', 'tag_id', 'tag', 'meeting_id', 'tag_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_tagged_ids_motion_intermediate AFTER INSERT ON gm_tag_tagged_ids_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_tag_t_tagged_ids_motion_t_intermediate AFTER INSERT ON gm_tag_tagged_ids_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('tag_id', 'tag', 'tagged_id_motion_id', 'motion', 'meeting_id', 'tagged_ids');
-
-
-
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_vote_option_id AFTER INSERT ON vote_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('vote', 'option', 'option_id', 'meeting_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_option_vote_ids AFTER INSERT ON option_t INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION check_equals('vote', 'option', 'option_id', 'meeting_id', TRUE);
 
 
 
@@ -6195,13 +6046,10 @@ SQL nt:nt => group/write_comment_section_ids:-> motion_comment_section/write_gro
 SQL nt:nt => group/read_chat_group_ids:-> chat_group/read_group_ids
 SQL nt:nt => group/write_chat_group_ids:-> chat_group/write_group_ids
 SQL nt:nt => group/poll_ids:-> poll/entitled_group_ids
-FIELD 1r:nt => group/used_as_motion_poll_default_id:-> meeting/motion_poll_default_group_ids
-FIELD 1r:nt => group/used_as_assignment_poll_default_id:-> meeting/assignment_poll_default_group_ids
-FIELD 1r:nt => group/used_as_topic_poll_default_id:-> meeting/topic_poll_default_group_ids
-FIELD 1r:nt => group/used_as_poll_default_id:-> meeting/poll_default_group_ids
+SQL nt:nt => group/used_in_meeting_poll_setting_ids:-> meeting_poll_setting/group_ids
 FIELD 1rR:nt => group/meeting_id:-> meeting/group_ids
 
-FIELD 1Gr:nt,nt,nt => history_entry/model_id:-> user/history_entry_ids,motion/history_entry_ids,assignment/history_entry_ids
+FIELD 1Gr:nt,nt,nt,nt => history_entry/model_id:-> assignment/history_entry_ids,motion/history_entry_ids,topic/history_entry_ids,user/history_entry_ids
 FIELD 1rR:nt => history_entry/position_id:-> history_position/entry_ids
 FIELD 1r:nt => history_entry/meeting_id:-> meeting/relevant_history_entry_ids
 
@@ -6225,13 +6073,10 @@ FIELD 1r:nt => meeting/is_archived_in_organization_id:-> organization/archived_m
 FIELD 1r:nt => meeting/template_for_organization_id:-> organization/template_meeting_ids
 FIELD 1rR:1t => meeting/motions_default_workflow_id:-> motion_workflow/default_workflow_meeting_id
 FIELD 1rR:1t => meeting/motions_default_amendment_workflow_id:-> motion_workflow/default_amendment_workflow_meeting_id
-SQL nt:1r => meeting/motion_poll_default_group_ids:-> group/used_as_motion_poll_default_id
-SQL nr:1rR => meeting/poll_candidate_list_ids:-> poll_candidate_list/meeting_id
-SQL nr:1rR => meeting/poll_candidate_ids:-> poll_candidate/meeting_id
 SQL nt:1rR => meeting/meeting_user_ids:-> meeting_user/meeting_id
-SQL nt:1r => meeting/assignment_poll_default_group_ids:-> group/used_as_assignment_poll_default_id
-SQL nt:1r => meeting/poll_default_group_ids:-> group/used_as_poll_default_id
-SQL nt:1r => meeting/topic_poll_default_group_ids:-> group/used_as_topic_poll_default_id
+FIELD 1r:1t => meeting/assignment_poll_config_id:-> meeting_poll_setting/used_as_assignment_poll_config_in_meeting_id
+FIELD 1r:1t => meeting/motion_poll_config_id:-> meeting_poll_setting/used_as_motion_poll_config_in_meeting_id
+FIELD 1r:1t => meeting/topic_poll_config_id:-> meeting_poll_setting/used_as_topic_poll_config_in_meeting_id
 SQL nt:1rR => meeting/projector_ids:-> projector/meeting_id
 SQL nt:1rR => meeting/all_projection_ids:-> projection/meeting_id
 SQL nt:1rR => meeting/projector_message_ids:-> projector_message/meeting_id
@@ -6260,8 +6105,7 @@ SQL nt:1rR => meeting/motion_working_group_speaker_ids:-> motion_working_group_s
 SQL nt:1rR => meeting/motion_change_recommendation_ids:-> motion_change_recommendation/meeting_id
 SQL nt:1rR => meeting/motion_state_ids:-> motion_state/meeting_id
 SQL nr:1rR => meeting/poll_ids:-> poll/meeting_id
-SQL nr:1rR => meeting/option_ids:-> option/meeting_id
-SQL nr:1rR => meeting/vote_ids:-> vote/meeting_id
+SQL nt:1rR => meeting/poll_setting_ids:-> meeting_poll_setting/meeting_id
 SQL nt:1rR => meeting/assignment_ids:-> assignment/meeting_id
 SQL nt:1rR => meeting/assignment_candidate_ids:-> assignment_candidate/meeting_id
 SQL nt:1rR => meeting/personal_note_ids:-> personal_note/meeting_id
@@ -6306,7 +6150,7 @@ SQL ntR:1r => meeting/default_projector_message_ids:-> projector/used_as_default
 SQL ntR:1r => meeting/default_projector_countdown_ids:-> projector/used_as_default_projector_for_countdown_in_meeting_id
 SQL ntR:1r => meeting/default_projector_assignment_poll_ids:-> projector/used_as_default_projector_for_assignment_poll_in_meeting_id
 SQL ntR:1r => meeting/default_projector_motion_poll_ids:-> projector/used_as_default_projector_for_motion_poll_in_meeting_id
-SQL ntR:1r => meeting/default_projector_poll_ids:-> projector/used_as_default_projector_for_poll_in_meeting_id
+SQL ntR:1r => meeting/default_projector_topic_poll_ids:-> projector/used_as_default_projector_for_topic_poll_in_meeting_id
 FIELD 1rR:1t => meeting/default_group_id:-> group/default_group_for_meeting_id
 FIELD 1r:1t => meeting/admin_group_id:-> group/admin_group_for_meeting_id
 FIELD 1r:1t => meeting/anonymous_group_id:-> group/anonymous_group_for_meeting_id
@@ -6336,6 +6180,12 @@ SQL 1t:1r => meeting_mediafile/used_as_font_chyron_speaker_name_in_meeting_id:->
 SQL 1t:1r => meeting_mediafile/used_as_font_projector_h1_in_meeting_id:-> meeting/font_projector_h1_id
 SQL 1t:1r => meeting_mediafile/used_as_font_projector_h2_in_meeting_id:-> meeting/font_projector_h2_id
 
+SQL nt:nt => meeting_poll_setting/group_ids:-> group/used_in_meeting_poll_setting_ids
+SQL 1t:1r => meeting_poll_setting/used_as_assignment_poll_config_in_meeting_id:-> meeting/assignment_poll_config_id
+SQL 1t:1r => meeting_poll_setting/used_as_motion_poll_config_in_meeting_id:-> meeting/motion_poll_config_id
+SQL 1t:1r => meeting_poll_setting/used_as_topic_poll_config_in_meeting_id:-> meeting/topic_poll_config_id
+FIELD 1rR:nt => meeting_poll_setting/meeting_id:-> meeting/poll_setting_ids
+
 FIELD 1rR:nt => meeting_user/user_id:-> user/meeting_user_ids
 FIELD 1rR:nt => meeting_user/meeting_id:-> meeting/meeting_user_ids
 SQL nt:1rR => meeting_user/personal_note_ids:-> personal_note/meeting_user_id
@@ -6345,8 +6195,12 @@ SQL nt:1r => meeting_user/motion_editor_ids:-> motion_editor/meeting_user_id
 SQL nt:1r => meeting_user/motion_working_group_speaker_ids:-> motion_working_group_speaker/meeting_user_id
 SQL nt:1r => meeting_user/motion_submitter_ids:-> motion_submitter/meeting_user_id
 SQL nt:1r => meeting_user/assignment_candidate_ids:-> assignment_candidate/meeting_user_id
-FIELD 1r:nt => meeting_user/vote_delegated_to_id:-> meeting_user/vote_delegations_from_ids
-SQL nt:1r => meeting_user/vote_delegations_from_ids:-> meeting_user/vote_delegated_to_id
+SQL nt:nt => meeting_user/vote_delegated_to_ids:-> meeting_user/vote_delegations_from_ids
+SQL nt:nt => meeting_user/vote_delegations_from_ids:-> meeting_user/vote_delegated_to_ids
+SQL nt:1Gr => meeting_user/poll_option_ids:-> poll_option/content_object_id
+SQL nt:1r => meeting_user/acting_ballot_ids:-> poll_ballot_user/acting_meeting_user_id
+SQL nt:1r => meeting_user/represented_ballot_ids:-> poll_ballot_user/represented_meeting_user_id
+SQL nt:1r => meeting_user/poll_entitled_user_ids:-> poll_entitled_user/meeting_user_id
 SQL nt:1r => meeting_user/chat_message_ids:-> chat_message/meeting_user_id
 SQL ntR:nt => meeting_user/group_ids:-> group/meeting_user_ids
 SQL nt:nt => meeting_user/structure_level_ids:-> structure_level/meeting_user_ids
@@ -6374,7 +6228,6 @@ SQL nt:1rR => motion/supporter_ids:-> motion_supporter/motion_id
 SQL nt:1rR => motion/editor_ids:-> motion_editor/motion_id
 SQL nt:1rR => motion/working_group_speaker_ids:-> motion_working_group_speaker/motion_id
 SQL nt:1GrR => motion/poll_ids:-> poll/content_object_id
-SQL nr:1Gr => motion/option_ids:-> option/content_object_id
 SQL nt:1rR => motion/change_recommendation_ids:-> motion_change_recommendation/motion_id
 SQL nt:1rR => motion/comment_ids:-> motion_comment/motion_id
 SQL 1t:1GrR => motion/agenda_item_id:-> agenda_item/content_object_id
@@ -6441,12 +6294,6 @@ FIELD 1r:nt => motion_working_group_speaker/meeting_user_id:-> meeting_user/moti
 FIELD 1rR:nt => motion_working_group_speaker/motion_id:-> motion/working_group_speaker_ids
 FIELD 1rR:nt => motion_working_group_speaker/meeting_id:-> meeting/motion_working_group_speaker_ids
 
-FIELD 1r:nr => option/poll_id:-> poll/option_ids
-SQL 1t:1r => option/used_as_global_option_in_poll_id:-> poll/global_option_id
-SQL nr:1rR => option/vote_ids:-> vote/option_id
-FIELD 1Gr:nr,nr,1tR => option/content_object_id:-> motion/option_ids,user/option_ids,poll_candidate_list/option_id
-FIELD 1rR:nr => option/meeting_id:-> meeting/option_ids
-
 SQL nr:1rR => organization/gender_ids:-> gender/organization_id
 SQL nr:1rR => organization/committee_ids:-> committee/organization_id
 SQL nt:1r => organization/active_meeting_ids:-> meeting/is_active_in_organization_id
@@ -6469,21 +6316,39 @@ FIELD 1rR:nt => personal_note/meeting_id:-> meeting/personal_note_ids
 FIELD 1rR:nt => point_of_order_category/meeting_id:-> meeting/point_of_order_category_ids
 SQL nt:1r => point_of_order_category/speaker_ids:-> speaker/point_of_order_category_id
 
+FIELD 1GrR:1tR,1tR,1tR,1tR,1tR => poll/config_id:-> poll_config_approval/poll_id,poll_config_selection/poll_id,poll_config_rating_score/poll_id,poll_config_rating_approval/poll_id,poll_config_stv_scottish/poll_id
+SQL nt:1rR => poll/option_ids:-> poll_option/poll_id
 FIELD 1GrR:nt,nt,nt => poll/content_object_id:-> motion/poll_ids,assignment/poll_ids,topic/poll_ids
-SQL nr:1r => poll/option_ids:-> option/poll_id
-FIELD 1r:1t => poll/global_option_id:-> option/used_as_global_option_in_poll_id
-SQL nt:nt => poll/voted_ids:-> user/poll_voted_ids
+SQL nr:1rR => poll/ballot_ids:-> poll_ballot/poll_id
+SQL nr:1rR => poll/ballot_user_ids:-> poll_ballot_user/poll_id
 SQL nt:nt => poll/entitled_group_ids:-> group/poll_ids
+SQL nt:1rR => poll/entitled_user_ids:-> poll_entitled_user/poll_id
 SQL nt:1GrR => poll/projection_ids:-> projection/content_object_id
 FIELD 1rR:nr => poll/meeting_id:-> meeting/poll_ids
 
-FIELD 1rR:nr => poll_candidate/poll_candidate_list_id:-> poll_candidate_list/poll_candidate_ids
-FIELD 1r:nr => poll_candidate/user_id:-> user/poll_candidate_ids
-FIELD 1rR:nr => poll_candidate/meeting_id:-> meeting/poll_candidate_ids
+FIELD 1rR:nr => poll_ballot/poll_id:-> poll/ballot_ids
+FIELD 1r:1t => poll_ballot/poll_ballot_user_id:-> poll_ballot_user/poll_ballot_id
 
-SQL nr:1rR => poll_candidate_list/poll_candidate_ids:-> poll_candidate/poll_candidate_list_id
-FIELD 1rR:nr => poll_candidate_list/meeting_id:-> meeting/poll_candidate_list_ids
-SQL 1tR:1Gr => poll_candidate_list/option_id:-> option/content_object_id
+FIELD 1rR:nr => poll_ballot_user/poll_id:-> poll/ballot_user_ids
+SQL 1t:1r => poll_ballot_user/poll_ballot_id:-> poll_ballot/poll_ballot_user_id
+FIELD 1r:nt => poll_ballot_user/acting_meeting_user_id:-> meeting_user/acting_ballot_ids
+FIELD 1r:nt => poll_ballot_user/represented_meeting_user_id:-> meeting_user/represented_ballot_ids
+
+SQL 1tR:1GrR => poll_config_approval/poll_id:-> poll/config_id
+
+SQL 1tR:1GrR => poll_config_rating_approval/poll_id:-> poll/config_id
+
+SQL 1tR:1GrR => poll_config_rating_score/poll_id:-> poll/config_id
+
+SQL 1tR:1GrR => poll_config_selection/poll_id:-> poll/config_id
+
+SQL 1tR:1GrR => poll_config_stv_scottish/poll_id:-> poll/config_id
+
+FIELD 1rR:nt => poll_entitled_user/poll_id:-> poll/entitled_user_ids
+FIELD 1r:nt => poll_entitled_user/meeting_user_id:-> meeting_user/poll_entitled_user_ids
+
+FIELD 1rR:nt => poll_option/poll_id:-> poll/option_ids
+FIELD 1Gr:nt,nt => poll_option/content_object_id:-> meeting_user/poll_option_ids,user/poll_option_ids
 
 FIELD 1r:nt => projection/current_projector_id:-> projector/current_projection_ids
 FIELD 1r:nt => projection/preview_projector_id:-> projector/preview_projection_ids
@@ -6508,7 +6373,7 @@ FIELD 1r:ntR => projector/used_as_default_projector_for_message_in_meeting_id:->
 FIELD 1r:ntR => projector/used_as_default_projector_for_countdown_in_meeting_id:-> meeting/default_projector_countdown_ids
 FIELD 1r:ntR => projector/used_as_default_projector_for_assignment_poll_in_meeting_id:-> meeting/default_projector_assignment_poll_ids
 FIELD 1r:ntR => projector/used_as_default_projector_for_motion_poll_in_meeting_id:-> meeting/default_projector_motion_poll_ids
-FIELD 1r:ntR => projector/used_as_default_projector_for_poll_in_meeting_id:-> meeting/default_projector_poll_ids
+FIELD 1r:ntR => projector/used_as_default_projector_for_topic_poll_in_meeting_id:-> meeting/default_projector_topic_poll_ids
 FIELD 1rR:nt => projector/meeting_id:-> meeting/projector_ids
 
 SQL nt:1GrR => projector_countdown/projection_ids:-> projection/content_object_id
@@ -6546,33 +6411,20 @@ SQL 1tR:1GrR => topic/list_of_speakers_id:-> list_of_speakers/content_object_id
 SQL nt:1GrR => topic/poll_ids:-> poll/content_object_id
 SQL nt:1GrR => topic/projection_ids:-> projection/content_object_id
 FIELD 1rR:nt => topic/meeting_id:-> meeting/topic_ids
+SQL nt:1Gr => topic/history_entry_ids:-> history_entry/model_id
 
 FIELD 1r:nr => user/gender_id:-> gender/user_ids
 SQL nt:nt => user/is_present_in_meeting_ids:-> meeting/present_user_ids
 SQL nts:nts => user/committee_ids:-> committee/user_ids
 SQL nt:nt => user/committee_management_ids:-> committee/manager_ids
 SQL nt:1rR => user/meeting_user_ids:-> meeting_user/user_id
-SQL nt:nt => user/poll_voted_ids:-> poll/voted_ids
-SQL nr:1Gr => user/option_ids:-> option/content_object_id
-SQL nr:1r => user/vote_ids:-> vote/user_id
-SQL nr:1r => user/delegated_vote_ids:-> vote/delegated_user_id
-SQL nr:1r => user/poll_candidate_ids:-> poll_candidate/user_id
 FIELD 1r:nt => user/home_committee_id:-> committee/native_user_ids
+SQL nt:1Gr => user/poll_option_ids:-> poll_option/content_object_id
 SQL nt:1r => user/history_position_ids:-> history_position/user_id
 SQL nt:1Gr => user/history_entry_ids:-> history_entry/model_id
 SQL nts:nts => user/meeting_ids:-> meeting/user_ids
 FIELD 1rR:nr => user/organization_id:-> organization/user_ids
 
-FIELD 1rR:nr => vote/option_id:-> option/vote_ids
-FIELD 1r:nr => vote/user_id:-> user/vote_ids
-FIELD 1r:nr => vote/delegated_user_id:-> user/delegated_vote_ids
-FIELD 1rR:nr => vote/meeting_id:-> meeting/vote_ids
-
-*/
-/*
-There are 2 errors/warnings
-    poll/live_votes: type:JSON is marked as a calculated field and not generated in schema
-    projection/content: type:JSON is marked as a calculated field and not generated in schema
 */
 
-/*   Missing attribute handling for on_delete, constant_legacy */
+/*   Missing attribute handling for on_delete, constant_legacy, deferred */

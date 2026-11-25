@@ -9,10 +9,11 @@ type {{.GoName}} struct{
 }
 
 type {{.GoNameLc}}Builder struct{
-    builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}]
+  builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}, *{{.GoName}}]
 }
 
-func (b *{{.GoNameLc}}Builder)lazy(ds *Fetch, id int) *{{.GoName}} {
+func (b *{{.GoNameLc}}Builder)lazy(ds *Fetch, idI any) *{{.GoName}} {
+		id := idI.(int)
     c := {{.GoName}}{}
     {{- range .Fields}}
     ds.{{.FetchName}}(id).Lazy(&c.{{.Name}})
@@ -25,27 +26,87 @@ func (b *{{.GoNameLc}}Builder) Preload(rel builderWrapperI) *{{.GoNameLc}}Builde
     return b
 }
 
-{{ range .Relations}}
-func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
-	return &{{.TypeLc}}Builder{
-		builder: builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}]{
-			fetch: b.fetch,
-			parent: b,
-			idField: "{{.FieldName}}",
-			relField: "{{.MethodName}}",
-            {{- if .IsList}}
-            many: true,
-	        {{- end}}
-		},
+{{ range .Relations }}
+	func (b *{{$.GoNameLc}}Builder) {{.MethodName}}() *{{.TypeLc}}Builder {
+		return &{{.TypeLc}}Builder{
+			builder: builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}, {{ if not .IsGeneric }}*{{ end }}{{.Type}}]{
+				fetch: b.fetch,
+				parent: b,
+				idField: "{{.FieldName}}",
+				relField: "{{.MethodName}}",
+        {{- if .IsList}}
+          many: true,
+	      {{- end}}
+				{{- if .IsGeneric }}
+	      	conv: func(u {{.Type}}) {{.Type}} { return u },
+				{{- else }}
+	      	conv: func(p *{{.Type}}) {{.Type}} { return *p },
+				{{- end }}
+			},
+		}
 	}
-}
-{{end}}
+
+	{{ if .IsGeneric }}
+		type {{ .Type }} interface {
+    		is{{ .Type }}()
+		}
+
+		{{ $type := .Type }}
+		{{ range $index, $element := .GenericTypes }}
+		func (*{{ $element }}) is{{ $type }}() {}{{ end }}
+
+		type {{.TypeLc}}Builder struct {
+			builder[{{.TypeLc}}Builder, *{{.TypeLc}}Builder, {{.Type}}, {{.Type}}]
+		}
+
+		func (b *{{.TypeLc}}Builder) lazy(ds *Fetch, id any) {{.Type}} {
+			fqid, ok := id.(string)
+			if !ok {
+				return nil
+			}
+			
+			collection, idStr, ok := strings.Cut(fqid, "/")
+			if !ok {
+				return nil
+			}
+			
+			intId, err := strconv.Atoi(idStr)
+			if err != nil {
+				return nil
+			}
+
+			switch collection {
+			{{- $genericTypesLc := .GenericTypesLc }}
+			{{- $genericTypesCc := .GenericTypesCc }}
+			{{- range $i, $gType := .GenericTypes }}
+			case "{{ index $genericTypesCc $i }}":
+				{{- $typeLc := index $genericTypesLc $i }}
+				builder := &{{$typeLc}}Builder{
+					builder: builder[{{$typeLc}}Builder, *{{$typeLc}}Builder, {{$gType}}, *{{$gType}}]{
+						fetch: ds,
+	    			conv: func(p *{{$gType}}) {{$gType}} { return *p },
+					},
+				}
+				return builder.lazy(ds, intId)
+			{{- end }}
+			}
+					
+			return nil
+		}
+
+		func (b *{{.TypeLc}}Builder) Preload(rel builderWrapperI) *{{.TypeLc}}Builder {
+			b.builder.Preload(rel)
+			return b
+		}
+	{{ end }}
+{{ end }}
 
 func (r *Fetch){{.GoName}}(ids... int) *{{.GoNameLc}}Builder {
 	return &{{.GoNameLc}}Builder{
-		builder: builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}]{
+		builder: builder[{{.GoNameLc}}Builder, *{{.GoNameLc}}Builder, {{.GoName}}, *{{.GoName}}]{
 			ids: ids,
 			fetch: r,
+	    conv: func(p *{{.GoName}}) {{.GoName}} { return *p },
 		},
 	}
 }

@@ -89,6 +89,7 @@ func genEnums(buf *bytes.Buffer, fromYML map[string]collection.Collection) error
 				enumMap[name] = []enumField{}
 				for _, enumValue := range field.Enum.Values {
 					goEnumName := dsgen.GoName(strings.ReplaceAll(enumValue, "-", "_"))
+					goEnumName = strings.ReplaceAll(goEnumName, ".", "")
 					if goEnumName == "" {
 						goEnumName = "empty"
 					}
