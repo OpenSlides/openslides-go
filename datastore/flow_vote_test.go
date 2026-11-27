@@ -18,10 +18,10 @@ import (
 func TestVoteCountSourceGet(t *testing.T) {
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `{}`)
+		_, _ = fmt.Fprintln(w, `{}`)
 		w.(http.Flusher).Flush()
 		for msg := range sender {
-			fmt.Fprintln(w, msg)
+			_, _ = fmt.Fprintln(w, msg)
 			w.(http.Flusher).Flush()
 		}
 	}))
@@ -121,11 +121,11 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `{}`)
+		_, _ = fmt.Fprintln(w, `{}`)
 		w.(http.Flusher).Flush()
 
 		for msg := range sender {
-			fmt.Fprintln(w, msg)
+			_, _ = fmt.Fprintln(w, msg)
 			w.(http.Flusher).Flush()
 		}
 	}))
@@ -203,7 +203,7 @@ func TestReconnect(t *testing.T) {
 	sender := make(chan struct{})
 	var counter int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, msg)
+		_, _ = fmt.Fprintln(w, msg)
 		w.(http.Flusher).Flush()
 		counter++
 		<-sender
@@ -240,7 +240,7 @@ func TestGetWithoutConnect(t *testing.T) {
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for msg := range sender {
-			fmt.Fprintln(w, msg)
+			_, _ = fmt.Fprintln(w, msg)
 			w.(http.Flusher).Flush()
 		}
 	}))
@@ -268,7 +268,7 @@ func TestGetWithoutConnect(t *testing.T) {
 // waitForResponse calls the given function and waits until the data is
 // processed.
 func waitForResponse(ctx context.Context, flow *datastore.FlowVoteCount, fn func()) {
-	updateResult(ctx, flow, fn)
+	_, _ = updateResult(ctx, flow, fn)
 }
 
 // updateResult returns the return values from flow.Update after the given function is processed.

@@ -11,12 +11,16 @@ import (
 )
 
 func TestHasSuperAdmin(t *testing.T) {
-	ctx := context.Background()
-	ds := dsmock.Stub(dsmock.YAMLData(`---
+	ctx := t.Context()
+	data, err := dsmock.YAMLDataErr(`---
 		user/1/organization_management_level: superadmin
 
 		meeting/3/id: 3
-	`))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmock.Stub(data)
 
 	p, err := perm.New(ctx, dsfetch.New(ds), 1, 3)
 	if err != nil {
@@ -30,7 +34,7 @@ func TestHasSuperAdmin(t *testing.T) {
 
 func TestLockedOut(t *testing.T) {
 	ctx := context.Background()
-	ds := dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 		meeting/3/committee_id: 2
 		user/1/meeting_user_ids: [10]
 		meeting_user/10:
@@ -38,7 +42,11 @@ func TestLockedOut(t *testing.T) {
 			locked_out: true
 			group_ids: [30]
 		group/30/permissions: ["agenda_item.can_see"]
-	`))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmock.Stub(data)
 
 	p, err := perm.New(ctx, dsfetch.New(ds), 1, 3)
 	if err != nil {
@@ -56,11 +64,15 @@ func TestLockedOut(t *testing.T) {
 
 func TestManagementLevelCommittees(t *testing.T) {
 	ctx := t.Context()
-	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 		committee/1/all_child_ids: [3,4]
 		user/4:
 			committee_management_ids: [1]
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsfetch.New(dsmock.Stub(data))
 
 	got, err := perm.ManagementLevelCommittees(ctx, ds, 4)
 	if err != nil {
@@ -76,12 +88,16 @@ func TestManagementLevelCommittees(t *testing.T) {
 
 func TestCommitteeManagerPermission(t *testing.T) {
 	ctx := t.Context()
-	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 		committee/1/all_child_ids: [3,4]
 		user/4:
 			committee_management_ids: [1]
 		meeting/5/committee_id: 3
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsfetch.New(dsmock.Stub(data))
 
 	p, err := perm.New(ctx, ds, 4, 5)
 	if err != nil {

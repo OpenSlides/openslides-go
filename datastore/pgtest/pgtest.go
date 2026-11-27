@@ -41,7 +41,7 @@ func RunTests(m *testing.M) int {
 	pool, err = dockertest.NewPool(ctx, "",
 		dockertest.WithMaxWait(2*time.Minute),
 	)
-	defer pool.Close(ctx)
+	defer func() { _ = pool.Close(ctx) }()
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		return 1
@@ -100,7 +100,7 @@ func NewPostgresTest(t *testing.T) (*PostgresTest, error) {
 		if err != nil {
 			return fmt.Errorf("create admin connection: %w", err)
 		}
-		defer conn.Close(ctx)
+		defer func() { _ = conn.Close(ctx) }()
 
 		if _, err = conn.Exec(ctx, "CREATE DATABASE "+database); err != nil {
 			return fmt.Errorf("send create database command: %w", err)
@@ -184,7 +184,7 @@ func (tp *PostgresTest) addSchema(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("creating connection: %w", err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 
 	if _, err := conn.Exec(ctx, schemaSQL); err != nil {
 		return fmt.Errorf("adding schema: %w", PrityPostgresError(err, schemaSQL))
@@ -211,7 +211,7 @@ func (tp *PostgresTest) AddData(ctx context.Context, data string) error {
 	if err != nil {
 		return fmt.Errorf("open connection: %w", err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 
 	if err := insertTestData(ctx, conn, data); err != nil {
 		return fmt.Errorf("insert data: %w", err)

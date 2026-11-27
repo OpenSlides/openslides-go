@@ -137,7 +137,7 @@ func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 // Update gets values from the flow to update the cached values.
 func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	if updateFn == nil {
-		updateFn = func(m map[dskey.Key][]byte, err error) {}
+		updateFn = func(map[dskey.Key][]byte, error) {}
 	}
 
 	c.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {

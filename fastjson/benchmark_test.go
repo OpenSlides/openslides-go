@@ -73,6 +73,7 @@ func BenchmarkFastjsonDecodeIntList(b *testing.B) {
 			}
 			sum = append(sum, list...)
 		}
+		_ = sum
 	}
 }
 
@@ -96,5 +97,6 @@ func BenchmarkJSONDecodeIntList(b *testing.B) {
 			}
 			sum = append(sum, list...)
 		}
+		_ = sum
 	}
 }

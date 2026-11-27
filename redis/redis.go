@@ -61,7 +61,7 @@ func (r *Redis) Wait(ctx context.Context) error {
 	for range 100 {
 		conn := r.pool.Get()
 		_, err := redis.DoContext(conn, ctx, "PING")
-		conn.Close()
+		_ = conn.Close()
 
 		if err == nil {
 			return nil
@@ -95,7 +95,7 @@ func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 
 func (r *Redis) singleUpdate(ctx context.Context, id string) (string, map[dskey.Key][]byte, error) {
 	conn := r.pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", fieldChangedTopic, id)
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 	}
 
 	conn := r.pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", logoutTopic, id)
 	if err != nil {

@@ -28,7 +28,6 @@ const liveVotesPath = "/internal/vote/live_votes"
 type FlowVoteCount struct {
 	voteServiceURL string
 	client         *http.Client
-	id             uint64
 
 	mu            sync.Mutex
 	pollLiveVotes map[int]map[int]*string
@@ -119,7 +118,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 		// TODO External Error
 		return fmt.Errorf("sending request to vote service: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	decoder := json.NewDecoder(resp.Body)
 	for {

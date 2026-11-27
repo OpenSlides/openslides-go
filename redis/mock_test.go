@@ -36,7 +36,7 @@ func newTestRedis(t *testing.T) *testRedis {
 		if err != nil {
 			return fmt.Errorf("create connection to redis: %w", err)
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		if _, err := conn.Do("PING"); err != nil {
 			return fmt.Errorf("send ping: %w", err)

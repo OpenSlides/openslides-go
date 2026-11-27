@@ -17,7 +17,7 @@ func GoName(name string) string {
 
 	parts := strings.Split(name, "_")
 	for i := range parts {
-		parts[i] = strings.Title(parts[i])
+		parts[i] = titleASCII(parts[i])
 	}
 	name = strings.Join(parts, "")
 
@@ -104,4 +104,14 @@ func ValueType(collection, fieldName string, field *collection.Field) string {
 	default:
 		panic(fmt.Sprintf("Unknown type %q", collectionType))
 	}
+}
+
+func titleASCII(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	if s[0] >= 'a' && s[0] <= 'z' {
+		return string(s[0]-('a'-'A')) + s[1:]
+	}
+	return s
 }

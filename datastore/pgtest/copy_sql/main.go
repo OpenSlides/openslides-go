@@ -43,16 +43,15 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return fmt.Errorf("opening source file: %w", err)
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return fmt.Errorf("creating destination file: %w", err)
 	}
-	defer dstFile.Close()
+	defer func() { _ = dstFile.Close() }()
 
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
+	if _, err = io.Copy(dstFile, srcFile); err != nil {
 		return fmt.Errorf("copying file contents: %w", err)
 	}
 

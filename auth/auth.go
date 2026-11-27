@@ -247,7 +247,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 
 	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
 
-	_, err = jwt.Parse(encodedCookie, func(token *jwt.Token) (interface{}, error) {
+	_, err = jwt.Parse(encodedCookie, func(_ *jwt.Token) (any, error) {
 		return []byte(a.cookieKey), nil
 	})
 	if err != nil {
@@ -258,7 +258,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 		return fmt.Errorf("validating auth cookie: %w", err)
 	}
 
-	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
+	_, err = jwt.ParseWithClaims(encodedToken, payload, func(_ *jwt.Token) (any, error) {
 		return []byte(a.tokenKey), nil
 	})
 	if err != nil {
@@ -300,10 +300,9 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		// TODO External ERROR
 		return "", fmt.Errorf("send request to auth service: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 403 {

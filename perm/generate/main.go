@@ -25,7 +25,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("open permissions file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var d permFile
 	if err := yaml.NewDecoder(f).Decode(&d); err != nil {

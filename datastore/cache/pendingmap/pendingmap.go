@@ -107,7 +107,7 @@ func (pm *PendingMap) Snapshot() *immutable.Map[dskey.Key, []byte] {
 // Possible Errors: context.Canceled or context.DeadlineExeeded
 func (pm *PendingMap) waitForPending(ctx context.Context, keys []dskey.Key) error {
 	hasPendingKey := false
-	pm.reading(func() error {
+	_ = pm.reading(func() error {
 		for _, key := range keys {
 			if _, ok := pm.pending[key]; ok {
 				hasPendingKey = true
@@ -122,7 +122,7 @@ func (pm *PendingMap) waitForPending(ctx context.Context, keys []dskey.Key) erro
 
 	for _, k := range keys {
 		var pending chan struct{}
-		pm.reading(func() error {
+		_ = pm.reading(func() error {
 			pending = pm.pending[k]
 			return nil
 		})
@@ -147,7 +147,7 @@ func (pm *PendingMap) waitForPending(ctx context.Context, keys []dskey.Key) erro
 // Returns all keys that where marked as pending (did not exist).
 func (pm *PendingMap) MarkPending(keys ...dskey.Key) []dskey.Key {
 	var needMark []dskey.Key
-	pm.reading(func() error {
+	_ = pm.reading(func() error {
 		for _, key := range keys {
 			if _, inStore := pm.data.Get(key); inStore {
 				continue

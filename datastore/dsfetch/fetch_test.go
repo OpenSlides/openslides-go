@@ -11,17 +11,19 @@ import (
 )
 
 func TestRequestTwoWithErrors(t *testing.T) {
-	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	topic/1/title: foo
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsfetch.New(dsmock.Stub(data))
 
-	_, err := ds.Topic_Title(2).Value(context.Background())
-	if err == nil {
+	if _, err := ds.Topic_Title(2).Value(t.Context()); err == nil {
 		t.Fatalf("Title2 returned no error, expected DoesNotExist")
 	}
 
-	_, err = ds.Topic_Title(1).Value(context.Background())
-	if err != nil {
+	if _, err := ds.Topic_Title(1).Value(t.Context()); err != nil {
 		t.Errorf("Title1 returned unexpected error: %v", err)
 	}
 }
@@ -46,13 +48,17 @@ func TestRequestEmpty(t *testing.T) {
 }
 
 func TestFetch_required_field_when_object_does_not_exist(t *testing.T) {
-	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(``)))
+	data, err := dsmock.YAMLDataErr(``)
+	if err != nil {
+		t.Fatalf("Parseing Yaml: %v", err)
+	}
+	ds := dsfetch.New(dsmock.Stub(data))
 
 	var username string
 	ds.User_Username(404).Lazy(&username)
 
-	ctx := context.Background()
-	err := ds.Execute(ctx)
+	ctx := t.Context()
+	err = ds.Execute(ctx)
 
 	var errDoesNotExist dsfetch.DoesNotExistError
 	if !errors.As(err, &errDoesNotExist) {
@@ -61,11 +67,16 @@ func TestFetch_required_field_when_object_does_not_exist(t *testing.T) {
 }
 
 func TestFech_two_times_lazy(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
-	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	user/1/username: max
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+
+	ds := dsfetch.New(dsmock.Stub(data))
 
 	var username1 string
 	var username2 string
@@ -82,11 +93,16 @@ func TestFech_two_times_lazy(t *testing.T) {
 }
 
 func TestFech_error_on_value_followed_by_execute(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
-	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	user/1/username: max
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+
+	ds := dsfetch.New(dsmock.Stub(data))
 
 	if _, err := ds.User_Username(2).Value(ctx); err == nil {
 		t.Fatalf("fetching non existing user did not return an error")
@@ -101,12 +117,17 @@ func TestFech_error_on_value_followed_by_execute(t *testing.T) {
 }
 
 func TestFech_lazy_after_value_should_not_fetch_value_again(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
-	stub := dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	user/1/username: max
 	user/2/username: muster
-	`))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+
+	stub := dsmock.Stub(data)
 
 	recorder := dsrecorder.New(stub)
 
