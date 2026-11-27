@@ -1,0 +1,53 @@
+[
+  {
+    "collection": "organization",
+    "ids": [1],
+    "fields": [
+      "id",
+      "name",
+      "description",
+      "legal_notice",
+      "privacy_policy",
+      "login_text",
+      "reset_password_verbose_errors",
+      "gender_ids",
+      "disable_forward_with_attachments",
+      "restrict_edit_forward_committees",
+      "enable_electronic_voting",
+      "enable_chat",
+      "limit_of_meetings",
+      "limit_of_users",
+      "default_language",
+      "time_zone",
+      "require_duplicate_from",
+      "enable_anonymous",
+      "restrict_editing_same_level_committee_admins",
+      "saml_enabled",
+      "saml_login_button_text",
+      "saml_attr_mapping",
+      "saml_metadata_idp",
+      "saml_metadata_sp",
+      "saml_private_key",
+      "committee_ids",
+      {
+        "name": "active_meeting_ids",
+        "type": "relation-list",
+        "collection": "meeting",
+        "fields": ["enable_anonymous", "id", "language"]
+      },
+      "archived_meeting_ids",
+      "template_meeting_ids",
+      "organization_tag_ids",
+      "theme_id",
+      "theme_ids",
+      "mediafile_ids",
+      "published_mediafile_ids",
+      "user_ids",
+      "users_email_sender",
+      "users_email_replyto",
+      "users_email_subject",
+      "users_email_body",
+      "url"
+    ]
+  }
+]
