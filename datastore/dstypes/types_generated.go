@@ -37,6 +37,17 @@ const (
 	BallotPaperSelectionCUSTOMNUMBER            BallotPaperSelection = "CUSTOM_NUMBER"
 )
 
+// IDmMapping_OsField represents the IDmMapping_OsField enum type.
+type IDmMapping_OsField string
+
+const (
+	IDmMapping_OsFieldStructureLevelIDs IDmMapping_OsField = "structure_level_ids"
+	IDmMapping_OsFieldNumber            IDmMapping_OsField = "number"
+	IDmMapping_OsFieldVoteWeight        IDmMapping_OsField = "vote_weight"
+	IDmMapping_OsFieldPresent           IDmMapping_OsField = "present"
+	IDmMapping_OsFieldComment           IDmMapping_OsField = "comment"
+)
+
 // ImportPreview_Name represents the ImportPreview_Name enum type.
 type ImportPreview_Name string
 
