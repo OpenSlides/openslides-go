@@ -16,9 +16,14 @@ import (
 func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
 	ctx := context.Background()
 	myKey := dskey.MustKey("user/1/username")
-	flow := dsmock.NewFlow(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	user/1/username: value
-	`))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
+
+	flow := dsmock.NewFlow(data)
 
 	c := cache.New(flow)
 
@@ -34,9 +39,13 @@ func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
 }
 
 func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
+	data, err := dsmock.YAMLDataErr(``)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
 	flow := dsmock.NewFlow(
-		dsmock.YAMLData(``),
+		data,
 		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
 	)
 	counter := flow.Middlewares()[0].(*dsmock.Counter)
@@ -64,12 +73,16 @@ func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T)
 }
 
 func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/username: value
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
 
 	flow := dsmock.NewFlow(
-		dsmock.Stub(dsmock.YAMLData(`---
-		user/1/username: value
-		`)),
+		dsmock.Stub(data),
 		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
 	)
 	myKey := dskey.MustKey("user/1/username")
@@ -92,10 +105,14 @@ func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
 func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_finished(t *testing.T) {
 	ctx := context.Background()
 	wait := make(chan error)
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/username: value
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
 	flow := dsmock.NewFlow(
-		dsmock.YAMLData(`---
-		user/1/username: value
-		`),
+		data,
 		dsmock.NewWait(wait),
 	)
 	myKey := dskey.MustKey("user/1/username")
@@ -134,7 +151,8 @@ func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_fin
 	defer timer.Stop()
 
 	select {
-	case <-err2:
+	case v := <-err2:
+		_ = v
 	case <-timer.C:
 		t.Errorf("Second Get-Call was not done one Millisecond after the frist Get-Call returned.")
 	}
@@ -143,10 +161,14 @@ func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_fin
 func TestCache_Get_gets_an_error_from_flow_does_not_effect_a_second_call_to_Get(t *testing.T) {
 	ctx := context.Background()
 	waiter := make(chan error, 1)
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/username: value
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
 	flow := dsmock.NewFlow(
-		dsmock.YAMLData(`---
-		user/1/username: value
-		`),
+		data,
 		dsmock.NewWait(waiter),
 	)
 	myKey1 := dskey.MustKey("user/1/username")
@@ -167,11 +189,16 @@ func TestCache_Update_values_not_in_the_cache_do_not_update_the_cache(t *testing
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/username: value
+	user/2/username: value
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
+
 	flow := dsmock.NewFlow(
-		dsmock.YAMLData(`---
-		user/1/username: value
-		user/2/username: value
-		`),
+		data,
 		func(in flow.Getter) flow.Getter { return dsmock.NewCounter(in) },
 	)
 	myKey1 := dskey.MustKey("user/1/username")
@@ -213,10 +240,15 @@ func TestCache_Get_a_value_when_in_parallel_it_is_updated(t *testing.T) {
 
 	waiter := make(chan error, 1)
 
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/username: old value
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
+
 	flow := dsmock.NewFlow(
-		dsmock.YAMLData(`---
-		user/1/username: old value
-		`),
+		data,
 		dsmock.NewWait(waiter),
 	)
 	myKey := dskey.MustKey("user/1/username")
@@ -266,11 +298,14 @@ func converted(data map[dskey.Key][]byte) map[string]string {
 func TestCache_flow_returns_null_should_return_nil(t *testing.T) {
 	ctx := context.Background()
 
-	flow := dsmock.NewFlow(
-		dsmock.YAMLData(`---
-		user/1/username: null
-		`),
-	)
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/username: null
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml data: %v", err)
+	}
+
+	flow := dsmock.NewFlow(data)
 	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 

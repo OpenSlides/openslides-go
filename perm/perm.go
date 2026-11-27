@@ -140,7 +140,7 @@ func newPublicAccess(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Pe
 	if err != nil {
 		return nil, fmt.Errorf("checking meeting public access enabled: %w", err)
 	}
-	if !(enableMeetingPublicAccess && enabledOrgaPublicAccess) {
+	if !enableMeetingPublicAccess || !enabledOrgaPublicAccess {
 		return nil, nil
 	}
 

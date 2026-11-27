@@ -64,7 +64,7 @@ func buildInstanceID(now func() time.Time) string {
 // Save saves a metric value for this instance.
 func (m Metric[T]) Save(ctx context.Context, value string) error {
 	conn := m.r.pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, m.name)
 	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)
@@ -86,7 +86,7 @@ func (m Metric[T]) Save(ctx context.Context, value string) error {
 func (m Metric[T]) Get(ctx context.Context) (T, error) {
 	var zero T
 	conn := m.r.pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, m.name)
 	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)

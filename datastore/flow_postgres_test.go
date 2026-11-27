@@ -127,7 +127,7 @@ func TestFlowPostgres(t *testing.T) {
 			if err != nil {
 				t.Fatalf("create connection: %v", err)
 			}
-			defer conn.Close(ctx)
+			defer func() { _ = conn.Close(ctx) }()
 
 			if _, err := conn.Exec(ctx, tt.insert); err != nil {
 				t.Fatalf("adding example data: %v", pgtest.PrityPostgresError(err, tt.insert))
@@ -201,7 +201,8 @@ func TestPostgresUpdate(t *testing.T) {
 	// timeout.
 	go flow.Update(ctx, func(m map[dskey.Key][]byte, err error) {
 		select {
-		case <-done:
+		case err := <-done:
+			_ = err
 			// Only call update once.
 			return
 		default:
@@ -223,7 +224,6 @@ func TestPostgresUpdate(t *testing.T) {
 		}
 
 		done <- nil
-		return
 	})
 	// TODO: This test could be flaky.
 	time.Sleep(5 * time.Second) // TODO: How to do this without a sleep?
@@ -276,7 +276,8 @@ func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
 	// timeout.
 	go flow.Update(ctx, func(m map[dskey.Key][]byte, err error) {
 		select {
-		case <-done:
+		case err = <-done:
+			_ = err
 			// Only call update once.
 			return
 		default:
@@ -293,7 +294,6 @@ func TestPostgresUpdateCollectionWithCalculatedField(t *testing.T) {
 		}
 
 		done <- nil
-		return
 	})
 	// TODO: This test could be flaky.
 	time.Sleep(5 * time.Second) // TODO: How to do this without a sleep?

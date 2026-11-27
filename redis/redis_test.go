@@ -17,7 +17,7 @@ func TestUpdate(t *testing.T) {
 	tr := newTestRedis(t)
 
 	r := redis.New(environment.ForTests(tr.Env))
-	r.Wait(ctx)
+	_ = r.Wait(ctx)
 
 	done := make(chan error)
 	var got map[dskey.Key][]byte
@@ -59,7 +59,7 @@ func TestLogout(t *testing.T) {
 	tr := newTestRedis(t)
 
 	r := redis.New(environment.ForTests(tr.Env))
-	r.Wait(ctx)
+	_ = r.Wait(ctx)
 
 	done := make(chan error)
 	var got []string

@@ -316,7 +316,7 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 	var conn *pgx.Conn
 	defer func() {
 		if conn != nil {
-			conn.Close(context.Background())
+			_ = conn.Close(context.Background())
 		}
 	}()
 

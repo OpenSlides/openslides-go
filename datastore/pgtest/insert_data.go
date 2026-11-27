@@ -14,7 +14,10 @@ import (
 )
 
 func insertTestData(ctx context.Context, conn *pgx.Conn, testData string) error {
-	yml := dsmock.YAMLData(testData)
+	yml, err := dsmock.YAMLDataErr(testData)
+	if err != nil {
+		return fmt.Errorf("parse yaml: %w", err)
+	}
 	dataByTable := make(map[string]map[int]map[string]any)
 	var nmData []nmInfo
 
@@ -52,7 +55,7 @@ func insertTestData(ctx context.Context, conn *pgx.Conn, testData string) error 
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	if _, err = tx.Exec(ctx, "SET CONSTRAINTS ALL DEFERRED"); err != nil {
 		return fmt.Errorf("set constraints deferred: %w", err)
@@ -217,7 +220,7 @@ func inserNMData(ctx context.Context, tx pgx.Tx, nm nmInfo) error {
 	}
 
 	results := tx.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 
 	for i := range len(nm.id1) * len(nm.id2) {
 		_, err := results.Exec()

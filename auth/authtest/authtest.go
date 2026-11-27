@@ -25,7 +25,7 @@ func ValidTokens(cookieKey, headerKey []byte, userID int) (cookie *http.Cookie, 
 		"sessionId": "123",
 	}).SignedString(headerKey)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("Can not sign token token: %w", err)
+		return nil, "", "", fmt.Errorf("sign token: %w", err)
 	}
 	headerValue = "bearer " + headerValue
 

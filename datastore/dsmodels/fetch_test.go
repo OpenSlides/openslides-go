@@ -8,23 +8,26 @@ import (
 )
 
 func TestRequestSingleModel(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	topic/1:
 		sequential_number: 1
 		title: foo
 		meeting_id: 1
 		agenda_item_id: 1
 		list_of_speakers_id: 1
-	`)))
-
-	_, err := ds.Topic(1).First(t.Context())
+	`)
 	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
+
+	if _, err := ds.Topic(1).First(t.Context()); err != nil {
 		t.Errorf("Topic 1 returned unexpected error: %v", err)
 	}
 }
 
 func TestRequestSingleModelWithRequiredRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	topic/1:
 		sequential_number: 1
 		title: foo
@@ -33,24 +36,32 @@ func TestRequestSingleModelWithRequiredRelation(t *testing.T) {
 		list_of_speakers_id: 1
 	agenda_item/1/content_object_id: topic/1
 	agenda_item/1/meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	tQ := ds.Topic(1)
-	_, err := tQ.Preload(tQ.AgendaItem()).First(t.Context())
-	if err != nil {
+
+	if _, err := tQ.Preload(tQ.AgendaItem()).First(t.Context()); err != nil {
 		t.Errorf("Topic 1 with agenda item returned unexpected error: %v", err)
 	}
 }
 
 func TestRequestSingleModelWithExistingMaybeRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	agenda_item/1:
 		content_object_id: topic/1
 		meeting_id: 1
 		parent_id: 2
 	agenda_item/2/content_object_id: topic/2
 	agenda_item/2/meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	q := ds.AgendaItem(1)
 	res, err := q.Preload(q.Parent()).First(t.Context())
@@ -70,14 +81,18 @@ func TestRequestSingleModelWithExistingMaybeRelation(t *testing.T) {
 }
 
 func TestRequestModelsWithExistingMaybeRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	agenda_item/1:
 		content_object_id: topic/1
 		meeting_id: 1
 		parent_id: 2
 	agenda_item/2/content_object_id: topic/2
 	agenda_item/2/meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	q := ds.AgendaItem(1)
 	resAll, err := q.Preload(q.Parent()).Get(t.Context())
@@ -103,10 +118,14 @@ func TestRequestModelsWithExistingMaybeRelation(t *testing.T) {
 }
 
 func TestRequestSingleModelWithNonExistingMaybeRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	agenda_item/1/content_object_id: topic/1
 	agenda_item/1/meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	q := ds.AgendaItem(1)
 	res, err := q.Preload(q.Parent()).First(t.Context())
@@ -124,10 +143,14 @@ func TestRequestSingleModelWithNonExistingMaybeRelation(t *testing.T) {
 }
 
 func TestRequestSingleModelWithEmptyListRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	agenda_item/1/content_object_id: topic/1
 	agenda_item/1/meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	q := ds.AgendaItem(1)
 	res, err := q.Preload(q.ChildList()).First(t.Context())
@@ -141,7 +164,7 @@ func TestRequestSingleModelWithEmptyListRelation(t *testing.T) {
 }
 
 func TestRequestSingleModelWithListRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	agenda_item/1:
 		content_object_id: topic/1
 		meeting_id: 1
@@ -154,7 +177,11 @@ func TestRequestSingleModelWithListRelation(t *testing.T) {
 		content_object_id: topic/3
 		meeting_id: 1
 		parent_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	q := ds.AgendaItem(1)
 	res, err := q.Preload(q.ChildList()).First(t.Context())
@@ -176,7 +203,7 @@ func TestRequestSingleModelWithListRelation(t *testing.T) {
 }
 
 func TestRequestSingleModelWithNestedRelation(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	topic/1:
 		sequential_number: 1
 		title: foo
@@ -193,7 +220,11 @@ func TestRequestSingleModelWithNestedRelation(t *testing.T) {
 		parent_id: 3
 	agenda_item/3/content_object_id: topic/3
 	agenda_item/3/meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	tQ := ds.Topic(1)
 	res, err := tQ.Preload(tQ.AgendaItem().Parent().Parent()).First(t.Context())
@@ -217,7 +248,7 @@ func TestRequestSingleModelWithNestedRelation(t *testing.T) {
 }
 
 func TestRequestSinglePreloadMulti(t *testing.T) {
-	ds := dsmodels.New(dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	topic/1:
 		sequential_number: 1
 		title: foo
@@ -230,7 +261,11 @@ func TestRequestSinglePreloadMulti(t *testing.T) {
 		sequential_number: 1
 		content_object_id: topic/1
 		meeting_id: 1
-	`)))
+	`)
+	if err != nil {
+		t.Fatalf("Parse yaml: %v", err)
+	}
+	ds := dsmodels.New(dsmock.Stub(data))
 
 	tQ := ds.Topic(1)
 	res, err := tQ.Preload(tQ.AgendaItem()).Preload(tQ.ListOfSpeakers()).First(t.Context())

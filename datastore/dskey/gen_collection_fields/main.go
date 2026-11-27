@@ -55,9 +55,7 @@ func parse(path string) ([]collectionField, error) {
 	}
 
 	// TODO: Save mode fields in own datastructure
-	for _, cf := range modefields.List() {
-		result = append(result, cf)
-	}
+	result = append(result, modefields.List()...)
 
 	sort.Slice(result, func(i, j int) bool {
 		if result[i].Collection == result[j].Collection {
