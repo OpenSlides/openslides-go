@@ -1311,6 +1311,15 @@ func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Committee_IDentityKey(committeeID int) *ValueString {
+	key, err := dskey.FromParts("committee", committeeID, "identity_key")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Committee_ManagerIDs(committeeID int) *ValueIntSlice {
 	key, err := dskey.FromParts("committee", committeeID, "manager_ids")
 	if err != nil {
@@ -1714,6 +1723,159 @@ func (r *Fetch) HistoryPosition_UserID(historyPositionID int) *ValueMaybeInt {
 	}
 
 	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) IDmCondition_ID(iDmConditionID int) *ValueInt {
+	key, err := dskey.FromParts("idm_condition", iDmConditionID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmCondition_IDmField(iDmConditionID int) *ValueString {
+	key, err := dskey.FromParts("idm_condition", iDmConditionID, "idm_field")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmCondition_MapperID(iDmConditionID int) *ValueInt {
+	key, err := dskey.FromParts("idm_condition", iDmConditionID, "mapper_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmCondition_Regex(iDmConditionID int) *ValueString {
+	key, err := dskey.FromParts("idm_condition", iDmConditionID, "regex")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapper_ConditionIDs(iDmMapperID int) *ValueIntSlice {
+	key, err := dskey.FromParts("idm_mapper", iDmMapperID, "condition_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) IDmMapper_GroupExternalIDs(iDmMapperID int) *ValueStringSlice {
+	key, err := dskey.FromParts("idm_mapper", iDmMapperID, "group_external_ids")
+	if err != nil {
+		return &ValueStringSlice{err: err}
+	}
+
+	return &ValueStringSlice{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapper_ID(iDmMapperID int) *ValueInt {
+	key, err := dskey.FromParts("idm_mapper", iDmMapperID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapper_MappingIDs(iDmMapperID int) *ValueIntSlice {
+	key, err := dskey.FromParts("idm_mapper", iDmMapperID, "mapping_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) IDmMapper_OrganizationID(iDmMapperID int) *ValueInt {
+	key, err := dskey.FromParts("idm_mapper", iDmMapperID, "organization_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapper_Weight(iDmMapperID int) *ValueInt {
+	key, err := dskey.FromParts("idm_mapper", iDmMapperID, "weight")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) IDmMapping_AllowUpdate(iDmMappingID int) *ValueBool {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "allow_update")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) IDmMapping_DefaultValue(iDmMappingID int) *ValueString {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "default_value")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) IDmMapping_ID(iDmMappingID int) *ValueInt {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapping_IDmField(iDmMappingID int) *ValueString {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "idm_field")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapping_MapperID(iDmMappingID int) *ValueInt {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "mapper_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapping_OsField(iDmMappingID int) *ValueEnum[dstypes.IDmMapping_OsField] {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "os_field")
+	if err != nil {
+		return &ValueEnum[dstypes.IDmMapping_OsField]{err: err}
+	}
+
+	return &ValueEnum[dstypes.IDmMapping_OsField]{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) IDmMapping_OverrideDefault(iDmMappingID int) *ValueBool {
+	key, err := dskey.FromParts("idm_mapping", iDmMappingID, "override_default")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) ImportPreview_Created(importPreviewID int) *ValueInt {
@@ -2942,6 +3104,15 @@ func (r *Fetch) Meeting_Description(meetingID int) *ValueString {
 
 func (r *Fetch) Meeting_EnableAnonymous(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "enable_anonymous")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_EnableIDmMatching(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "enable_idm_matching")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
@@ -6214,6 +6385,42 @@ func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Organization_IDmCommitteeManagementKey(organizationID int) *ValueString {
+	key, err := dskey.FromParts("organization", organizationID, "idm_committee_management_key")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_IDmIDentityKey(organizationID int) *ValueString {
+	key, err := dskey.FromParts("organization", organizationID, "idm_identity_key")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_IDmMapperIDs(organizationID int) *ValueIntSlice {
+	key, err := dskey.FromParts("organization", organizationID, "idm_mapper_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_IDmOrganizationManagmentKey(organizationID int) *ValueString {
+	key, err := dskey.FromParts("organization", organizationID, "idm_organization_managment_key")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_LegalNotice(organizationID int) *ValueString {
